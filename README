@@ -1,0 +1,8 @@
+Enclosed is a proof of strong normalization (SN) for simply-typed
+lambda-calculus (STLC) in Coq using de Bruijn indices. It uses the Tait-Girard
+technique of a "Reducibility" predicate which is recursive on the type. I
+believe it to be the smallest direct proof of that fact using those methods
+(i.e. de Bruijn indices in Coq), although the one by Adam Koprowski, part of
+the CoLoR library, is elegant and more general.
+
+See sn.pdf for more description, or start reading the Coq code at sn3.v.
