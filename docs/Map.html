@@ -1,0 +1,99 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<link href="coqdoc.css" rel="stylesheet" type="text/css"/>
+<title>Map</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">Library Map</h1>
+
+<div class="code">
+<span class="id" type="keyword">Load</span> "eztactics.v".<br/>
+
+<br/>
+<span class="id" type="keyword">Require</span> <span class="id" type="keyword">Import</span> <span class="id" type="var">List</span>.<br/>
+
+<br/>
+
+<br/>
+<span class="id" type="keyword">Require</span> <span class="id" type="keyword">Import</span> <span class="id" type="var">Listkit.logickit</span>.<br/>
+
+<br/>
+<span class="id" type="keyword">Require</span> <span class="id" type="keyword">Import</span> <span class="id" type="var">Listkit.Sets</span>.<br/>
+
+<br/>
+<span class="id" type="keyword">Lemma</span> <span class="id" type="var">map_lemma</span>:<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">∀</span> (<span class="id" type="var">A</span> <span class="id" type="var">B</span> :<span class="id" type="keyword">Set</span>) (<span class="id" type="var">f</span>:<span class="id" type="var">A</span>→<span class="id" type="var">B</span>) (<span class="id" type="var">x</span>:<span class="id" type="var">A</span>) <span class="id" type="var">xs</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">map</span> <span class="id" type="var">f</span> (<span class="id" type="var">x</span>::<span class="id" type="var">xs</span>) = (<span class="id" type="var">f</span> <span class="id" type="var">x</span>) :: (<span class="id" type="var">map</span> <span class="id" type="var">f</span> <span class="id" type="var">xs</span>).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Might be in standard library? 
+</div>
+<div class="code">
+<span class="id" type="keyword">Lemma</span> <span class="id" type="var">map_app_commutes</span>:<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">∀</span> (<span class="id" type="var">A</span> <span class="id" type="var">B</span>:<span class="id" type="keyword">Set</span>) <span class="id" type="var">f</span> <span class="id" type="var">l1</span> <span class="id" type="var">l2</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">map</span> (<span class="id" type="var">A</span>:=<span class="id" type="var">A</span>)(<span class="id" type="var">B</span>:=<span class="id" type="var">B</span>) <span class="id" type="var">f</span> (<span class="id" type="var">l1</span> ++ <span class="id" type="var">l2</span>) = <span class="id" type="var">map</span> <span class="id" type="var">f</span> <span class="id" type="var">l1</span> ++ <span class="id" type="var">map</span> <span class="id" type="var">f</span> <span class="id" type="var">l2</span>.<br/>
+
+<br/>
+<span class="id" type="keyword">Lemma</span> <span class="id" type="var">map_idy</span> : <span class="id" type="keyword">∀</span> <span class="id" type="var">A</span> <span class="id" type="var">xs</span>, <span class="id" type="var">map</span> (<span class="id" type="var">idy</span> <span class="id" type="var">A</span>) <span class="id" type="var">xs</span> = <span class="id" type="var">xs</span>.<br/>
+
+<br/>
+<span class="id" type="keyword">Lemma</span> <span class="id" type="var">map_extensionality</span>:<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">A</span> <span class="id" type="var">B</span> (<span class="id" type="var">f</span> <span class="id" type="var">g</span>:<span class="id" type="var">A</span>→<span class="id" type="var">B</span>) <span class="id" type="var">xs</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" type="keyword">∀</span> <span class="id" type="var">x</span>, <span class="id" type="var">set_In</span> <span class="id" type="var">x</span> <span class="id" type="var">xs</span> → <span class="id" type="var">f</span> <span class="id" type="var">x</span> = <span class="id" type="var">g</span> <span class="id" type="var">x</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ <span class="id" type="var">map</span> <span class="id" type="var">f</span> <span class="id" type="var">xs</span> = <span class="id" type="var">map</span> <span class="id" type="var">g</span> <span class="id" type="var">xs</span>.<br/>
+
+<br/>
+<span class="id" type="keyword">Lemma</span> <span class="id" type="var">set_map_extensionality</span>:<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">A</span> <span class="id" type="var">B</span> <span class="id" type="var">B_eq_dec</span> (<span class="id" type="var">f</span> <span class="id" type="var">g</span>:<span class="id" type="var">A</span>→<span class="id" type="var">B</span>) <span class="id" type="var">xs</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" type="keyword">∀</span> <span class="id" type="var">x</span>, <span class="id" type="var">set_In</span> <span class="id" type="var">x</span> <span class="id" type="var">xs</span> → <span class="id" type="var">f</span> <span class="id" type="var">x</span> = <span class="id" type="var">g</span> <span class="id" type="var">x</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ <span class="id" type="var">set_map</span> <span class="id" type="var">B_eq_dec</span> <span class="id" type="var">f</span> <span class="id" type="var">xs</span> = <span class="id" type="var">set_map</span> <span class="id" type="var">B_eq_dec</span> <span class="id" type="var">g</span> <span class="id" type="var">xs</span>.<br/>
+
+<br/>
+<span class="id" type="keyword">Lemma</span> <span class="id" type="var">map_image</span>:<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">A</span> <span class="id" type="var">B</span> (<span class="id" type="var">f</span>:<span class="id" type="var">A</span>→<span class="id" type="var">B</span>) <span class="id" type="var">x</span> <span class="id" type="var">xs</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">set_In</span> <span class="id" type="var">x</span> (<span class="id" type="var">map</span> <span class="id" type="var">f</span> <span class="id" type="var">xs</span>) → <span class="id" type="tactic">∃</span> <span class="id" type="var">x'</span>, <span class="id" type="var">x</span> = <span class="id" type="var">f</span> <span class="id" type="var">x'</span> ∧ <span class="id" type="var">set_In</span> <span class="id" type="var">x'</span> <span class="id" type="var">xs</span>.<br/>
+
+<br/>
+<span class="id" type="keyword">Lemma</span> <span class="id" type="var">set_map_idy_ext</span> :<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">A</span> <span class="id" type="var">eq_dec</span> (<span class="id" type="var">f</span>:<span class="id" type="var">A</span>→<span class="id" type="var">A</span>) <span class="id" type="var">xs</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" type="keyword">∀</span> <span class="id" type="var">x</span>, <span class="id" type="var">true</span> = <span class="id" type="var">set_mem</span> <span class="id" type="var">eq_dec</span> <span class="id" type="var">x</span> <span class="id" type="var">xs</span> → <span class="id" type="var">f</span> <span class="id" type="var">x</span> = <span class="id" type="var">x</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;→ <span class="id" type="var">eq_sets</span> <span class="id" type="var">_</span> (<span class="id" type="var">set_map</span> <span class="id" type="var">eq_dec</span> <span class="id" type="var">f</span> <span class="id" type="var">xs</span>) <span class="id" type="var">xs</span>.<br/>
+
+<br/>
+<span class="id" type="keyword">Lemma</span> <span class="id" type="var">set_map_idy</span> :<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">A</span> <span class="id" type="var">eq_dec</span> (<span class="id" type="var">xs</span>:<span class="id" type="tactic">set</span> <span class="id" type="var">A</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">eq_sets</span> <span class="id" type="var">_</span> (<span class="id" type="var">set_map</span> <span class="id" type="var">eq_dec</span> (<span class="id" type="var">idy</span> <span class="id" type="var">A</span>) <span class="id" type="var">xs</span>) <span class="id" type="var">xs</span>.<br/>
+
+<br/>
+<span class="id" type="keyword">Lemma</span> <span class="id" type="var">set_map_map</span> :<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">A</span> <span class="id" type="var">B</span> <span class="id" type="var">eq_dec</span> <span class="id" type="var">f</span> (<span class="id" type="var">g</span>:<span class="id" type="var">A</span>→<span class="id" type="var">B</span>) <span class="id" type="var">xs</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">eq_sets</span> <span class="id" type="var">_</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" type="var">set_map</span> <span class="id" type="var">eq_dec</span> <span class="id" type="var">f</span> (<span class="id" type="var">set_map</span> <span class="id" type="var">eq_dec</span> <span class="id" type="var">g</span> <span class="id" type="var">xs</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" type="var">set_map</span> <span class="id" type="var">eq_dec</span> (<span class="id" type="keyword">fun</span> <span class="id" type="var">x</span> ⇒ <span class="id" type="var">f</span> (<span class="id" type="var">g</span> <span class="id" type="var">x</span>)) <span class="id" type="var">xs</span>).<br/>
+</div>
+</div>
+
+<div id="footer">
+<hr/><a href="index.html">Index</a><hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

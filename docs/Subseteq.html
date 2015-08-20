@@ -1,0 +1,180 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<link href="coqdoc.css" rel="stylesheet" type="text/css"/>
+<title>Subseteq</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">Library Subseteq</h1>
+
+<div class="code">
+
+<br/>
+<span class="id" type="keyword">Require</span> <span class="id" type="keyword">Import</span> <span class="id" type="var">Coq.Arith.Arith</span>.<br/>
+<span class="id" type="keyword">Require</span> <span class="id" type="keyword">Import</span> <span class="id" type="var">Coq.Bool.Bool</span>.<br/>
+<span class="id" type="keyword">Require</span> <span class="id" type="keyword">Import</span> <span class="id" type="var">Coq.Lists.List</span>.<br/>
+<span class="id" type="keyword">Require</span> <span class="id" type="keyword">Import</span> <span class="id" type="var">Coq.Lists.ListSet</span>.<br/>
+
+<br/>
+<span class="id" type="keyword">Require</span> <span class="id" type="keyword">Import</span> <span class="id" type="var">Listkit.Sets</span>.<br/>
+
+<br/>
+<span class="id" type="keyword">Load</span> <span class="id" type="var">eztactics</span>.<br/>
+
+<br/>
+<span class="id" type="keyword">Fixpoint</span> <span class="id" type="var">subseteq</span> <span class="id" type="var">xs</span> <span class="id" type="var">ys</span> :=<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">match</span> <span class="id" type="var">xs</span> <span class="id" type="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" type="var">nil</span> ⇒ <span class="id" type="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" type="var">x</span>::<span class="id" type="var">xs</span> ⇒ <span class="id" type="var">set_mem</span> <span class="id" type="var">eq_nat_dec</span> <span class="id" type="var">x</span> <span class="id" type="var">ys</span> &amp;&amp; <span class="id" type="var">subseteq</span> <span class="id" type="var">xs</span> <span class="id" type="var">ys</span><br/>
+&nbsp;&nbsp;<span class="id" type="keyword">end</span>.<br/>
+
+<br/>
+<span class="id" type="keyword">Notation</span> "X ⊆ Y" := (<span class="id" type="var">subseteq</span> <span class="id" type="var">X</span> <span class="id" type="var">Y</span>) (<span class="id" type="tactic">at</span> <span class="id" type="keyword">level</span> 500).<br/>
+
+<br/>
+<span class="id" type="keyword">Lemma</span> <span class="id" type="var">subseteq_elim</span>:<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">X</span> <span class="id" type="var">Y</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">true</span> = (<span class="id" type="var">X</span> ⊆ <span class="id" type="var">Y</span>) →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" type="keyword">∀</span> <span class="id" type="var">x</span>, <span class="id" type="var">set_In</span> <span class="id" type="var">x</span> <span class="id" type="var">X</span> → <span class="id" type="var">set_In</span> <span class="id" type="var">x</span> <span class="id" type="var">Y</span>).<br/>
+
+<br/>
+<span class="id" type="keyword">Lemma</span> <span class="id" type="var">subseteq_intro</span>:<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">X</span> <span class="id" type="var">Y</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" type="keyword">∀</span> <span class="id" type="var">x</span>, <span class="id" type="var">set_In</span> <span class="id" type="var">x</span> <span class="id" type="var">X</span> → <span class="id" type="var">set_In</span> <span class="id" type="var">x</span> <span class="id" type="var">Y</span>) →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">true</span> = (<span class="id" type="var">X</span> ⊆ <span class="id" type="var">Y</span>).<br/>
+
+<br/>
+
+<br/>
+<span class="id" type="keyword">Lemma</span> <span class="id" type="var">mem_union</span>: <br/>
+&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">A</span> <span class="id" type="var">eq_dec</span> (<span class="id" type="var">x</span>:<span class="id" type="var">A</span>) <span class="id" type="var">X</span> <span class="id" type="var">Y</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">set_mem</span> <span class="id" type="var">eq_dec</span> <span class="id" type="var">x</span> (<span class="id" type="var">set_union</span> <span class="id" type="var">eq_dec</span> <span class="id" type="var">X</span> <span class="id" type="var">Y</span>) = (<span class="id" type="var">set_mem</span> <span class="id" type="var">eq_dec</span> <span class="id" type="var">x</span> <span class="id" type="var">X</span> || <span class="id" type="var">set_mem</span> <span class="id" type="var">eq_dec</span> <span class="id" type="var">x</span> <span class="id" type="var">Y</span>).<br/>
+
+<br/>
+<span class="id" type="keyword">Lemma</span> <span class="id" type="var">subseteq_union</span> :<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">X</span> <span class="id" type="var">X'</span> <span class="id" type="var">Y</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">true</span> = <span class="id" type="var">subseteq</span> <span class="id" type="var">X</span> <span class="id" type="var">X'</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">true</span> = <span class="id" type="var">subseteq</span> <span class="id" type="var">X</span> (<span class="id" type="var">set_union</span> <span class="id" type="var">eq_nat_dec</span> <span class="id" type="var">X'</span> <span class="id" type="var">Y</span>).<br/>
+
+<br/>
+<span class="id" type="keyword">Lemma</span> <span class="id" type="var">subseteq_union2</span> :<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">Y'</span> <span class="id" type="var">X</span> <span class="id" type="var">Y</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">true</span> = <span class="id" type="var">subseteq</span> <span class="id" type="var">Y</span> <span class="id" type="var">Y'</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">true</span> = <span class="id" type="var">subseteq</span> <span class="id" type="var">Y</span> (<span class="id" type="var">set_union</span> <span class="id" type="var">eq_nat_dec</span> <span class="id" type="var">X</span> <span class="id" type="var">Y'</span>).<br/>
+
+<br/>
+<span class="id" type="keyword">Lemma</span> <span class="id" type="var">subseteq_cons</span> :<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">A</span> <span class="id" type="var">A'</span> <span class="id" type="var">a</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">true</span> = <span class="id" type="var">subseteq</span> <span class="id" type="var">A</span> <span class="id" type="var">A'</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">true</span> = <span class="id" type="var">subseteq</span> <span class="id" type="var">A</span> (<span class="id" type="var">a</span>::<span class="id" type="var">A'</span>).<br/>
+
+<br/>
+<span class="id" type="keyword">Lemma</span> <span class="id" type="var">subseteq_refl</span>:<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">X</span>, <span class="id" type="var">true</span> = <span class="id" type="var">subseteq</span> <span class="id" type="var">X</span> <span class="id" type="var">X</span>.<br/>
+
+<br/>
+<span class="id" type="keyword">Lemma</span> <span class="id" type="var">subseteq_set_unions</span>:<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">Xs</span> <span class="id" type="var">n</span> (<span class="id" type="var">X</span>:<span class="id" type="var">list</span> <span class="id" type="var">nat</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">nth_error</span> <span class="id" type="var">Xs</span> <span class="id" type="var">n</span> = <span class="id" type="var">value</span> <span class="id" type="var">X</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">true</span> = <span class="id" type="var">subseteq</span> <span class="id" type="var">X</span> (<span class="id" type="var">set_unions</span> <span class="id" type="var">nat</span> <span class="id" type="var">eq_nat_dec</span> <span class="id" type="var">Xs</span>).<br/>
+
+<br/>
+<span class="id" type="keyword">Lemma</span> <span class="id" type="var">subseteq_map</span> :<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">eq_dec</span> <span class="id" type="var">X</span> <span class="id" type="var">Y</span> <span class="id" type="var">f</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">true</span> = <span class="id" type="var">subseteq</span> <span class="id" type="var">X</span> <span class="id" type="var">Y</span> → <span class="id" type="var">true</span> = <span class="id" type="var">subseteq</span> (<span class="id" type="var">set_map</span> <span class="id" type="var">eq_dec</span> <span class="id" type="var">f</span> <span class="id" type="var">X</span>) (<span class="id" type="var">set_map</span> <span class="id" type="var">eq_dec</span> <span class="id" type="var">f</span> <span class="id" type="var">Y</span>).<br/>
+
+<br/>
+<span class="id" type="keyword">Lemma</span> <span class="id" type="var">subseteq_incl_sets_fwd</span>:<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">xs</span> <span class="id" type="var">ys</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">true</span> = <span class="id" type="var">subseteq</span> <span class="id" type="var">xs</span> <span class="id" type="var">ys</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">incl_sets</span> <span class="id" type="var">_</span> <span class="id" type="var">xs</span> <span class="id" type="var">ys</span>.<br/>
+
+<br/>
+<span class="id" type="keyword">Lemma</span> <span class="id" type="var">subseteq_trans</span> :<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">A</span> <span class="id" type="var">B</span> <span class="id" type="var">B'</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">true</span> = <span class="id" type="var">subseteq</span> <span class="id" type="var">A</span> <span class="id" type="var">B</span> → <span class="id" type="var">true</span> = <span class="id" type="var">subseteq</span> <span class="id" type="var">B</span> <span class="id" type="var">B'</span> → <span class="id" type="var">true</span> = <span class="id" type="var">subseteq</span> <span class="id" type="var">A</span> <span class="id" type="var">B'</span>.<br/>
+
+<br/>
+<span class="id" type="keyword">Lemma</span> <span class="id" type="var">subseteq_union_right</span> :<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">eq_dec</span> <span class="id" type="var">A</span> <span class="id" type="var">B</span> <span class="id" type="var">B'</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">true</span> = <span class="id" type="var">subseteq</span> <span class="id" type="var">B</span> <span class="id" type="var">B'</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">true</span> = <span class="id" type="var">subseteq</span> (<span class="id" type="var">set_union</span> <span class="id" type="var">eq_dec</span> <span class="id" type="var">A</span> <span class="id" type="var">B</span>) (<span class="id" type="var">set_union</span> <span class="id" type="var">eq_dec</span> <span class="id" type="var">A</span> <span class="id" type="var">B'</span>).<br/>
+
+<br/>
+<span class="id" type="keyword">Lemma</span> <span class="id" type="var">subseteq_union_left</span> :<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">eq_dec</span> <span class="id" type="var">A</span> <span class="id" type="var">B</span> <span class="id" type="var">B'</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">true</span> = <span class="id" type="var">subseteq</span> <span class="id" type="var">B</span> <span class="id" type="var">B'</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">true</span> = <span class="id" type="var">subseteq</span> (<span class="id" type="var">set_union</span> <span class="id" type="var">eq_dec</span> <span class="id" type="var">B</span> <span class="id" type="var">A</span>) (<span class="id" type="var">set_union</span> <span class="id" type="var">eq_dec</span> <span class="id" type="var">B'</span> <span class="id" type="var">A</span>).<br/>
+
+<br/>
+<span class="id" type="keyword">Lemma</span> <span class="id" type="var">subseteq_cons_cons</span> :<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">A</span> <span class="id" type="var">A'</span> <span class="id" type="var">a</span>, <span class="id" type="var">true</span> = <span class="id" type="var">subseteq</span> <span class="id" type="var">A</span> <span class="id" type="var">A'</span> → <span class="id" type="var">true</span> = <span class="id" type="var">subseteq</span> (<span class="id" type="var">a</span>::<span class="id" type="var">A</span>) (<span class="id" type="var">a</span>::<span class="id" type="var">A'</span>).<br/>
+
+<br/>
+<span class="id" type="keyword">Lemma</span> <span class="id" type="var">subseteq_remove</span> : <span class="id" type="keyword">∀</span> <span class="id" type="var">A</span> <span class="id" type="var">x</span>, <span class="id" type="var">true</span> = <span class="id" type="var">subseteq</span> (<span class="id" type="var">set_remove</span> <span class="id" type="var">_</span> <span class="id" type="var">eq_nat_dec</span> <span class="id" type="var">x</span> <span class="id" type="var">A</span>) <span class="id" type="var">A</span>.<br/>
+
+<br/>
+<span class="id" type="keyword">Lemma</span> <span class="id" type="var">subseteq_remove_remove</span> :<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">A</span> <span class="id" type="var">B</span> <span class="id" type="var">x</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">true</span> = <span class="id" type="var">subseteq</span> <span class="id" type="var">A</span> <span class="id" type="var">B</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">true</span> = <span class="id" type="var">subseteq</span> (<span class="id" type="var">set_remove</span> <span class="id" type="var">_</span> <span class="id" type="var">eq_nat_dec</span> <span class="id" type="var">x</span> <span class="id" type="var">A</span>) (<span class="id" type="var">set_remove</span> <span class="id" type="var">_</span> <span class="id" type="var">eq_nat_dec</span> <span class="id" type="var">x</span> <span class="id" type="var">B</span>).<br/>
+
+<br/>
+<span class="id" type="keyword">Lemma</span> <span class="id" type="var">union_monotonic</span> :<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">eq_dec</span> <span class="id" type="var">A</span> <span class="id" type="var">B</span> <span class="id" type="var">A'</span> <span class="id" type="var">B'</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">true</span> = <span class="id" type="var">subseteq</span> <span class="id" type="var">A</span> <span class="id" type="var">A'</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">true</span> = <span class="id" type="var">subseteq</span> <span class="id" type="var">B</span> <span class="id" type="var">B'</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">true</span> = <span class="id" type="var">subseteq</span> (<span class="id" type="var">set_union</span> <span class="id" type="var">eq_dec</span> <span class="id" type="var">A</span> <span class="id" type="var">B</span>) (<span class="id" type="var">set_union</span> <span class="id" type="var">eq_dec</span> <span class="id" type="var">A'</span> <span class="id" type="var">B'</span>).<br/>
+
+<br/>
+<span class="id" type="keyword">Lemma</span> <span class="id" type="var">subseteq_incl_sets_bwd</span>:<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">xs</span> <span class="id" type="var">ys</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">incl_sets</span> <span class="id" type="var">_</span> <span class="id" type="var">xs</span> <span class="id" type="var">ys</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">true</span> = <span class="id" type="var">subseteq</span> <span class="id" type="var">xs</span> <span class="id" type="var">ys</span>.<br/>
+
+<br/>
+<span class="id" type="keyword">Lemma</span> <span class="id" type="var">subseteq_incl_sets</span>:<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">xs</span> <span class="id" type="var">ys</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">incl_sets</span> <span class="id" type="var">_</span> <span class="id" type="var">xs</span> <span class="id" type="var">ys</span> ↔<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">true</span> = <span class="id" type="var">subseteq</span> <span class="id" type="var">xs</span> <span class="id" type="var">ys</span>.<br/>
+
+<br/>
+<span class="id" type="keyword">Require</span> <span class="id" type="keyword">Import</span> <span class="id" type="var">Setoid</span>.<br/>
+
+<br/>
+<span class="id" type="keyword">Lemma</span> <span class="id" type="var">subseteq_incl_sets_neg_fwd</span>:<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">xs</span> <span class="id" type="var">ys</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">false</span> = <span class="id" type="var">subseteq</span> <span class="id" type="var">xs</span> <span class="id" type="var">ys</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;¬<span class="id" type="var">incl_sets</span> <span class="id" type="var">_</span> <span class="id" type="var">xs</span> <span class="id" type="var">ys</span>.<br/>
+
+<br/>
+<span class="id" type="keyword">Lemma</span> <span class="id" type="var">subseteq_incl_sets_neg_bwd</span>:<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">xs</span> <span class="id" type="var">ys</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;¬<span class="id" type="var">incl_sets</span> <span class="id" type="var">_</span> <span class="id" type="var">xs</span> <span class="id" type="var">ys</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">false</span> = <span class="id" type="var">subseteq</span> <span class="id" type="var">xs</span> <span class="id" type="var">ys</span> .<br/>
+
+<br/>
+<span class="id" type="keyword">Add</span> <span class="id" type="var">Parametric</span> <span class="id" type="var">Morphism</span> : <span class="id" type="var">subseteq</span> <span class="id" type="keyword">with</span><br/>
+&nbsp;&nbsp;<span class="id" type="var">signature</span> (<span class="id" type="var">eq_sets</span> <span class="id" type="var">nat</span>) ==&gt; (<span class="id" type="var">eq_sets</span> <span class="id" type="var">nat</span>) ==&gt; (@<span class="id" type="var">eq</span> <span class="id" type="var">bool</span>) <span class="id" type="keyword">as</span> <span class="id" type="var">subseteq_mor</span>.<br/>
+</div>
+</div>
+
+<div id="footer">
+<hr/><a href="index.html">Index</a><hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>
