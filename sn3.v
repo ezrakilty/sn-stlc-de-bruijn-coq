@@ -551,22 +551,21 @@ Proof.
  (* Case TmProj false *)
     subst.
     rename m into M, T into S, t into T.
-    assert (Reducible (subst_env 0 Vs M) (TyPair S T)).
-     eapply IHm; seauto.
+    assert (X0 : Reducible (subst_env 0 Vs M) (TyPair S T)).
+     seauto.
     simpl in X0.
     tauto.
 
  (* Case TmProj true *)
    subst.
    rename m into M, s into S.
-   assert (Reducible (subst_env 0 Vs M) (TyPair S T)).
-    eapply IHm; seauto.
+   assert (X0 : Reducible (subst_env 0 Vs M) (TyPair S T)).
+    seauto.
    simpl in X0.
    tauto.
 
  (* Case TmAbs *)
   replace (map (shift 0 1) Vs) with Vs by (symmetry; eauto).
-
   replace (TmAbs (subst_env 1 Vs m)) with (subst_env 0 Vs (TmAbs m)).
   (* Proof of reducibility of the lambda. *)
    apply lambda_reducibility with tyEnv; auto.
@@ -579,12 +578,10 @@ Proof.
   erewrite env_typing_shift_noop; eauto.
 
  (* Case TmApp *)
- inversion tp.
  subst.
  assert (m1_subst_red : Reducible (subst_env 0 Vs m1) (TyArr a T)) by eauto.
  assert (m2_subst_red : Reducible (subst_env 0 Vs m2) a) by eauto.
- simpl in m1_subst_red.
- intuition.
+ firstorder.
 Qed.
 
 (** Every well-typed term is strongly normalizing. *)
