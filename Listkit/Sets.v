@@ -1014,7 +1014,7 @@ Proof.
  auto.
 Qed.
 
-Lemma remove_unions:
+Lemma unions_remove:
   forall A eq_dec x xs,
     eq_sets _ (set_remove A eq_dec x (set_unions A eq_dec xs))
               (set_unions _ eq_dec (map (set_remove _ eq_dec x) xs)).
@@ -1039,11 +1039,33 @@ Proof.
  unfold compwise_eq_sets.
  unfold foreach2.
  split.
-  map_omega.
+  do 2 rewrite map_length; auto.
  rewrite zip_map_diamond.
  rewrite map_map.
  cut (foreach _ env (fun x => eq_sets A (f x) (g x))).
   auto.
  apply foreach_universal.
+ sauto.
+Qed.
+
+Lemma incl_union_left:
+  forall A eq_dec X Y Z,
+    incl_sets A X Y -> incl_sets A X (set_union eq_dec Y Z).
+Proof.
+ intros.
+ apply incl_sets_trans with (set_union eq_dec X Z).
+  apply incl_sets_union1.
+ rewrite H.
+ sauto.
+Qed.
+
+Lemma incl_union_right:
+  forall A eq_dec X Y Z,
+    incl_sets A X Z -> incl_sets A X (set_union eq_dec Y Z).
+Proof.
+ intros.
+ apply incl_sets_trans with (set_union eq_dec Y X).
+  apply incl_sets_union2.
+ rewrite H.
  sauto.
 Qed.

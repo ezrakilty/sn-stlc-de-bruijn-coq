@@ -509,6 +509,16 @@ Proof.
  apply map_union.
 Qed.
 
+Lemma pred_shift :
+  forall x,
+      pred (shift_var 0 1 x) = x.
+Proof.
+ intros.
+ unfold shift_var.
+ simpl.
+ omega.
+Qed.
+
 Lemma pred_freevars_shift :
   forall M,
     eq_sets _
@@ -517,16 +527,10 @@ Lemma pred_freevars_shift :
 Proof.
  intros.
  rewrite freevars_shift_1.
- setoid_replace (set_map eq_nat_dec pred (set_map eq_nat_dec (shift_var 0 1) (freevars M)))
-    with (set_map eq_nat_dec (fun x => pred (shift_var 0 1 x)) (freevars M)).
-  unfold shift_var.
-  simpl.
-  apply set_map_idy_ext.
-  intros.
-  rewrite plus_comm.
-  simpl.
-  auto.
- apply set_map_map.
+ rewrite set_map_map.
+ apply set_map_idy_ext.
+ intros.
+ apply pred_shift.
 Qed.
 
 Require Import Listkit.All.

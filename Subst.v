@@ -100,45 +100,8 @@ Proof.
  erewrite env_typing_shift_noop; eauto.
 Qed.
 
+
 Hint Resolve subst_env_preserves_typing.
-
-(* TODO: Figure out why I called this "better" *)
-
-(* Lemma subst_env_preserves_typing_better: *)
-(*   forall tm Vs env env' ty k, *)
-(*     env_typing Vs env' -> *)
-(*     Typing (env ++ env') tm ty -> *)
-(*     k = length env -> *)
-(*     Typing env (subst_env k Vs tm) ty. *)
-(* Proof. *)
-(*  induction tm; simpl; intros Vs env env' ty k Vs_tp tp k_eq; *)
-(*     inversion tp; subst; eauto. *)
-(* (* case TmVar *) *)
-(*   destruct Vs_tp as [Vs_env'_equilong Vs_tp]. *)
-(*   apply nth_error_app_strong in H0. *)
-(*   destruct H0 as [[x_big ty_in_env'] | [x_small ?]]. *)
-(*    (* x is in env' *) *)
-(*    break; [|exfalso; omega]. *)
-(*    destruct (nth_error_dichot _ Vs (x-length env)) *)
-(*     (* as [[bounds is_error] | [bounds ?]] *). *)
-(*     exfalso. *)
-(*     apply nth_error_ok_rev in ty_in_env'. *)
-(*     omega. *)
-(*    assert (H0 : {v:Term | nth_error Vs (x-length env) = value v}). *)
-(*     admit. *)
-(*    destruct H0. *)
-(*    rewrite e; simpl. *)
-(*    apply Weakening_closed. *)
-(*    eapply foreach2_ty_member; eauto. *)
-(*    (* x is in env *) *)
-(*   break; try (exfalso; omega). *)
-(*   apply TVar; auto. *)
-(* (* case TmAbs *) *)
-(*  apply TAbs. *)
-(*  replace (S (length env)) with (length (s::env)); trivial. *)
-(*  apply IHtm with env'; trivial. *)
-(*  erewrite env_typing_shift_noop; eauto. *)
-(* Qed. *)
 
 Lemma subst_nil :
   forall N k, subst_env k nil N = N.
@@ -510,6 +473,11 @@ Qed.
 
 Import Setoid.
 
+Lemma shift_var_0: forall n x, shift_var 0 n x = x + n.
+Proof.
+ unfold shift_var. intros. break; finish.
+Qed.
+
 (** After making a substitution, the freevars of the result is:
      - the freevars of the original term,
      - less the range of variables we replaced
@@ -527,6 +495,7 @@ Proof.
  induction M; intros env k q k_def.
  (* Case TmConst *)
       simpl; auto.
+
  (* Case TmVar *)
      subst k.
      case_eq (outside_range q (length env + q) x); intro H.
@@ -539,12 +508,11 @@ Proof.
      (* Case x is inside [q, k+q). *)
      destruct (subst_var_inside_range q env x H) as [M [H0 H1]].
      rewrite H1.
-     apply incl_sets_trans with (set_unions nat eq_nat_dec (map freevars env)).
-      apply nth_error_set_unions with (n:=x-q).
-      rewrite nth_error_map.
-      rewrite <- H0.
-      sauto.
-     solve[apply incl_sets_union1].
+     apply incl_union_left.
+     apply nth_error_set_unions with (n:=x-q).
+     rewrite nth_error_map.
+     rewrite <- H0.
+     sauto.
 
  (* Case TmPair *)
     simpl.
@@ -562,36 +530,31 @@ Proof.
  (* Case TmAbs *)
   simpl.
   subst k.
-  specialize (IHM (map (shift 0 1) env) (length env) (S q)).
-  rewrite map_length in IHM.
-  specialize (IHM eq_refl).
-  rewrite map_map in IHM.
-  rewrite set_filter_map.
-  rewrite IHM.
+  rewrite IHM by auto.
   clear IHM.
 
-  rewrite filter_remove.
-  rewrite union_remove.
-  rewrite remove_unions.
-
-  rewrite map_union.
+  rewrite map_length.
   rewrite map_map.
-
+  rewrite set_filter_map.
+  rewrite union_remove.
+  rewrite unions_remove.
+  rewrite map_map.
+  rewrite map_union.
   rewrite <- set_unions_map.
   rewrite map_map.
+
   (* Corresponding sides of the union are \subseteq *)
   apply incl_sets_union.
   (* Left side *)
    rewrite <- filter_remove.
-   rewrite <- filter_remove.
-   remember (fun x : nat => outside_range (S q) (length env + S q) x) as f.
-   remember (fun x : nat => outside_range q (length env + q) (x - 1)) as g.
+   set (f := fun x : nat => outside_range (S q) (length env + S q) x).
+   set (g := fun x : nat => outside_range q (length env + q) (x - 1)).
    setoid_rewrite filter_extensionality with (g:=g); [sauto|].
    intros.
    assert (x <> 0).
     apply set_remove_elim in H.
     intuition.
-   subst.
+   unfold f, g.
    unfold outside_range.
    break; break; try (break; try break); auto; finish.
   (* Right side *)
@@ -600,8 +563,8 @@ Proof.
   intros x.
   setoid_replace (set_remove nat eq_nat_dec 0 (freevars (shift 0 1 x)))
             with (freevars (shift 0 1 x)).
-  replace (fun x0 : nat => x0 - 1) with pred by auto.
-   rewrite pred_freevars_shift; sauto.
+   replace (fun x0 : nat => x0 - 1) with pred by auto.
+    rewrite pred_freevars_shift; sauto.
   solve[apply remove_0_shift_0_1].
 
  (* Case TmApp *)
@@ -615,18 +578,6 @@ Proof.
 Qed.
 
 Require Import Listkit.listkit.
-Require Import Monomorphism.
-
-Lemma monomorphism_shift_var:  (* TODO: Move to Shift.v? *)
-  forall k n,
-    monomorphism _ _ (shift_var k n).
-Proof.
- unfold shift_var.
- intros k n.
- intros x' y' eqn.
- destruct (le_gt_dec k x');
- destruct (le_gt_dec k y'); omega.
-Qed.
 
 Lemma In_nth_error: forall A (x:A) xs, In x xs -> exists n, value x = nth_error xs n.
 Proof.
