@@ -128,18 +128,10 @@ Ltac redseq_induction M :=
          let M_to_M' := fresh M "to" M' in
            intros M' IH_M; intros
      | try trivial].
-(*
-Ltac redseq_double_induction M M :=
-   cut (M ~>> M); [|auto];
-   cut (N ~>> N); [|auto];
-   pattern M at 2 3; (* The reduct and the other position *)
-   refine (SN_induction _ _ M _); [
-   let M' := fresh M in
-     let IH_M := fresh "IH" M in
-         let M_to_M' := fresh M "to" M' in
-           intros M' IH_M; intros
-     | try trivial].
-*)
+
+Ltac double_induction_SN M N :=
+  cut (M ~>> M); [|auto]; cut (N ~>> N); [|auto]; pattern N at 2 3, M at 2 3;
+  refine (SN_double_induction _ _ N M _ _) ; [ | auto | auto].
 
 (** Reducing a term transitively preserves its SN status. *)
 Lemma Rw_trans_preserves_SN :

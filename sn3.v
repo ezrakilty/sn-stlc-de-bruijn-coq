@@ -117,10 +117,6 @@ Qed.
 
 Hint Resolve Rw_rt_preserves_Reducible.
 
-Ltac double_induction_SN M N :=
-  cut (M ~>> M); [|auto]; cut (N ~>> N); [|auto]; pattern N at 2 3, M at 2 3;
-  refine (SN_double_induction _ _ N M _ _) ; [ | auto | auto].
-
 (** The [Reducible] predicate has these important properties which
     must be proved in a mutually-inductive way. They are:
       (1) Every type has a [Reducible] term,
