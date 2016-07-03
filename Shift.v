@@ -327,6 +327,7 @@ Proof.
  symmetry; apply if_cc.
 Qed.
 
+(** Good lemma; unused. Mis-spelled. *)
 Lemma shift_preservs_env_typing:
   forall (Vs : list Term) (k n : nat)
     (env1 env2 env env' : list Ty)

@@ -184,8 +184,11 @@ Ltac break_in H :=
     destruct (eq_nat_dec x y)
   end.
 
-Ltac sufficient H :=
-  cut H; [solve[auto] | ].
+Ltac suff H tac :=
+  cut H; [solve[tac] | ].
+
+Tactic Notation "sufficient" reference(H) "by" tactic(tac) := suff H tac.
+Tactic Notation "sufficient" reference(H) := suff H auto.
 
 (** Moves a hypothesis back into the conclusion as a premise--the inverse of intro H. *)
 Ltac extro H :=

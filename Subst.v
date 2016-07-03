@@ -35,7 +35,7 @@ Lemma subst_env_nonfree_noop:
   forall N T env Vs n,
     Typing env N T ->
     n >= length env ->
-    subst_env n Vs N = N.
+      subst_env n Vs N = N.
 Proof.
  induction N; simpl; intros T env Vs n tp n_big;
    auto; inversion tp; try (f_equal; eauto).
@@ -53,7 +53,7 @@ Qed.
 Lemma subst_env_closed_noop:
   forall N T Vs n,
     Typing nil N T ->
-    subst_env n Vs N = N.
+      subst_env n Vs N = N.
 Proof.
  intros.
  eapply subst_env_nonfree_noop; eauto.
@@ -121,7 +121,7 @@ Hint Resolve subst_nil (* Used in the proof of @normalization@! *).
 Lemma subst_env_big_var :
   forall q x env,
     q + length env <= x ->
-    TmVar x = subst_env q env (TmVar x).
+      TmVar x = subst_env q env (TmVar x).
 Proof.
  intros.
  simpl.
@@ -132,9 +132,9 @@ Qed.
 
 Lemma shift_subst_commute_hi:
   forall M env k q n,
-  q + length env <= k ->
-  shift k n (subst_env q env M) =
-  subst_env q (map (shift k n) env) (shift k n M).
+    q + length env <= k ->
+    shift k n (subst_env q env M) =
+      subst_env q (map (shift k n) env) (shift k n M).
 Proof.
  induction M; intros env k q n k_overbounds_subst.
  (* Case TmConst *)
@@ -184,7 +184,7 @@ Lemma shift_subst_commute_lo:
   forall M env k q n,
     k <= q ->
     shift k n (subst_env q env M) =
-    subst_env (q+n) (map (shift k n) env) (shift k n M).
+      subst_env (q+n) (map (shift k n) env) (shift k n M).
 Proof.
  induction M; simpl; intros env k q n k_low.
  (* TmConst *)
@@ -235,18 +235,18 @@ Proof.
 Qed.
 
 Lemma subst_env_concat_TmVar:
-forall
-  (x : nat)
-  (Vs : list Term)
-  (Ws : list Term)
-  (env : list Ty)
-  (k : nat)
-  (env_closed : env_typing (Vs ++ Ws) env)
-  (VsWs_env_equilong : length (Vs ++ Ws) = length env)
-  (env_closed' : foreach2_ty Term Ty (Vs ++ Ws) env
-                  (fun (x0 : Term) (y : Ty) => Typing nil x0 y)),
-  (subst_env k Vs (subst_env (k + length Vs) Ws (TmVar x)) =
-   subst_env k (Vs ++ Ws) (TmVar x)).
+  forall
+    (x : nat)
+    (Vs : list Term)
+    (Ws : list Term)
+    (env : list Ty)
+    (k : nat)
+    (env_closed : env_typing (Vs ++ Ws) env)
+    (VsWs_env_equilong : length (Vs ++ Ws) = length env)
+    (env_closed' : foreach2_ty Term Ty (Vs ++ Ws) env
+                    (fun (x0 : Term) (y : Ty) => Typing nil x0 y)),
+      (subst_env k Vs (subst_env (k + length Vs) Ws (TmVar x)) =
+       subst_env k (Vs ++ Ws) (TmVar x)).
 Proof.
  intros.
  unfold subst_env at 3.
@@ -340,7 +340,7 @@ Require Import OutsideRange.
 Lemma subst_var_outside_range:
   forall q env x,
     outside_range q (length env + q) x = true ->
-    subst_env q env (TmVar x) = TmVar x.
+      subst_env q env (TmVar x) = TmVar x.
 Proof.
  unfold outside_range.
  intros.
@@ -356,8 +356,8 @@ Qed.
 Lemma subst_var_inside_range:
   forall q env x,
     outside_range q (length env + q) x = false ->
-    exists X, value X = nth_error env (x-q) /\
-              (subst_env q env (TmVar x)) = X.
+      exists X, value X = nth_error env (x-q) /\
+                (subst_env q env (TmVar x)) = X.
 Proof.
  unfold outside_range.
  intros.
@@ -484,20 +484,18 @@ Qed.
      - union the freevars of all the substituted terms.
  *)
 Lemma subst_Freevars:
-  forall M env k q,
-    k = length env ->
+  forall M env q,
     incl_sets _
       (freevars (subst_env q env M))
       (set_union eq_nat_dec
         (set_unions nat eq_nat_dec (map freevars env))
-        (set_filter nat (fun x => outside_range q (k+q) x) (freevars M))).
+        (set_filter nat (fun x => outside_range q (length env + q) x) (freevars M))).
 Proof.
- induction M; intros env k q k_def.
+ induction M; intros env q.
  (* Case TmConst *)
       simpl; auto.
 
  (* Case TmVar *)
-     subst k.
      case_eq (outside_range q (length env + q) x); intro H.
      (* Case x is outside [q, k+q). *)
       rewrite subst_var_outside_range by trivial.
@@ -509,16 +507,15 @@ Proof.
      destruct (subst_var_inside_range q env x H) as [M [H0 H1]].
      rewrite H1.
      apply incl_union_left.
-     apply nth_error_set_unions with (n:=x-q).
+     apply nth_error_set_unions with (n := x-q).
      rewrite nth_error_map.
      rewrite <- H0.
-     sauto.
+     sauto...
 
  (* Case TmPair *)
     simpl.
     rewrite IHM1 by auto.
     rewrite IHM2 by auto.
-    subst k.
     rewrite set_filter_union.
     solve_set_union_inclusion. (* TODO: Make this opaque-ify anything that doesn't contain
                                         set_union *)
@@ -529,7 +526,6 @@ Proof.
 
  (* Case TmAbs *)
   simpl.
-  subst k.
   rewrite IHM by auto.
   clear IHM.
 
@@ -544,6 +540,7 @@ Proof.
   rewrite map_map.
 
   (* Corresponding sides of the union are \subseteq *)
+
   apply incl_sets_union.
   (* Left side *)
    rewrite <- filter_remove.
@@ -572,8 +569,6 @@ Proof.
  rewrite IHM1 by auto.
  rewrite IHM2 by auto.
  setoid_rewrite set_filter_union.
- subst k.
-
  solve_set_union_inclusion.
 Qed.
 

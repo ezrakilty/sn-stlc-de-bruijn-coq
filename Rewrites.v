@@ -272,7 +272,7 @@ Proof.
                   | M N1 N2
                   | M1 M2 b
                   | M N
-                  | M N];
+                  | M N ];
    intros n env.
 
  (* Case BetaRed *)
@@ -284,14 +284,14 @@ Proof.
             The situation at this point can be summarized as:
 
               (1) -----------> (2) -----------> (4)
-                 subst 0 {M''}      unshift01
+                 subst 0 {M''}      unshift 0 1
                ^                                 ^
                |                                 |
                | subst n+1 env'                  | subst n env
                |                                 |
 
                N ----------->  (3) ----------->  V
-                 subst 0 {M'}      unshift01
+                 subst 0 {M'}      unshift 0 1
 
                where
                    env' = map shift01 env
@@ -511,7 +511,7 @@ Proof.
 
    (* Obligation of shift_unshift_commute: that 0 \not\in subst_env 0 [shift 0 1 N2] N1. *)
    clear red H H1 M0 k IHN2 IHN1.
-   rewrite subst_Freevars by eauto.
+   rewrite subst_Freevars by auto.
    simpl.
    intro H0.
    apply set_union_elim in H0.
