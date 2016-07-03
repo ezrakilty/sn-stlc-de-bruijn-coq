@@ -138,18 +138,17 @@ Proof.
  induction T.
  (* Case TyBase *)
    split; [split |].
-  (* Exists a Reducible term at TyBase *)
-    simpl; eauto.
-  (* Reducible -> SN *)
-   simpl.
-   tauto.
-  (* neutral withdraw *)
+   (* Exists a Reducible term at TyBase *)
+     simpl; eauto.
+   (* Reducible -> SN *)
+    simpl.
+    tauto.
+   (* neutral withdraw *)
    unfold Reducible in *.
-  intuition
-   apply reducts_SN.
+   intuition (apply reducts_SN).
    firstorder.
 
- (* Case TyPair *)
+  (* Case TyPair *)
   split; [split|].
   (* Case: exists a reducible term *)
     destruct IHT1 as [[[M M_red] Reducible_SN_T1] Neutral_Reducible_T1].
@@ -164,79 +163,89 @@ Proof.
     split.
 
     (* Case: TmProj false *)
+    (* TODO: This needs us to prove that an arbitrary transitive reduct of
+       the term is reducible; but I think it would be fine to prove just that
+       the term itself is so. *)
      double_induction_SN M N.
      intros N' M' IHN IHM N_rw_N' M_rw_M'.
-     apply Neutral_Reducible_T1.
-       sauto.
-      seauto.
+     (* Because <M', N'> is Neutral, it's sufficient to show that all its
+        reducts are reducible. *)
+     apply Neutral_Reducible_T1; [seauto | seauto | ].
      intros Z H.
      inversion H.
+     (* Case: <M', N'> itself reduces *)
       subst.
       inversion H3.
        subst m1 n m2.
-       apply IHM; auto.
-       apply Rw_rt_trans with M'; auto.
+       apply IHM; seauto.
       subst m n1 m2.
-      apply IHN; auto.
-      apply Rw_rt_trans with N'; auto.
+      apply IHN; seauto.
+     (* Case: The reduct is at the head; we project. *)
      subst m n Z.
-     apply Rw_rt_preserves_Reducible with M; auto.
+     eauto.
 
     (* Case: TmProj true *)
     (* TODO: too much duplication with TmProj true / TmProj false *)
     double_induction_SN M N.
     intros N' M' IHN IHM N_rw_N' M_rw_M'.
-    apply Neutral_Reducible_T2.
-      auto.
+    (* Because <M', N'> is Neutral, it's sufficient to show that all its
+       reducts are reducible. *)
+    apply Neutral_Reducible_T2; [seauto |  | ].
      apply TProj2 with T1.
      eauto.
     intros Z H.
     inversion H.
+    (* Case: <M', N'> itself reduces *)
      subst.
      inversion H3.
       subst m1 n m2.
-      apply IHM; auto.
-      apply Rw_rt_trans with M'; auto.
+      apply IHM; seauto.
      subst m n1 m2.
-     apply IHN; auto.
-     apply Rw_rt_trans with N'; auto.
+     apply IHN; seauto.
+    (* Case: The reduct is at the head; we project. *)
     subst m n Z.
-    apply Rw_rt_preserves_Reducible with N; auto.
+    eauto.
 
   (* Case: Reducible pair-type terms are strongly normalizing *)
    simpl.
    intuition.
-   assert (SN (TmProj false tm)).
-    auto.
+   assert (SN (TmProj false tm)) by auto.
    eapply SN_context_Proj; eauto.
 
   (* Case: Neutral terms at pair type whose reducts are reducible are
      themselves reducible (reducibility "withdraws"). *)
-  intros.
-  simpl.
-  intuition.
-   apply b.
-     auto.
-    eapply TProj1; eauto.
-   intros.
-   inversion H1.
-    pose (X m2 H5).
-    simpl in r.
-    intuition.
-   subst m.
-   subst M.
+  intros M M_Neutral M_Typing M_reducts_Reducible.
+  destruct IHT1 as [[? ?] l_withdraws].
+  destruct IHT2 as [[? ?] r_withdraws].
+  simpl. (* this is only true if both destructors (projections) are reducible. *)
+  split; [auto | ].
+  (* Split into left and right projections. *)
+  split.
+  (* Case: left projection. *)
+   apply l_withdraws.
+     sauto.
+    seauto.
+   intros M' H. (* Consider all reducts of the projection. *)
    inversion H.
-  apply b0.
-    auto.
-   eapply TProj2; eauto.
-  intros.
-  inversion H1.
-   pose (X m2 H5).
-   simpl in r.
-   intuition.
-  subst n.
-  subst M.
+   (* Case: The reduction is in the subject term. *)
+    pose (M_reducts_Reducible m2 H3). (* Then the subject's reduct is Reducible. *)
+    simpl in r.
+    solve [intuition]. (* Which by definition entails our goal. *)
+   (* Case: The reduction is at the head; it is the projection. But the subject
+            being neutral, it is not a pair, so contradiction. *)
+   subst m M.
+   inversion M_Neutral.
+  (* Case: right projection. *)
+  apply r_withdraws.
+    sauto.
+   seauto.
+  intros M' H.
   inversion H.
+   pose (M_reducts_Reducible m2 H3).
+   simpl in r.
+   solve [intuition].
+  subst n M.
+  inversion M_Neutral.
 
  (* Case TyArr *)
  split; [split|].
