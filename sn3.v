@@ -117,6 +117,10 @@ Qed.
 
 Hint Resolve Rw_rt_preserves_Reducible.
 
+Ltac double_induction_SN M N :=
+  cut (M ~>> M); [|auto]; cut (N ~>> N); [|auto]; pattern N at 2 3, M at 2 3;
+  refine (SN_double_induction _ _ N M _ _) ; [ | auto | auto].
+
 (** The [Reducible] predicate has these important properties which
     must be proved in a mutually-inductive way. They are:
       (1) Every type has a [Reducible] term,
@@ -136,18 +140,18 @@ Lemma Reducible_properties:
       -> Reducible M T).
 Proof.
  induction T.
-  split; [split |].
  (* Case TyBase *)
+   split; [split |].
   (* Exists a Reducible term at TyBase *)
     simpl; eauto.
   (* Reducible -> SN *)
    simpl.
    tauto.
   (* neutral withdraw *)
-  unfold Reducible in *.
+   unfold Reducible in *.
   intuition
-    apply reducts_SN.
-  firstorder.
+   apply reducts_SN.
+   firstorder.
 
  (* Case TyPair *)
   split; [split|].
@@ -164,9 +168,7 @@ Proof.
     split.
 
     (* Case: TmProj false *)
-     (* TODO: Capture as double_induction_SN tactic *)
-     cut (M ~>> M); [|auto]; cut (N ~>> N); [|auto]; pattern N at 2 3, M at 2 3.
-     refine (SN_double_induction _ _ N M _ _) ; [ | auto | auto].
+     double_induction_SN M N.
      intros N' M' IHN IHM N_rw_N' M_rw_M'.
      apply Neutral_Reducible_T1.
        sauto.
@@ -186,8 +188,7 @@ Proof.
 
     (* Case: TmProj true *)
     (* TODO: too much duplication with TmProj true / TmProj false *)
-    cut (M ~>> M); [|auto]; cut (N ~>> N); [|auto]; pattern N at 2 3, M at 2 3.
-    refine (SN_double_induction _ _ N M _ _) ; [ | auto | auto].
+    double_induction_SN M N.
     intros N' M' IHN IHM N_rw_N' M_rw_M'.
     apply Neutral_Reducible_T2.
       auto.
@@ -259,8 +260,7 @@ Proof.
    assert (SN M) by auto.
    pattern N, M.
    (* TODO: The double redseq induction pattern. Abstract out! *)
-   cut (M ~>> M); [|auto]; cut (N ~>> N); [|auto]; pattern N at 2 3, M at 2 3.
-   refine (SN_double_induction _ _ N M _ _) ; [ | auto | auto].
+   double_induction_SN M N.
    intros N' M' IHN IHM N_rw_N' M_rw_M'.
    (* We'll show that all reducts are reducible. *)
    apply IHT2_Red_neutral_withdraw; eauto.
@@ -412,11 +412,7 @@ Proof.
     SN_double_induction can apply. It effectively generalizes the
     goal, so that we prove it not just for N'' and P, but for
     "anything downstream of" the respective terms. *)
- cut (N'' ~>> N''); [|auto]
-   ; cut (P ~>> P); [|auto]
-   ; pattern N'' at 2 3, P at 2 3.
- refine (SN_double_induction _ _ N'' P _ _);
-   [| solve [auto] (* SN N'' *) | solve [auto]].
+ double_induction_SN P N''.
  intros N' P' IHN IHP H1 H2.
  subst N''.
 
@@ -473,10 +469,7 @@ Lemma TmProj_reducible:
      Reducible (TmProj b (〈M, N 〉)) (if b then T else S).
 Proof.
  intros.
- cut (M ~>> M); [|auto].
- cut (N ~>> N); [|auto].
- pattern M at 2 3, N at 2 3.
- refine (SN_double_induction _ _ M N _ _); auto.
+ double_induction_SN N M.
  intros x y X1 X2 H1 H2.
 
  apply Neutral_Reducible_withdraw; auto.
@@ -533,9 +526,9 @@ Proof.
  (* Case TmVar *)
       replace (x - 0) with x by omega.
       case_eq (nth_error Vs x); [intros V V_H | intro H_bogus].
-       apply foreach2_ty_member with Term Ty x Vs tyEnv; auto.
+       eapply foreach2_ty_member; eauto.
       absurd (length Vs <= x).
-       cut (length tyEnv > x); [omega|].
+       cut (length tyEnv > x); [omega|]. (* TODO: sufficient ... by omega. *)
        seauto.
       apply <- nth_error_overflow; sauto.
 
@@ -544,9 +537,9 @@ Proof.
      assert (Reducible (subst_env 0 Vs m1) s) by eauto.
      simpl.
      assert (Reducible (TmPair (subst_env 0 Vs m1) (subst_env 0 Vs m2)) (TyPair s t)).
-     apply pair_reducible; sauto.
+      apply pair_reducible; sauto.
      simpl in X2.
-     intuition.
+     trivial.
 
  (* Case TmProj false *)
     subst.
@@ -579,8 +572,8 @@ Proof.
 
  (* Case TmApp *)
  subst.
- assert (m1_subst_red : Reducible (subst_env 0 Vs m1) (TyArr a T)) by eauto.
- assert (m2_subst_red : Reducible (subst_env 0 Vs m2) a) by eauto.
+ assert (Reducible (subst_env 0 Vs m1) (TyArr a T)) by eauto.
+ assert (Reducible (subst_env 0 Vs m2) a) by eauto.
  firstorder.
 Qed.
 
