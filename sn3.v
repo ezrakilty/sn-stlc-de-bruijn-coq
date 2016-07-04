@@ -191,7 +191,7 @@ Proof.
       apply IHN; seauto.
      (* Case: The reduct is at the head; we project. *)
      subst m n Z.
-     eauto.
+     seauto.
 
     (* Case: right projection *)
     (* TODO: refactor between the TmProj true / TmProj false cases. *)
@@ -200,8 +200,7 @@ Proof.
     (* Because (TmProj _ _) is Neutral, it's sufficient to show that all its
        reducts are reducible. *)
     apply Neutral_Reducible_T2; [seauto |  | ].
-     apply TProj2 with T1.
-     eauto.
+     apply TProj2 with T1; seauto.
     intros Z H.
     inversion H.
     (* Case: <M', N'> itself reduces *)
@@ -213,7 +212,7 @@ Proof.
      apply IHN; seauto.
     (* Case: The reduct is at the head; we project. *)
     subst m n Z.
-    eauto.
+    seauto.
 
   (* Case: Reducible pair-type terms are strongly normalizing *)
    simpl.
@@ -227,13 +226,11 @@ Proof.
   destruct IHT1 as [[? ?] l_withdraws].
   destruct IHT2 as [[? ?] r_withdraws].
   simpl. (* this is only true if both destructors (projections) are reducible. *)
-  split; [auto | ].
+  split; [sauto | ].
   (* Split into left and right projections. *)
   split.
   (* Case: left projection. *)
-   apply l_withdraws.
-     sauto.
-    seauto.
+   apply l_withdraws; [seauto | seauto | ].
    intros M' H. (* Consider all reducts of the projection. *)
    inversion H.
    (* Case: The reduction is in the subject term. *)
@@ -243,18 +240,16 @@ Proof.
    (* Case: The reduction is at the head; it is the projection. But the subject
             being neutral, it is not a pair, so contradiction. *)
    subst m M.
-   inversion M_Neutral.
+   solve [inversion M_Neutral].
   (* Case: right projection. *)
-  apply r_withdraws.
-    sauto.
-   seauto.
+  apply r_withdraws; [seauto | seauto | ].
   intros M' H.
   inversion H.
-   pose (M_reducts_Reducible m2 H3).
+   pose (r := M_reducts_Reducible m2 H3).
    simpl in r.
    solve [intuition].
   subst n M.
-  inversion M_Neutral.
+  solve [inversion M_Neutral].
 
  (* Case TyArr *)
  splitN 3.
