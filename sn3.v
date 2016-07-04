@@ -173,8 +173,7 @@ Proof.
     (* TODO: double_induction_SN needs us to prove that an arbitrary
        transitive reduct of the term is reducible; but I think it
        would be fine to prove just that the term itself is so. *)
-     double_induction_SN M N.
-     intros N' M' IHN IHM N_rw_N' M_rw_M'.
+     double_induction_SN_intro M N.
      (* Because (TmProj _ _) is Neutral, it's sufficient to show that all its
         reducts are reducible. *)
      apply Neutral_Reducible_T1; [seauto | seauto | ].
@@ -195,8 +194,7 @@ Proof.
 
     (* Case: right projection *)
     (* TODO: refactor between the TmProj true / TmProj false cases. *)
-    double_induction_SN M N.
-    intros N' M' IHN IHM N_rw_N' M_rw_M'.
+    double_induction_SN_intro M N.
     (* Because (TmProj _ _) is Neutral, it's sufficient to show that all its
        reducts are reducible. *)
     apply Neutral_Reducible_T2; [seauto |  | ].
@@ -269,8 +267,7 @@ Proof.
    assert (SN M) by auto.
    pattern N, M.
    (* TODO: The double redseq induction pattern. Abstract out! *)
-   double_induction_SN M N.
-   intros N' M' IHN IHM N_rw_N' M_rw_M'.
+   double_induction_SN_intro M N.
    (* We'll show that all reducts are reducible. *)
    apply IHT2_Red_neutral_withdraw; eauto.
     apply TApp with T1; seauto.
@@ -421,8 +418,7 @@ Proof.
     SN_double_induction can apply. It effectively generalizes the
     goal, so that we prove it not just for N'' and P, but for
     "anything downstream of" the respective terms. *)
- double_induction_SN P N''.
- intros N' P' IHN IHP H1 H2.
+ double_induction_SN_intro P N''.
  subst N''.
 
  assert (Typing nil P' S) by eauto.
@@ -436,23 +432,23 @@ Proof.
    subst V M0 N0.
    replace (shift 0 1 P') with P' in M'_eq by (symmetry; eauto).
    simpl in M'_eq.
-   replace (unshift 0 1 (subst_env 0 (P' :: nil) N'))
-      with (subst_env 0 (P' :: nil) N') in M'_eq.
+   replace (unshift 0 1 (subst_env 0 (P' :: nil) N'''))
+      with (subst_env 0 (P' :: nil) N''') in M'_eq.
 
     rewrite M'_eq.
-    assert (subst_env 0 (P' :: Vs) N ~>> subst_env 0 (P' :: nil) N').
+    assert (subst_env 0 (P' :: Vs) N ~>> subst_env 0 (P' :: nil) N''').
      replace (subst_env 0 (P'::Vs) N)
         with (subst_env 0 (P'::nil) (subst_env 1 Vs N)).
       auto.
      eapply subst_env_concat; simpl; solve [eauto].
     assert (Reducible (subst_env 0 (P'::Vs) N) T) by auto.
     solve [eauto].
-   (* To show that unshift 0 1 has no effect on (subst_env 0 [P'] N'). *)
+   (* To show that unshift 0 1 has no effect on (subst_env 0 [P'] N'''). *)
    (* First, N, after substitution of P'::Vs, is closed: *)
    assert (Typing nil (subst_env 0 (P'::Vs) N) T).
     apply subst_env_preserves_typing with (S::Ts); solve [auto].
-   (* Next, N', after substitution of [P'], is closed: *)
-   assert (Typing nil (subst_env 0 (P'::nil) N') T).
+   (* Next, N''', after substitution of [P'], is closed: *)
+   assert (Typing nil (subst_env 0 (P'::nil) N''') T).
     assert (Typing nil (subst_env 0 (P'::nil) (subst_env 1 Vs N)) T).
      erewrite subst_env_concat; simpl; solve [eauto].
     eapply Rw_rt_preserves_types; solve [eauto].
@@ -460,7 +456,7 @@ Proof.
  (* Case: Reduction in left subterm. *)
   inversion L_redn.
   subst n m1 m2 n0.
-  apply IHN; solve [eauto].
+  apply IHN''; solve [eauto].
  (* Case: Reduction in right subterm. *)
  apply IHP; solve [eauto].
 Qed.

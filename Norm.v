@@ -115,6 +115,21 @@ Proof.
  apply double_sn_intro; auto.
 Qed.
 
+Ltac double_induction_SN M N :=
+  cut (M ~>> M); [|auto]; cut (N ~>> N); [|sauto]; pattern N at 2 3, M at 2 3;
+  refine (SN_double_induction _ _ N M _ _) ; [ | sauto | sauto].
+
+Ltac double_induction_SN_intro M N :=
+  cut (M ~>> M); [|auto]; cut (N ~>> N); [|sauto]; pattern N at 2 3, M at 2 3;
+  refine (SN_double_induction _ _ N M _ _) ; [ | sauto | sauto];
+  let N' := fresh N "'" in
+  let M' := fresh M "'" in
+  let IHN := fresh "IH" N in
+  let IHM := fresh "IH" M in
+  let N_rw_N' := fresh N "_rw_" N' in
+  let M_rw_M' := fresh M "_rw_" M' in
+  intros N' M' IHN IHM N_rw_N' M_rw_M'.
+
 (** The tactic [redseq_induction M] allows us to prove the current
    goal [P M] by proving that [P] holds for an arbitrary transitive
    reduct of [M], provided that all of ITS immediate reducts have the
@@ -128,10 +143,6 @@ Ltac redseq_induction M :=
          let M_to_M' := fresh M "to" M' in
            intros M' IH_M; intros
      | try trivial].
-
-Ltac double_induction_SN M N :=
-  cut (M ~>> M); [|auto]; cut (N ~>> N); [|auto]; pattern N at 2 3, M at 2 3;
-  refine (SN_double_induction _ _ N M _ _) ; [ | auto | auto].
 
 (** Reducing a term transitively preserves its SN status. *)
 Lemma Rw_trans_preserves_SN :
