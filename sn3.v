@@ -149,7 +149,7 @@ Proof.
    (* Reducible -> SN *)
     simpl.
     tauto.
-   (* neutral withdraw *)
+   (* Neutral terms withdraw *)
    unfold Reducible in *.
    intuition (apply reducts_SN).
    firstorder.
@@ -165,16 +165,17 @@ Proof.
     (* Case: that <M, N> : TyPair T1 T2 *)
       auto.
 
-    (* Case: The TmProj false and TmProj true both produce a reducible term. *)
+  (* Case: When continuation frames (left & right projections) are applied, a
+       reducible term is formed. *)
     split.
 
-    (* Case: TmProj false *)
-    (* TODO: This needs us to prove that an arbitrary transitive reduct of
-       the term is reducible; but I think it would be fine to prove just that
-       the term itself is so. *)
+    (* Case: left projection *)
+    (* TODO: double_induction_SN needs us to prove that an arbitrary
+       transitive reduct of the term is reducible; but I think it
+       would be fine to prove just that the term itself is so. *)
      double_induction_SN M N.
      intros N' M' IHN IHM N_rw_N' M_rw_M'.
-     (* Because <M', N'> is Neutral, it's sufficient to show that all its
+     (* Because (TmProj _ _) is Neutral, it's sufficient to show that all its
         reducts are reducible. *)
      apply Neutral_Reducible_T1; [seauto | seauto | ].
      intros Z H.
@@ -182,19 +183,21 @@ Proof.
      (* Case: <M', N'> itself reduces *)
       subst.
       inversion H3.
+      (* Case: reduction in rhs *)
        subst m1 n m2.
        apply IHM; seauto.
+      (* Case: reduction in lhs *)
       subst m n1 m2.
       apply IHN; seauto.
      (* Case: The reduct is at the head; we project. *)
      subst m n Z.
      eauto.
 
-    (* Case: TmProj true *)
-    (* TODO: too much duplication with TmProj true / TmProj false *)
+    (* Case: right projection *)
+    (* TODO: refactor between the TmProj true / TmProj false cases. *)
     double_induction_SN M N.
     intros N' M' IHN IHM N_rw_N' M_rw_M'.
-    (* Because <M', N'> is Neutral, it's sufficient to show that all its
+    (* Because (TmProj _ _) is Neutral, it's sufficient to show that all its
        reducts are reducible. *)
     apply Neutral_Reducible_T2; [seauto |  | ].
      apply TProj2 with T1.
