@@ -117,6 +117,12 @@ Qed.
 
 Hint Resolve Rw_rt_preserves_Reducible.
 
+Ltac splitN n :=
+  match n with
+    | 2 => split
+    | 3 => split; [splitN 2 | ]
+  end.
+
 (** The [Reducible] predicate has these important properties which
     must be proved in a mutually-inductive way. They are:
       (1) Every type has a [Reducible] term,
@@ -137,7 +143,7 @@ Lemma Reducible_properties:
 Proof.
  induction T.
  (* Case TyBase *)
-   split; [split |].
+   splitN 3.
    (* Exists a Reducible term at TyBase *)
      simpl; eauto.
    (* Reducible -> SN *)
@@ -149,7 +155,7 @@ Proof.
    firstorder.
 
   (* Case TyPair *)
-  split; [split|].
+  splitN 3.
   (* Case: exists a reducible term *)
     destruct IHT1 as [[[M M_red] Reducible_SN_T1] Neutral_Reducible_T1].
     destruct IHT2 as [[[N N_red] Reducible_SN_T2] Neutral_Reducible_T2].
@@ -248,7 +254,7 @@ Proof.
   inversion M_Neutral.
 
  (* Case TyArr *)
- split; [split|].
+ splitN 3.
  (* Exists a reducible term at T1->T2 *)
    destruct IHT2 as [[[N N_Red] Red_T2_tms_SN] IHT2_Red_neutral_withdraw].
    (* Given any term at T2, we can abstract it with a dummy argument.
