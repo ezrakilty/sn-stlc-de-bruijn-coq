@@ -12,9 +12,13 @@ Lemma Weakening :
     Typing (env++env') tm ty.
 Proof.
  induction tm; intros ty env tp; inversion tp; eauto.
- apply TAbs.
+  apply TAbs.
+  autorewrite with list.
+  seauto.
+ apply TBind with s.
+  apply IHtm1; sauto.
  autorewrite with list.
- eauto.
+ apply IHtm2; sauto.
 Qed.
 
 Hint Immediate Weakening.

@@ -16,11 +16,21 @@ Fixpoint shift k n tm {struct tm} :=
   match tm with
 | TmConst => TmConst
 | TmVar x => TmVar (shift_var k n x)
-| TmPair l m => TmPair (shift k n l) (shift k n m)
-| TmProj b m => TmProj b (shift k n m)
-| TmAbs n' => TmAbs (shift (S k) n n')
-| TmApp l m =>TmApp (shift k n l) (shift k n m)
-end.
+| TmPair L M => TmPair (shift k n L) (shift k n M)
+| TmProj b M => TmProj b (shift k n M)
+| TmAbs N' => TmAbs (shift (S k) n N')
+| TmApp L M => TmApp (shift k n L) (shift k n M)
+| TmNull => TmNull
+| TmSingle x => TmSingle (shift k n x)
+| TmUnion L R => TmUnion (shift k n L) (shift k n R)
+| TmBind M N => TmBind (shift k n M) (shift (S k) n N)
+  end.
+
+(*
+| TmNull => 0
+| TmSingle x => 0
+| TmUnion l r => 0
+ *)
 
 Definition unshift_var k n :=
   fun x => if le_gt_dec (n+k) x then (x-n) else x.
@@ -33,6 +43,10 @@ Fixpoint unshift k n tm {struct tm} :=
 | TmProj b m => TmProj b (unshift k n m)
 | TmAbs N => TmAbs (unshift (S k) n N)
 | TmApp L M =>TmApp (unshift k n L) (unshift k n M)
+| TmNull => TmNull
+| TmSingle x => TmSingle (unshift k n x)
+| TmUnion l r => TmUnion (unshift k n l) (unshift k n r)
+| TmBind M N => TmBind (unshift k n M) (unshift (S k) n N)
 end.
 
 Hint Unfold unshift_var shift_var.
@@ -52,9 +66,13 @@ Lemma unshift_shift :
     unshift k n (shift k n N) = N.
 Proof.
  induction N; intros k n; simpl.
-      trivial.
-     f_equal.
-     apply unshift_var_shift_var.
+          trivial.
+         f_equal.
+         apply unshift_var_shift_var.
+        f_equal; sauto.
+       f_equal; sauto.
+      f_equal; sauto.
+     f_equal; sauto.
     f_equal; sauto.
    f_equal; sauto.
   f_equal; sauto.
@@ -78,15 +96,17 @@ Lemma shift_nonfree_noop :
     Typing env M T -> shift k n M = M.
 Proof.
  induction M; simpl; intros k env T k_big M_tp; intuition;
-   inversion M_tp as [| ? ? T_is_env_x | | | | |];
+   inversion M_tp as [| ? ? T_is_env_x | | | | | | | | |];
      try (f_equal; eauto).
  (* Case TmVar *)
-  unfold shift_var.
-  break; trivial.
-  pose (nth_error_to_length _ _ _ _ T_is_env_x).
-  omega.
+   unfold shift_var.
+   break; trivial.
+   pose (nth_error_to_length _ _ _ _ T_is_env_x).
+   omega.
  (* Case TmAbs *)
- apply IHM with (s :: env) t; simpl; auto; omega.
+  apply IHM with (s :: env) t; simpl; auto; omega.
+ (* Case TmBind *)
+ apply IHM2 with (s :: env) (TyList t); simpl; auto; omega.
 Qed.
 
 Lemma unshift_nonfree_noop :
@@ -95,12 +115,13 @@ Lemma unshift_nonfree_noop :
     Typing env M T -> unshift k n M = M.
 Proof.
  induction M; simpl; intros k env T k_big M_tp; intuition;
-   inversion M_tp as [| ? ? T_is_env_x | | | | |];
+   inversion M_tp as [| ? ? T_is_env_x | | | | | | | | |];
      try (f_equal; eauto).
-  unfold unshift_var.
-  break; trivial.
-  absurd (x < length env); efinish.
- eapply IHM with (s :: env) t; auto; simpl; omega.
+   unfold unshift_var.
+   break; trivial.
+   absurd (x < length env); efinish.
+  eapply IHM with (s :: env) t; auto; simpl; omega.
+ eapply IHM2 with (s :: env) (TyList t); auto; simpl; omega.
 Qed.
 
 (** (Un)Shifting a closed term is a no-op. *)
@@ -165,26 +186,38 @@ Lemma shift_preserves_typing:
     Typing env M T -> Typing (env1++env'++env2) (shift k n M) T.
 Proof.
  induction M; intros k n env1 env2 env env' T env_split k_def n_def M_tp;
-   inversion M_tp as [| ? ? T_is_env_x| | | | |]; simpl.
+   inversion M_tp as [| ? ? T_is_env_x| | | | | | | | |]; simpl.
  (* TmConst *)
-       auto.
+           auto.
  (* TmVar *)
-      subst x0 ty env n k.
-      apply TVar.
-      apply shift_var_nth_error; auto.
+          subst x0 ty env n k.
+          apply TVar.
+          apply shift_var_nth_error; auto.
  (* TmPair *)
-     apply TPair; eauto.
+         apply TPair; eauto.
  (* TmProj *)
-    eapply TProj1; eauto.
-   eapply TProj2; eauto.
+        eapply TProj1; eauto.
+       eapply TProj2; eauto.
  (* TmAbs *)
-  subst n0 T env k.
-  apply TAbs.
-  replace (s :: env1 ++ env' ++ env2)
-     with ((s::env1) ++ env' ++ env2) by auto.
-  eauto using IHM.
+      subst n0 T env k.
+      apply TAbs.
+      replace (s :: env1 ++ env' ++ env2)
+         with ((s::env1) ++ env' ++ env2) by auto.
+      eauto using IHM.
  (* TmApp *)
- eauto.
+      eauto.
+     auto.
+   apply TSingle; eauto.
+  apply TUnion; eauto.
+ (* TmBind *)
+ eapply TBind.
+  eapply IHM1; seauto.
+ subst env.
+ replace (s :: env1 ++ env' ++ env2)
+   with ((s::env1) ++ env' ++ env2) by auto.
+ eapply IHM2 with (s::env1 ++ env2); auto.
+ simpl.
+ sauto.
 Qed.
 
 (** Shifting a term by just one preserves typing. *)
@@ -267,6 +300,8 @@ Proof.
   break; omega.
  (* Case TmAbs *)
   apply IHM; omega.
+ (* Case TmBind *)
+ apply IHM2; omega.
 Qed.
 
 Lemma shift_var_shift_var_commute:
@@ -306,6 +341,10 @@ Proof.
  simpl; f_equal.
  assert (S k' <= S k) by omega.
  eauto.
+ simpl; f_equal.
+  apply IHM1; auto.
+ apply IHM2; auto.
+ omega.
 Qed.
 
 Require Import Listkit.logickit.
@@ -381,64 +420,94 @@ Proof.
  induction M; intros k k' k'_not_free k'_le_k.
 
  (* Case TmConst *)
-      sauto.
+         sauto.
 
  (* Case TmVar *)
-     simpl in *.
-     unfold not in *.
-     intuition.
-     unfold shift_var, unshift_var.
-     f_equal.
-     break; break; break; break; omega.
+        simpl in *.
+        unfold not in *.
+        intuition.
+        unfold shift_var, unshift_var.
+        f_equal.
+        break; break; break; break; omega.
 
  (* Case TmPair *)
-    simpl.
-    simpl in k'_not_free.
+       simpl.
+       simpl in k'_not_free.
 
-    (* TODO: Would be nice to just throw set_union_intro at k'_not_free. *)
-    (* I have H: A->B  and a lemma foo_intro: C->A and I want H': C->B*)
-    assert (~(set_In k' (freevars M1) \/ set_In k' (freevars M2))) by auto.
-    f_equal; eauto.
+       (* TODO: Would be nice to just throw set_union_intro at k'_not_free. *)
+       (* I have H: A->B  and a lemma foo_intro: C->A and I want H': C->B*)
+       assert (~(set_In k' (freevars M1) \/ set_In k' (freevars M2))) by auto.
+       f_equal; eauto.
 
  (* Case TmProj *)
-   simpl.
-   f_equal; eauto.
+      simpl.
+      f_equal; eauto.
 
  (* Case TmAbs *)
-  simpl in *.
-  rewrite IHM; [auto | | ].
-   cut (~ set_In (S k') (set_remove _ eq_nat_dec 0 (freevars M))).
-    auto.
-   remember (set_remove _ eq_nat_dec 0 (freevars M)) as M_fvs_less_0.
-   assert (H : ~set_In (S k')
-                  (set_map eq_nat_dec S
-                     (set_map eq_nat_dec (fun x => x - 1)
-                        M_fvs_less_0))).
-    subst M_fvs_less_0.
-    rewrite <- (map_monomorphism _ _ _ _ S _); auto.
-    unfold monomorphism.
-    auto.
+     simpl in *.
+     rewrite IHM; [auto | | ].
+      cut (~ set_In (S k') (set_remove _ eq_nat_dec 0 (freevars M))).
+       auto.
+      remember (set_remove _ eq_nat_dec 0 (freevars M)) as M_fvs_less_0.
+      assert (H : ~set_In (S k')
+                     (set_map eq_nat_dec S
+                        (set_map eq_nat_dec (fun x => x - 1)
+                           M_fvs_less_0))).
+       subst M_fvs_less_0.
+       rewrite <- (map_monomorphism _ _ _ _ S _); auto.
+       unfold monomorphism.
+       auto.
 
-   rewrite set_map_map in H.
-   setoid_replace (set_map eq_nat_dec (fun x => S (x-1)) M_fvs_less_0)
-      with (M_fvs_less_0) (* using eq_sets *) in H.
-    auto.
-   rewrite set_map_extensionality with (g:=idy nat).
-    rewrite set_map_idy; auto.
-   intros x H0.
-   assert (x <> 0).
-    subst M_fvs_less_0.
-    apply set_remove_elim in H0.
-    intuition...
-   unfold idy.
-   omega...
-  omega...
+      rewrite set_map_map in H.
+      setoid_replace (set_map eq_nat_dec (fun x => S (x-1)) M_fvs_less_0)
+         with (M_fvs_less_0) (* using eq_sets *) in H.
+       auto.
+      rewrite set_map_extensionality with (g:=idy nat).
+       rewrite set_map_idy; auto.
+      intros x H0.
+      assert (x <> 0).
+       subst M_fvs_less_0.
+       apply set_remove_elim in H0.
+       intuition...
+      unfold idy.
+      omega...
+     omega...
 
  (* Case TmApp *)
+    simpl in *.
+    rewrite IHM1; [ | auto | auto].
+    rewrite IHM2; [auto | | auto].
+    auto.
+
+   simpl in *.
+   trivial.
+
+  simpl in *.
+  rewrite IHM; auto.
+
  simpl in *.
  rewrite IHM1; [ | auto | auto].
  rewrite IHM2; [auto | | auto].
  auto.
+ (* Case TmBind *)
+ simpl in *.
+ rewrite IHM1; [ | sauto | sauto].
+ rewrite IHM2; [sauto | | omega].
+ contrapose k'_not_free.
+ rename k'_not_free into S_k'_in_fvs_M2.
+ apply set_union_intro2.
+ assert (monomorphism _ _ S).
+  firstorder.
+ rewrite map_monomorphism with (f:=S) by auto.
+ rewrite set_map_map.
+ apply set_map_idy_ext.
+  intros.
+  assert (H1 : (x ∈ (Term.set_remove nat eq_nat_dec 0 (freevars M2))))
+    by (eauto using set_mem_correct1).
+  apply set_remove_elim in H1.
+  omega.
+ apply set_remove_intro.
+ sauto.
 Qed.
 
 Lemma freevars_shift_1 :
@@ -449,12 +518,59 @@ Lemma freevars_shift_1 :
 Proof.
  induction M; simpl; intros k n.
  (* Case TmConst *)
-      sauto.
+         sauto.
 
  (* Case TmVar *)
-     unfold shift_var; break; auto.
+        unfold shift_var; break; auto.
 
  (* Case TmPair *)
+       apply eq_sets_symm.
+       setoid_replace (freevars (shift k n M1))
+           with (set_map eq_nat_dec (shift_var k n) (freevars M1)) by auto.
+       setoid_replace (freevars (shift k n M2))
+           with (set_map eq_nat_dec (shift_var k n) (freevars M2)) by auto.
+       apply map_union.
+
+ (* Case TmProj *)
+      simpl; f_equal; eauto.
+
+ (* Case TmAbs *)
+     rewrite set_map_map.
+     assert (eq_sets _ (set_remove _ eq_nat_dec 0 (freevars (shift (S k) n M)))
+       (set_remove _ eq_nat_dec 0 (set_map eq_nat_dec (shift_var (S k) n) (freevars M)))).
+      rewrite IHM.
+      auto.
+     assert (eq_sets _
+       (set_map eq_nat_dec
+         (fun x => x-1) (set_remove _ eq_nat_dec 0 (freevars (shift (S k) n M))))
+       (set_map eq_nat_dec
+         (fun x => x-1)
+         (set_remove _ eq_nat_dec 0
+           (set_map eq_nat_dec (shift_var (S k) n) (freevars M))))).
+      rewrite H; auto.
+     apply eq_sets_trans with
+       (set_map eq_nat_dec (fun x => x-1)
+         (set_remove _ eq_nat_dec 0
+           (set_map eq_nat_dec (shift_var (S k) n) (freevars M)))).
+      auto.
+     assert (0 = shift_var (S k) n 0).
+     unfold shift_var.
+      break; finish.
+     rewrite H1 at 1.
+      rewrite <- map_remove.
+       rewrite set_map_map.
+      replace set_remove with Sets.set_remove by auto.
+      rewrite set_map_extensionality with (g := fun x => shift_var k n (x-1)).
+       auto.
+      intros.
+      (* subst f. *)
+      apply in_set_remove_not_removed in H2.
+      apply shift_var_S_pred; auto.
+     unfold shift_var.
+     intros y z H2.
+     break; break; solve [omega].
+
+ (* Case TmApp *)
     apply eq_sets_symm.
     setoid_replace (freevars (shift k n M1))
         with (set_map eq_nat_dec (shift_var k n) (freevars M1)) by auto.
@@ -462,52 +578,36 @@ Proof.
         with (set_map eq_nat_dec (shift_var k n) (freevars M2)) by auto.
     apply map_union.
 
- (* Case TmProj *)
-   simpl; f_equal; eauto.
+   trivial.
 
- (* Case TmAbs *)
+  rewrite IHM.
+  auto.
+
+ rewrite IHM1.
+ rewrite IHM2.
+ rewrite map_union.
+ trivial.
+ (* Case TmBind *)
+ (* TODO: the TmAbs case should be as simple as this. *)
+ rewrite IHM1.
+ rewrite IHM2.
+ rewrite map_union.
+ apply union_eq_mor.
+  auto.
+ replace 0 with (shift_var (S k) n 0) at 1 by auto.
+ rewrite <- map_remove.
   rewrite set_map_map.
-  assert (eq_sets _ (set_remove _ eq_nat_dec 0 (freevars (shift (S k) n M)))
-    (set_remove _ eq_nat_dec 0 (set_map eq_nat_dec (shift_var (S k) n) (freevars M)))).
-   rewrite IHM.
+  rewrite set_map_map.
+  rewrite set_map_extensionality with (g := (fun x => shift_var k n (x - 1))).
    auto.
-  assert (eq_sets _
-    (set_map eq_nat_dec
-      (fun x => x-1) (set_remove _ eq_nat_dec 0 (freevars (shift (S k) n M))))
-    (set_map eq_nat_dec
-      (fun x => x-1)
-      (set_remove _ eq_nat_dec 0
-        (set_map eq_nat_dec (shift_var (S k) n) (freevars M))))).
-   rewrite H; auto.
-  apply eq_sets_trans with
-    (set_map eq_nat_dec (fun x => x-1)
-      (set_remove _ eq_nat_dec 0
-        (set_map eq_nat_dec (shift_var (S k) n) (freevars M)))).
-   auto.
-  assert (0 = shift_var (S k) n 0).
+  intros.
   unfold shift_var.
-   break; finish.
-  rewrite H1 at 1.
-   rewrite <- map_remove.
-    rewrite set_map_map.
-   replace set_remove with Sets.set_remove by auto.
-   rewrite set_map_extensionality with (g := fun x => shift_var k n (x-1)).
-    auto.
-   intros.
-   (* subst f. *)
-   apply in_set_remove_not_removed in H2.
-   apply shift_var_S_pred; auto.
-  unfold shift_var.
-  intros y z H2.
-  break; break; solve [omega].
-
- (* Case TmApp *)
- apply eq_sets_symm.
- setoid_replace (freevars (shift k n M1))
-     with (set_map eq_nat_dec (shift_var k n) (freevars M1)) by auto.
- setoid_replace (freevars (shift k n M2))
-     with (set_map eq_nat_dec (shift_var k n) (freevars M2)) by auto.
- apply map_union.
+  assert (x <> 0).
+   apply set_remove_elim in H; intuition.
+  break; break; try omega.
+ intros.
+ unfold shift_var in H0.
+ destruct (le_gt_dec (S k) y); destruct (le_gt_dec (S k) z); omega.
 Qed.
 
 Lemma pred_shift :
@@ -536,6 +636,15 @@ Qed.
 
 Require Import Listkit.All.
 
+Lemma all_remove A A_dec (x:A) P xs:
+  all _ (fun y => y = x \/ P y) xs -> all _ P (set_remove _ A_dec x xs).
+ unfold all.
+intros.
+ pose (H x0).
+ apply set_remove_elim in H0.
+ intuition.
+Qed.
+
 (* TODO: Use outside_range? *)
 Lemma shift_freevars:
   forall M k,
@@ -543,36 +652,52 @@ Lemma shift_freevars:
 Proof.
  induction M; simpl; intros k.
  (* Case TmConst *)
-      unfold empty_set; unfold all; simpl; intros; easy.
+          unfold empty_set; unfold all; simpl; intros; easy.
  (* Case TmVar *)
-     unfold all.
-     simpl.
-     intros.
-     unfold shift_var in *.
-     destruct (le_gt_dec k x); omega.
+         unfold all.
+         simpl.
+         intros.
+         unfold shift_var in *.
+         destruct (le_gt_dec k x); omega.
  (* Case TmPair *)
-    apply all_union.
-    split; [apply IHM1 | apply IHM2].
+        apply all_union.
+        split; [apply IHM1 | apply IHM2].
  (* Case TmProj *)
-   auto.
+       auto.
  (* Case TmAbs *)
-  rewrite all_map.
-  unfold all.
-  intros.
-  apply set_remove_elim in H.
-  destruct H.
-  pose (IHM (S k)).
-  clearbody a.
-  remember (freevars (shift (S k) 1 M)) as N_fvs.
-  pose (a x H).
-  simpl in o.
-  omega.
+      rewrite all_map.
+      apply all_remove.
+      pose (H := IHM (S k)).
+      unfold all in H |- *.
+      intros x H0.
+      pose (H1 := H x H0).
+      omega.
 
  (* Case TmApp *)
+     rewrite all_union.
+     split.
+      apply IHM1; auto.
+     apply IHM2; auto...
+
+ (* Case TmNull *)
+    unfold all. intros. easy.
+
+ (* Case TmSingle *)
+   auto.
+
+ (* Case TmUnion *)
+  rewrite all_union.
+  auto.
+ (* Case TmBind *)
  rewrite all_union.
  split.
-  apply IHM1; auto.
- apply IHM2; auto...
+  apply IHM1.
+ rewrite all_map.
+ apply all_remove.
+ pose (H := IHM2 (S k)).
+ unfold all in H |- *.
+ intros; specialize (H x H0).
+ omega.
 Qed.
 
 Lemma remove_0_shift_0_1:

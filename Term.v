@@ -5,7 +5,12 @@ Require Import List.
 Require Import Listkit.Foreach.
 
 (** Definitions *)
-Inductive Ty : Set := TyBase | TyPair : Ty -> Ty -> Ty | TyArr : Ty -> Ty -> Ty.
+Inductive Ty : Set :=
+  TyBase
+| TyPair : Ty -> Ty -> Ty
+| TyArr : Ty -> Ty -> Ty
+| TyAny : Ty
+| TyList : Ty -> Ty.
 
 (** Terms *)
 Inductive Term : Set :=
@@ -14,7 +19,11 @@ Inductive Term : Set :=
 | TmPair : Term -> Term -> Term
 | TmProj : bool -> Term -> Term
 | TmAbs : Term -> Term
-| TmApp : Term -> Term -> Term.
+| TmApp : Term -> Term -> Term
+| TmNull : Term
+| TmSingle : Term -> Term
+| TmUnion : Term -> Term -> Term
+| TmBind : Term -> Term -> Term.
 
 Notation "L @ M" := (TmApp L M) (at level 500).
 Notation "〈 L , M 〉" := (TmPair L M) (at level 400).
@@ -39,6 +48,19 @@ Inductive Typing env : Term -> Ty -> Set :=
 | TProj2 : forall m s t,
     Typing env m (TyPair s t) ->
     Typing env (TmProj true m) t
+| TSingle : forall m t,
+    Typing env m t ->
+    Typing env (TmSingle m) (TyList t)
+| TUnion : forall m n t,
+    Typing env m t ->
+    Typing env n t ->
+    Typing env (TmUnion m n) (TyList t)
+| TNull : forall t,
+    Typing env TmNull (TyList t)
+| TBind : forall m s n t,
+    Typing env m (TyList s) ->
+    Typing (s::env) n (TyList t) ->
+    Typing env (TmBind m n) (TyList t)
 .
 
 Hint Constructors Typing.
@@ -160,6 +182,12 @@ Fixpoint freevars (M:Term) : set nat :=
   | TmAbs N => set_map eq_nat_dec (fun x => x-1)
                  (set_remove _ eq_nat_dec 0 (freevars N))
   | TmApp L M => set_union eq_nat_dec (freevars L) (freevars M)
+  | TmNull => empty_set nat
+  | TmSingle x => freevars x
+  | TmUnion a b => set_union eq_nat_dec (freevars a) (freevars b)
+  | TmBind M N => set_union eq_nat_dec (freevars M)
+                            (set_map eq_nat_dec (fun x => x-1)
+                                     (set_remove _ eq_nat_dec 0 (freevars N)))
   end.
 
 Definition free_in x M := set_In x (freevars M).

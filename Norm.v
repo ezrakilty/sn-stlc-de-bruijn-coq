@@ -4,14 +4,18 @@ Require Import Term.
 Require Import Rewrites.
 
 (** Strong normalization: a term is strongly normalizing if all its
-    reducts are strongly normalizing. *)
+    reducts are strongly normalizing. 
+
+    The well-foundedness of inductive objects in Coq means that the
+    reduction trees are well-founded or strongly-normalizing.
+*)
 Inductive SN m :=
   reducts_SN : (forall m', (m ~> m') -> SN m') -> SN m.
 
 Hint Constructors SN.
 Hint Resolve reducts_SN.
 
-Lemma SN_Unit : SN TmConst.
+Lemma SN_Const : SN TmConst.
  apply reducts_SN.
  intros.
  solve by inversion 1.
@@ -31,7 +35,7 @@ Lemma SN_Abs : forall n, SN n -> SN (TmAbs n).
 Qed.
 *)
 
-Hint Resolve SN_Unit SN_Var (*SN_Abs*).
+Hint Resolve SN_Const SN_Var (*SN_Abs*).
 
 (** If a property is preserved by reduction, then it holds for all
     strongly normalizing terms. *)
@@ -155,6 +159,15 @@ Proof.
   inversion_clear H; auto.
  auto.
 Qed.
+
+
+(* (        ~>          )      (               )
+   (   M ---------> M'  )      (            N  )
+   (   |            |   )      (            |  )
+   ( f |          f |   )  ->  (          f |  ) -> SN Q -> SN N
+   (   |            |   )      (            |  )
+   (   V    ~>      V   )      (     ~>>    V  )
+   (  f M · · · ·> f M' )      ( Q ------> f N ) *)
 
 (** If we have a function [f] that is compatible with rewriting, then
     for any SN term [Q], if [Q] reduces (transitively) to some [f M],

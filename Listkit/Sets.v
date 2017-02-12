@@ -4,12 +4,12 @@ Require Import Omega.
 Require Import Coq.Lists.List.
 Require Export Coq.Lists.ListSet.
 
-(* Add LoadPath "../Listkit" as Listkit. *)
+Add LoadPath "../Listkit" as Listkit.
 
 Load "eztactics.v".
 
-Require Import logickit.
-Require Import Foreach.
+Require Import Listkit.logickit.
+Require Import Listkit.Foreach.
 Require Import NthError.
 
 Notation "X ∪ Y" := (set_union eq_nat_dec X Y) (at level 600).
@@ -253,6 +253,63 @@ Proof.
  apply set_add_elim in H.
  destruct H.
   exists a; auto.
+ firstorder.
+Qed.
+
+Lemma set_add_elim_Type:
+  forall (A : Type) (Aeq_dec : forall x y : A, {x = y} + {x <> y}) (a b : A) (xs : set A),
+    (true = set_mem Aeq_dec a (set_add Aeq_dec b xs)) -> {a = b} + {true = set_mem Aeq_dec a xs}.
+Proof.
+  induction xs; simpl.
+  intros.
+  destruct (Aeq_dec a b); intuition.
+ intros.
+ destruct (Aeq_dec b a0).
+  subst.
+  simpl in H.
+  destruct (Aeq_dec a a0).
+   right; auto.
+   right; sauto.
+ destruct (Aeq_dec a a0).
+  intuition.
+ simpl in H.
+ destruct (Aeq_dec a a0).
+  contradiction.
+ apply IHxs; sauto.
+Qed.
+
+Lemma set_map_elim_Type:
+  forall A B eq_dec b (f : A -> B) X,
+  (true = set_mem eq_dec b (set_map eq_dec f X)) -> {a : A & (In a X) /\ f a = b}.
+Proof.
+ induction X; simpl.
+  intuition.
+  discriminate.
+ intros.
+ apply set_add_elim_Type in H.
+ destruct H.
+  exists a.
+  intuition.
+ destruct (IHX e) as [x a0].
+ exists x.
+ intuition.
+Qed.
+
+Lemma set_map_image_Type:
+  forall A B eq_dec (f:A->B) x xs,
+    set_In x (set_map eq_dec f xs) -> { x' | ((x = f x') * (set_In x' xs))%type}.
+Proof.
+ induction xs.
+  simpl; contradiction.
+ simpl.
+ intro H.
+ assert (H0: true = set_mem eq_dec x (set_add eq_dec (f a) (set_map eq_dec f xs))).
+ symmetry.
+ apply set_mem_correct2; auto.
+ apply set_add_elim_Type in H0.
+ destruct H0.
+  exists a; auto.
+ symmetry in e; apply set_mem_correct1 in e.
  firstorder.
 Qed.
 
@@ -992,6 +1049,7 @@ Proof.
 Qed.
 
 Ltac solve_set_union_inclusion :=
+(* TODO: need a solver for "conditional" set_union_inclusion. *)
   let x := fresh "x" in
   let H := fresh "H" in
     unfold incl_sets; intros x H;

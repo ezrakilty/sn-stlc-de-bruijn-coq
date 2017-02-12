@@ -229,7 +229,7 @@ Proof.
  intros M M' red.
  induction red;
    intros env T T_tp;
-   inversion T_tp as [| | | ? ? S T' TmAbs_N_tp | | |]; eauto.
+   inversion T_tp as [| | | ? ? S T' TmAbs_N_tp | | | | | |]; eauto.
  (* Case Beta_reduction -> *)
     inversion TmAbs_N_tp.
     subst.
@@ -537,4 +537,8 @@ Proof.
  simpl.
  subst n2.
  eauto.
+
+ inversion red.
+ inversion red.
+ inversion red.
 Qed.

@@ -34,7 +34,7 @@ Proof.
  destruct H; easy.
 Qed.
 
-(* Add LoadPath "../Listkit" as Listkit. *)
+Add LoadPath "../Listkit" as Listkit.
 
 Require Import Sets. (* Consider NOT doing this. *)
 
@@ -61,6 +61,77 @@ Proof.
  apply H1.
  apply set_map_intro; auto.
 Qed.
+
+(* Lemma set_map_image_2: *)
+(*   forall A B eq_dec (f:A->B) x xs, *)
+(*     (true = set_mem eq_dec x (set_map eq_dec f xs)) -> {x' | x = f x' /\ set_In x' xs}. *)
+(* Proof. *)
+(*   induction xs. *)
+(*   simpl. *)
+(*   discriminate. *)
+(*  simpl. *)
+(*  intro H. *)
+(*  apply set_add_elim in H. *)
+(*  lapply IHxs. *)
+(*   firstorder. *)
+(*  destruct H. *)
+
+(*  exists a; auto. *)
+(*  firstorder. *)
+(* Qed. *)
+
+(* Lemma all_map_Type_rev: *)
+(*   forall A eq_dec P f (xs : set A), *)
+(*   (all_Type _ eq_dec (fun x => P (f x)) xs) *)
+(*     -> (all_Type _ eq_dec P (set_map eq_dec f xs)). *)
+(* Proof. *)
+(*  intros ? ? ? ? ? H. *)
+(*  unfold all_Type in *. *)
+(*  intros. *)
+(*  pose (H1:=H (f x)). *)
+(*  apply H1. *)
+(*  apply set_map_intro; auto. *)
+(* Qed. *)
+
+(* Lemma all_Type_add_rev: *)
+(*   forall A eq_dec P (a:A) xs, *)
+(*     all_Type _ eq_dec P (set_add eq_dec a xs) *)
+(*     -> (P a * all_Type _ eq_dec P xs)%type. *)
+(* Proof. *)
+(*  unfold all_Type. *)
+(*  intros. *)
+(*  split. *)
+(*   apply X. *)
+(*   apply set_add_intro; auto. *)
+(*  intros. *)
+(*  apply X. *)
+(*  apply set_add_intro; auto. *)
+(* Qed. *)
+
+Lemma all_Type_map_fwd:
+  forall A eq_dec pred f xs,
+    (all_Type A eq_dec pred (set_map eq_dec f xs) -> all_Type A eq_dec (fun x => pred (f x)) xs).
+Proof.
+ unfold all_Type, set_map.
+ intros.
+ apply X.
+ change (set_In (f x) (set_map eq_dec f xs)).
+ apply set_map_intro; auto.
+Qed.
+
+(* Lemma all_Type_map_rev: *)
+(*   forall A eq_dec pred f xs, *)
+(*     (all_Type A eq_dec (fun x => pred (f x)) xs -> all_Type A eq_dec pred (set_map eq_dec f xs)). *)
+(* Proof. *)
+(*  unfold all_Type, set_map. *)
+(*  intros. *)
+(*  assert (H1:In x (set_map eq_dec f xs)). *)
+(*   intuition. *)
+(*  apply set_map_image in H1. *)
+(*  destruct H1 as [y [H1 H2]]. *)
+(*  subst x. *)
+(*  apply H; auto. *)
+(* Qed. *)
 
 Lemma all_cut_Type :
   forall A eq_dec P Q xs,
@@ -131,27 +202,6 @@ Proof.
  assert (set_In x xs) by tauto.
  auto.
 Qed.
-
-(* Lemma all_Type_add_rev: *)
-(*   forall A eq_dec P (a:A) xs, *)
-(*     all_Type _ eq_dec P (set_add eq_dec a xs) *)
-(*     -> (P a * all_Type _ eq_dec P xs)%type. *)
-(* Proof. *)
-(*  unfold all_Type. *)
-(*  intros. *)
-(*  (* TODO: It seems strange that I have to declare this intermediate result. *)
-(*     I want to just throw all_Type_set_In_bwd at X and be done. *) *)
-(*  assert (X0 : forall x, set_In x (set_add eq_dec a xs) -> P x). *)
-(*   apply all_Type_set_In_bwd with eq_dec; auto. *)
-(*  split. *)
-(*   apply X0. *)
-(*   apply set_add_intro. *)
-(*   auto. *)
-(*  apply all_Type_set_In_fwd. *)
-(*  intros. *)
-(*  apply X0. *)
-(*  apply set_add_intro1; auto. *)
-(* Qed. *)
 
 Lemma all_Type_nil:
   forall A eq_dec P, all_Type A eq_dec P nil.
@@ -247,4 +297,36 @@ Lemma all_Type_filter : forall A eq_dec P P' xs,
  intros x H0.
  apply set_filter_elim in H0.
  intuition.
+Qed.
+
+Lemma all_Type_map_1 :
+  forall A eq_dec pred f xs,
+    all_Type A eq_dec pred (set_map eq_dec f xs)
+      -> all_Type A eq_dec (fun x => pred (f x)) xs.
+Proof.
+ unfold all_Type in *.
+ intros.
+ specialize (X (f x)).
+ apply X.
+ apply set_map_intro.
+ auto.
+Qed.
+
+
+Lemma all_Type_map_2 :
+  forall A eq_dec pred f xs,
+    all_Type A eq_dec (fun x => pred (f x)) xs
+    -> all_Type A eq_dec pred (set_map eq_dec f xs).
+Proof.
+ unfold all_Type in *.
+ intros.
+ apply (set_mem_correct2 eq_dec) in H.
+ symmetry in H.
+ apply set_map_elim_Type in H.
+ destruct H.
+ pose (X x0).
+ destruct a.
+ subst x.
+ apply p.
+ auto.
 Qed.

@@ -3,7 +3,7 @@ COQC = coqc
 %.vo: %.v
 	$(COQC) $< -R Listkit Listkit
 
-all: sn3.vo sn3.html
+all: sn.vo sn.html
 
 Term.vo: Listkit/listkit.vo
 
@@ -21,13 +21,13 @@ Typing.vo: Term.vo
 
 OutsideRange.vo: eztactics.v
 
-sn3.vo: eztactics.v Listkit/listkit.vo Term.vo Shift.vo Subst.vo Rewrites.vo \
+sn.vo: eztactics.v Listkit/listkit.vo Term.vo Shift.vo Subst.vo Rewrites.vo \
 	Norm.vo Typing.vo Monomorphism.vo OutsideRange.vo
 
 %.html: %.v %.vo
 	coqdoc -g -d docs $<
 
-# index.html: sn3.html eztactics.v Listkit/listkit.html Term.html		\
+# index.html: sn.html eztactics.v Listkit/listkit.html Term.html		\
 # 	Shift.html Subst.html Rewrites.html Norm.html Typing.html	\
 # 	Monomorphism.html OutsideRange.html
 

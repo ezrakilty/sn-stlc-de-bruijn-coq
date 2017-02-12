@@ -184,7 +184,7 @@ Ltac break_in H :=
     destruct (eq_nat_dec x y)
   end.
 
-Ltac suff H tac :=
+Ltac suff H tac :=   (* TODO: replaced by Coq's 'enough' *)
   cut H; [solve[tac] | ].
 
 Tactic Notation "sufficient" reference(H) "by" tactic(tac) := suff H tac.
