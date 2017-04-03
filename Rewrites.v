@@ -205,6 +205,14 @@ Proof.
 
 (* TmApp *)
   (* handled by [eauto] at the top. *)
+(* TmBind *)
+ apply TBind with s.
+  apply IHN1; sauto.
+ (* copy and paste of TmAbs case :-( *)
+ replace (s::env++env') with ((s::env)++env') by auto.
+ replace (shift 0 1 (shift 0 (k+1) M)) with (shift 0 (Datatypes.S k+1) M)
+   by (rewrite shift_shift; auto).
+ apply IHN2; simpl; auto.
 Qed.
 
 (** Beta reduction preserves types, specialized to reduce at the head
@@ -229,7 +237,7 @@ Proof.
  intros M M' red.
  induction red;
    intros env T T_tp;
-   inversion T_tp as [| | | ? ? S T' TmAbs_N_tp | | | | | |]; eauto.
+   inversion T_tp as [| | | ? ? S T' TmAbs_N_tp | | | | | | |]; eauto.
  (* Case Beta_reduction -> *)
     inversion TmAbs_N_tp.
     subst.
@@ -540,5 +548,7 @@ Proof.
 
  inversion red.
  inversion red.
+ inversion red.
+
  inversion red.
 Qed.

@@ -665,7 +665,7 @@ Proof.
       apply IHM; auto.
 
  (* Case TmAbs *)
- Notation "{ q / env } M" := (subst_env q env M) (at level 100).
+ (* Notation "{ q / env } M" := (subst_env q env M) (at level 100). *)
  Notation "A ⊆ B" := (incl_sets nat A B) (at level 100).
  Notation "A % x" := (Term.set_remove nat eq_nat_dec x A) (at level 100).
       simpl.
@@ -853,6 +853,26 @@ Proof.
  rewrite IHM by auto; trivial.
  rewrite all_union in H.
  rewrite IHM1, IHM2 by tauto; trivial.
+
+ (* Case TmBind *)
+ rewrite all_union in H.
+ rewrite IHM1; [|solve[intuition]].
+  rewrite IHM2.
+   auto.
+  destruct H.
+  apply all_map in H0.
+ rewrite in_env_domain_map.
+ unfold all in H0 |- *.
+ intros x H1.
+ destruct (eq_nat_dec x 0).
+  unfold in_env_domain.
+  omega.
+ set (H2 := H0 x).
+ lapply H2.
+  unfold in_env_domain.
+  omega.
+ apply set_remove_intro.
+ auto.
 Qed.
 
 Require Import Listkit.Map.
@@ -1032,6 +1052,50 @@ Proof.
   rewrite IHN; auto.
  (* Case TmUnion. *)
  rewrite IHN1, IHN2; auto.
+ (* Case TmBind *)
+ f_equal.
+  apply IHN1; auto.
+
+ (* copy and paste of TmAbs case :-( *)
+ replace (S m) with (m + 1) by omega.
+ replace (S n) with (n + 1) by omega.
+ rewrite map_map.
+ replace (fun x => shift 0 1 (subst_env n env x))
+    with (fun x => subst_env (n+1) (map (shift 0 1) env) (shift 0 1 x)).
+  replace (map (fun x : Term => subst_env (n+1) (map (shift 0 1) env) (shift 0 1 x)) env')
+     with (map (subst_env (n+1) (map (shift 0 1) env)) (map (shift 0 1) env')).
+   apply IHN2.
+
+    (* Preservation of the free-variable relationship. *)
+    unfold (*all_terms,*) all in H0 |- *.
+    intros Z Z_source x x_free_in_Z.
+    destruct (map_image _ _ (shift 0 1) Z env Z_source) as [X' [X_X'_eq X'_in_env]].
+    pose (n0 := H0 (unshift 0 1 Z)).
+    subst Z.
+    rewrite unshift_shift in n0.
+    unfold in_env_domain in *.
+    rewrite map_length.
+    pose (n1 := n0 X'_in_env (unshift_var 0 1 x)).
+    lapply n1.
+     unfold unshift_var.
+     break; omega.
+    assert (x_free_in_Z': set_In x (set_map eq_nat_dec (shift_var 0 1) (freevars X'))).
+     pose (H2 := freevars_shift_1 X' 0 1).
+     unfold eq_sets, incl_sets in H2.
+     solve [intuition].
+
+    apply set_map_image in x_free_in_Z'.
+    destruct x_free_in_Z' as [x' [x'_def x'_in_X'_fvs]].
+    subst x.
+
+    rewrite unshift_var_shift_var.
+    solve [trivial]...
+
+   solve[map_omega].
+  rewrite map_map; solve [trivial]...
+ extensionality Z.
+ rewrite shift_subst_commute_lo; [auto|].
+ solve [omega]...
 Qed.
 
 
