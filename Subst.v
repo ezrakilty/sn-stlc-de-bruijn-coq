@@ -3,6 +3,8 @@ Load "eztactics.v".
 Require Import Arith.
 Require Import List.
 
+Add LoadPath "Listkit" as Listkit.
+
 Require Import Listkit.NthError.
 Require Import Listkit.Foreach.
 
@@ -22,8 +24,8 @@ Fixpoint subst_env k vs tm {struct tm} :=
   | TmVar x =>
     if le_gt_dec k x then
       match nth_error vs (x-k) with
-      | error => tm
-      | value v => v
+      | None => tm
+      | Some v => v
       end
     else tm
   | TmPair l m => TmPair (subst_env k vs l) (subst_env k vs m)
@@ -585,7 +587,10 @@ Proof.
  specialize (a0 x).
  lapply a0.
  unfold Outside_Range.
- admit.
+ intros H0.
+ destruct H0.
+   left; omega.
+  right; omega.
  apply set_remove_intro.
  intuition.
 Qed.

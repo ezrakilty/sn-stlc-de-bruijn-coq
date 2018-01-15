@@ -42,7 +42,10 @@ Hint Rewrite app_comm_cons : list.
  *)
 Inductive Neutral : Term -> Type :=
   | Neutral_App : forall L M, Neutral (TmApp L M)
-  | Neutral_Proj : forall b M, Neutral (TmProj b M).
+  | Neutral_Proj : forall b M, Neutral (TmProj b M)
+  | Neutral_TmBind : forall M N, Neutral (TmBind M N).
+
+Hint Constructors Neutral.
 
 Hint Resolve Neutral_App.
 Hint Resolve Neutral_Proj.
@@ -82,10 +85,19 @@ Fixpoint plug (K : Continuation) (M : Term) : Term :=
     | Iterate N K' => plug K' (TmBind M N)
   end.
 
-Definition ReducibleK (Reducible:Term->Ty -> Type) (bodyTy:Ty) (K : Continuation) :=
-    forall M,
-      Reducible M bodyTy ->
-      SN (plug K (TmSingle M)).
+(* Inductive Krw_explicit : Continuation -> Continuation -> Type := *)
+(* | A : forall N N' K, (N ~> N') -> Krw_explicit (Iterate N K) (Iterate N' K) *)
+(* | B : forall N K K', (Krw_explicit K K') -> Krw_explicit (Iterate N K) (Iterate N K') *)
+(* . *)
+
+Set Universe Polymorphism.
+
+(* Set Printing Universes. *)
+
+Definition SNK (K : Continuation) :=
+  forall M,
+    SN M ->
+    SN (plug K (TmSingle M)).
 
 (** * Reducibility *)
 Fixpoint Reducible (tm:Term) (ty:Ty)  {struct ty} : Type :=
@@ -101,14 +113,32 @@ Fixpoint Reducible (tm:Term) (ty:Ty)  {struct ty} : Type :=
         Reducible (TmApp tm l) t)
       (** ... at arrow type, must give a reducible term when applied
            to any reducible term. *)
-  | TyAny => True
-  | TyList s => forall K, ReducibleK Reducible s K -> SN (plug K tm)
+  | TyList s =>
+      let ReducibleK (K : Continuation) (T:Ty) :=
+          forall M,
+            Reducible M T ->
+            SN (plug K (TmSingle M))
+      in
+      forall K, ReducibleK K s -> SN (plug K tm)
   end)%type
 .
-(* with ReducibleK (bodyTy:Ty) (K : Continuation) {struct bodyTy} := *)
-(*     forall M, *)
-(*       Reducible M bodyTy -> *)
-(*       SN (plug K (TmSingle M)). *)
+
+Print Universes.
+
+Fixpoint ahem Vs Ts : Type :=
+  match Vs, Ts with
+    | nil, nil => True%type
+    | V::Vs, T::Ts => (Reducible V T * ahem Vs Ts)%type
+    | _, _ => False
+  end.
+
+Check Reducible.
+Check foreach2_ty.
+
+Definition ReducibleK (Reducible:Term->Ty -> Type) (K : Continuation) (T : Ty) :=
+    forall M,
+      Reducible M T ->
+      SN (plug K (TmSingle M)).
 
 Lemma Reducible_welltyped_closed :
   forall tm ty, Reducible tm ty -> Typing nil tm ty.
@@ -155,21 +185,18 @@ Qed.
 Lemma Rw_preserves_Reducible :
  forall T M, Reducible M T -> forall M', (M ~> M') -> Reducible M' T.
 Proof.
-  induction T; simpl.
-      firstorder using Rw_preserves_types.
-      inversion b; auto.
-     firstorder using Rw_preserves_types.
+ induction T; simpl.
     firstorder using Rw_preserves_types.
-   intuition.
-  intuition.
-  firstorder using Rw_preserves_types.
- split.
-  firstorder using Rw_preserves_types.
- intros K H1.
+     inversion b; auto.
+   solve [firstorder using Rw_preserves_types].
+  solve [firstorder using Rw_preserves_types].
+ intros.
+ split; eauto using Rw_preserves_types.
+ intros.
  assert (H2 : SN (plug K M)).
   apply X; auto.
- inversion H2.
- apply (H0 (plug K M')).
+ inversion H2 as [H3].
+ apply (H3 (plug K M')).
  apply rw_plug_lift.
  auto.
 Qed.
@@ -195,7 +222,14 @@ Lemma SN_TmSingle:
   forall M,
     SN M -> SN (TmSingle M).
 Proof.
-Admitted.
+  intros.
+  redseq_induction M.
+ apply reducts_SN.
+ intros.
+ inversion H1.
+ subst.
+ apply IHM; eauto.
+Qed.
 
 Lemma mamma_mia:
   forall
@@ -253,44 +287,613 @@ Qed.
 Definition HoleType K T :=
   forall M env, Typing env M T -> {S : Ty & Typing nil (plug K M) S}.
 
-Lemma ittyba :
-  forall K N,
-  HoleType (Iterate N K) TyBase -> False.
+Definition Krw K K' := (forall M, plug K M ~> plug K' M).
+
+(** Reflexive, transitive closure of Krw *)
+Inductive Krw_rt : Continuation -> Continuation -> Type :=
+| Krw_rt_refl : forall m n, m = n -> Krw_rt m n
+| Krw_rt_step : forall m n, Krw m n -> Krw_rt m n
+| Krw_rt_trans : forall l m n, Krw_rt l m -> Krw_rt m n
+                -> Krw_rt l n.
+
+(* Inductive SNK K := *)
+(*   Reducts_SNK : (forall K', Krw K K' -> SNK K') -> SNK K. *)
+
+Lemma Neutral_TmBind_left:
+  forall M N Z,
+    (Neutral M) -> (TmBind M N ~> Z) ->
+    {M' : Term & ((Z = TmBind M' N) * (M ~> M'))%type}.
 Proof.
- induction K; simpl; unfold HoleType; intros.
-  simpl in *.
-  pose (H TmConst nil).
-  lapply s; auto.
-  intros H0.
-  destruct H0.
-  inversion t.
-  inversion H2.
- lapply (H TmConst nil); auto.
- intros [S H0].
-dfadf 
+ intros.
  inversion H0.
-           .
+ subst.
+ inversion H.
+ subst.
+ inversion H.
+ subst.
+ inversion H.
+ subst.
+ firstorder.
 Qed.
 
-Lemma SN_ReducibleK:
-  forall K T M,
-    Typing nil M T ->
-    HoleType K T ->
-    Neutral M ->
-    SN M ->
-    ReducibleK Reducible T K ->
-      SN (plug K M).
+(* Lemma Krw_Iterate: *)
+(*   forall K K' t, *)
+(*     Krw K K'-> Krw (Iterate t K) (Iterate t K'). *)
+(* Proof. *)
+(*  induction K; simpl. *)
+(*   unfold Krw. *)
+(*   intros. *)
+(*   simpl in *. *)
+(*   assert (K' = Empty). *)
+  
+(*   assert (TmBind M t ~> TmBind (plug K' M) t). *)
+(*    apply Rw_Bind_subject. *)
+(*    auto. *)
+
+(* Qed. *)
+
+Lemma iterate_reduce K K' : Krw K K' -> forall F, Krw (Iterate F K) (Iterate F K').
 Proof.
- induction M.
-          intros.
-          destruct K.
-          simpl in *.
-          auto.
-          inversion H.
-          subst T.
-          HoleType (Iterate t K) T.
-          
+unfold Krw.
+intros.
+simpl.
+apply H.
 Qed.
+
+Lemma Neutral_Lists:
+  forall K M,
+    Neutral M ->
+    forall Z, (plug K M ~> Z) ->
+    {M' : Term & ((Z = plug K M') * (M ~> M'))%type} +
+    {K' : Continuation & ((Z = plug K' M) * (Krw K K'))%type}.
+Proof.
+ induction K.
+ (* Case : empty K *)
+  left.
+  simpl.
+  firstorder.
+ (* Case : K starts with an iterator. *)
+ simpl.
+ intros.
+ apply IHK in H0; try apply Neutral_TmBind.
+ destruct H0.
+ (* Case : redn of K@M' is inside M'. *)
+  left.
+  destruct s as [x [H0 H1]].
+  apply Neutral_TmBind_left in H1; auto.
+  destruct H1 as [M' [H10 H11]].
+  exists M'.
+  subst x.
+  auto.
+ (* Case : redn of K@M' in inside K. *)
+ right.
+ destruct s as [x [H0 H1]].
+ exists (Iterate t x).
+ simpl.
+ intuition.
+ apply iterate_reduce; sauto.
+Qed.
+
+(* BEGIN garbage *)
+
+(* Inductive f : Continuation -> Continuation -> Prop := *)
+(*   | e : f Empty Empty *)
+(*   | t : forall N N' K, (N ~> N') -> f (Iterate N K) (Iterate N' K) *)
+(*   | b : forall N K K', f K K' -> f (Iterate N K) (Iterate N K'). *)
+
+(* Inductive f_r K := *)
+(*   | f_r_r : (forall K', f K K' -> f_r K') -> f_r K. *)
+
+(* Lemma f_r_induction_1 K P: *)
+(*   (forall K, (forall K', f K K' -> P K') -> P K) -> *)
+(*   f_r K -> *)
+(*   P K. *)
+(* Proof. *)
+(*  intros. *)
+(*  induction H. *)
+(*  eauto. *)
+(* Qed. *)
+
+(* Lemma Krw_implies_f K K': *)
+(*   Krw K K' -> f K K'. *)
+(* Proof. *)
+(*  unfold Krw. *)
+(*  intros. *)
+(*  destruct K; destruct K'; simpl in H. *)
+(*     apply e. *)
+(*    exfalso. *)
+(*    specialize (H TmConst). *)
+(*    inversion H. *)
+(*   exfalso. *)
+(*   admit. *)
+(*  admit. *)
+(* Admitted. *)
+
+(* Goal forall K, (forall K', Krw K K' -> SNK K') -> SNK K. *)
+(* Proof. *)
+(* intros. *)
+(*  unfold SNK. *)
+(*  intros. *)
+(*  apply reducts_SN. *)
+(*  intros. *)
+(*  induction K; induction H0. *)
+(*   simpl in *. *)
+(*   inversion H1; subst. *)
+(*   assert (SN m'0). *)
+(*   inversion H1. *)
+(*   eauto. *)
+(*   apply SN_TmSingle; auto. *)
+(*  simpl in *. *)
+(*  apply Neutral_Lists in H1. *)
+(*  destruct H1 as [[M' [H1 H2]] | [K' [H1 H2]]]. *)
+(* Qed. *)
+
+(* Lemma SNK_f_r K: *)
+(*   (SNK K -> f_r K) *)
+(*   * (f_r K -> SNK K). *)
+(* Proof. *)
+(*  split. *)
+(*   admit. *)
+(*  unfold SNK. *)
+(*  intros. *)
+(*  induction H. *)
+(*  apply reducts_SN. *)
+(*  intros. *)
+(* Admitted. *)
+
+(* Lemma SNK_induction K P: *)
+(*   SNK K -> *)
+(*   (forall K', Krw_rt K K' -> *)
+(*               (forall K'', Krw K' K'' -> P K'') -> P K') -> *)
+(*   P K. *)
+(* Proof. *)
+(*  intros. *)
+(*  assert (f_r K). *)
+(*  unfold SNK in H. *)
+(*  assert (SN TmConst) by auto. *)
+(*  specialize (H TmConst H0). *)
+(*  cut (Krw_rt K K). *)
+(*  pattern K at 2 3. *)
+(*  induction H. *)
+(* Admitted. *)
+
+(* Lemma SNK_induction K P: *)
+(*   SNK K -> *)
+(*   (forall K', Krw_rt K K' -> *)
+(*               (forall K'', Krw K' K'' -> P K'') -> P K') -> *)
+(*   P K. *)
+(* Proof. *)
+(*  intros. *)
+(*  unfold SNK in H. *)
+(*  assert (SN TmConst) by auto. *)
+(*  specialize (H TmConst H0). *)
+(*  cut (Krw_rt K K). *)
+(*  pattern K at 2 3. *)
+(*  induction H. *)
+(*   intros H1; specialize (H1 K); apply H1; apply Krw_rt_refl; auto. *)
+(*  induction H. *)
+(* Admitted. *)
+
+(* END garbage *)
+
+Lemma Krw_SNK K K' : SNK K -> Krw K K' -> SNK K'.
+Proof.
+ unfold SNK, Krw in *.
+ intros.
+ specialize (H M H1).
+ inversion H.
+ auto.
+Qed.
+
+Lemma Krw_rt_SNK K K' : SNK K -> Krw_rt K K' -> SNK K'.
+Proof.
+ intros.
+ induction H0.
+   subst; auto.
+  eauto using Krw_SNK.
+ auto.
+Qed.
+
+Lemma plug_SN_rw_rt:
+  forall (K : Continuation) (M M' : Term),
+  (M ~>> M') -> SN (plug K M) -> SN (plug K M').
+Proof.
+ intros.
+ induction H; subst; eauto using plug_SN_rw.
+Qed.
+
+Lemma TmSingle_rw_rt M M0:
+  (M ~>> M0) -> (TmSingle M ~>> TmSingle M0).
+Proof.
+ intros.
+ induction H; subst; eauto.
+Qed.
+
+Lemma awesome_lemma K M:
+  forall Z,
+  (plug K (TmSingle M) ~> Z) ->
+  {M' : Term
+          & ((Z = plug K (TmSingle M')) * (M ~> M'))%type} +
+  {K' : Continuation
+          & ((Z = plug K' (TmSingle M)) * Krw K K')%type} +
+  {K' : Continuation & {N : Term
+                        & ((K = Iterate N K') * (Z = plug K' (TmApp (TmAbs N) M)))%type}}.
+Proof.
+Admitted.
+
+Lemma Empty_unrewritable: forall K, (Krw Empty K) -> False.
+Proof.
+ unfold Krw.
+ intros.
+ specialize (H TmConst).
+ destruct K; simpl in H; inversion H.
+Qed.
+
+Inductive Ktyping : Continuation -> Ty -> Type :=
+  Ktype : forall K T env S M, Typing env M T -> Typing nil (plug K M) S -> Ktyping K T.
+
+(* Inductive immed_subterm : Term -> Term -> Prop := *)
+(* | immed_subterm_pair_left : *)
+(*     forall l r, immed_subterm l (TmPair l r) *)
+(* | immed_subterm_pair_right : *)
+(*     forall l r, immed_subterm r (TmPair l r) *)
+(* | immed_subterm_proj : *)
+(*     forall b m, immed_subterm m (TmProj b m) *)
+(* | immed_subterm_abs : *)
+(*     forall n, immed_subterm n (TmAbs n) *)
+(* | immed_subterm_app_left : *)
+(*     forall l r, immed_subterm l (TmApp l r) *)
+(* | immed_subterm_app_right : *)
+(*     forall l r, immed_subterm r (TmApp l r) *)
+(* | immed_subterm_single : *)
+(*     forall m, immed_subterm m (TmSingle m) *)
+(* | immed_subterm_union_left : *)
+(*     forall l r, immed_subterm l (TmUnion l r) *)
+(* | immed_subterm_union_right : *)
+(*     forall l r, immed_subterm r (TmUnion l r) *)
+(* | immed_subterm_bind_left : *)
+(*     forall l r, immed_subterm l (TmBind l r) *)
+(* | immed_subterm_bind_right : *)
+(*     forall l r, immed_subterm r (TmBind l r) *)
+(* . *)
+
+(* Hint Constructors immed_subterm. *)
+
+(* Inductive subterm : Term -> Term -> Prop := *)
+(*   subterm_immed_subterm : forall m m', immed_subterm m m' -> subterm m m' *)
+(* | subterm_pair_left : *)
+(*     forall l' l r, subterm l' l -> subterm l' (TmPair l r) *)
+(* | subterm_pair_right : *)
+(*     forall r' l r, subterm r' r -> subterm r' (TmPair l r) *)
+(* | subterm_proj : *)
+(*     forall m' b m, subterm m' m -> subterm m' (TmProj b m) *)
+(* | subterm_abs : *)
+(*     forall n' n, subterm n' n -> subterm n' (TmAbs n) *)
+(* | subterm_app_left : *)
+(*     forall l' l r, subterm l' l -> subterm l' (TmApp l r) *)
+(* | subterm_app_right : *)
+(*     forall r' l r, subterm r' r -> subterm r' (TmApp l r) *)
+(* | subterm_single : *)
+(*     forall m' m, subterm m' m -> subterm m' (TmSingle m) *)
+(* | subterm_union_left : *)
+(*     forall l' l r, subterm l' l -> subterm l' (TmUnion l r) *)
+(* | subterm_union_right : *)
+(*     forall r' l r, subterm r' r -> subterm r' (TmUnion l r) *)
+(* | subterm_bind_left : *)
+(*     forall l' l r, subterm l' l -> subterm l' (TmBind l r) *)
+(* | subterm_bind_right : *)
+(*     forall r' l r, subterm r' r -> subterm r' (TmBind l r) *)
+(* . *)
+
+(* Hint Constructors subterm. *)
+
+(* Lemma no_self_immed_subterm : *)
+(*   forall M, *)
+(*     immed_subterm M M -> False. *)
+(* Proof. *)
+(*  induction M; intros; inversion H; try subst. *)
+(*            subst l r. *)
+(*            apply IHM1. *)
+(*            replace M1 with (TmPair M1 M2) at 2. *)
+(*            apply immed_subterm_pair_left. *)
+(*           admit. *)
+(*          apply IHM. *)
+(*          replace M with (TmProj b M) at 2. *)
+(*          apply immed_subterm_proj. *)
+(* Admitted. *)
+
+(* Lemma no_self_subterm : *)
+(*   forall M, *)
+(*     subterm M M -> False. *)
+(* Proof. *)
+(*  induction M; intros; inversion H; inversion H0; try subst. *)
+(* Admitted. *)
+
+(* Lemma no_self_reduction: *)
+(*   forall M, *)
+(*   (M ~> M) -> False. *)
+(* Proof. *)
+(*  induction M; intros; inversion H; try subst. *)
+(*            apply IHM1; auto. *)
+(*           apply IHM2; auto. *)
+(*          apply IHM; auto. *)
+(*         apply no_self_subterm with m. *)
+(*         rewrite H0 at 2. *)
+(*         auto. *)
+(*        apply no_self_subterm with n. *)
+(*        rewrite H0 at 2. *)
+(*        auto. *)
+(*       auto. *)
+(* Qed. *)
+
+Axiom no_Krw : forall K K', Krw K K' -> False.
+
+Lemma Krw_characterization:
+  forall K T K' N,
+    Ktyping K T ->
+    Krw (Iterate N K) K' ->
+    {K1 : Continuation & ((K' = Iterate N K1) * (Krw K K1))%type} +
+    {N' : Term & ((K' = Iterate N' K) * (N ~> N'))%type}.
+Proof.
+Admitted.
+
+Lemma Krw_preserves_ReducibleK :
+  forall T K K',
+  Krw K K' -> ReducibleK Reducible K T -> ReducibleK Reducible K' T.
+Proof.
+ unfold ReducibleK.
+ intros.
+ specialize (X M X0).
+ inversion X.
+ specialize (H0 (plug K' (TmSingle M))).
+ apply H0.
+ auto.
+Qed.
+
+Lemma Krw_rt_preserves_ReducibleK :
+  forall T K K',
+  Krw_rt K K' -> ReducibleK Reducible K T -> ReducibleK Reducible K' T.
+Proof.
+ intros T K K' H.
+ induction H; subst; eauto using Krw_preserves_ReducibleK.
+Qed.
+
+Lemma ReducibleK_induction:
+  forall T K, ReducibleK Reducible K T ->
+  forall P,
+      (forall K0, Krw_rt K K0 -> (forall K', Krw K0 K' -> P K') -> P K0) ->
+      P K.
+Proof.
+ intros T K H P IH.
+ apply IH.
+   apply Krw_rt_refl; auto.
+ intros.
+ apply no_Krw in H0.
+ intuition.
+ 
+ (* unfold ReducibleK in *. *)
+ (* assert (X : {M : Term & Reducible M T}). *)
+ (*  admit. *)
+ (* destruct X as [M M_Red]. *)
+ (* specialize (H M M_Red). *)
+
+ (* induction K. *)
+ (* apply IH. *)
+ (*  intros. *)
+ (*  apply Empty_unrewritable in H0. *)
+ (*  inversion H0. *)
+ (* apply IH. *)
+ (* intros. *)
+ (* apply Krw_characterization with (T:=T) in H0. *)
+ (* destruct H0 as [[K1 [K'_def K_K1_rw]] *)
+ (*                |[]]. *)
+ (* subst K'. *)
+ 
+ 
+ (*  (* OK: We absolutely need to define Krw inductively in its own right. *) *)
+ (* remember (plug K (TmSingle M)) as M0. *)
+ (* assert (M0 ~>> M0) by auto. *)
+ (* revert H0. *)
+ (* pattern M0 at 2. *)
+ (* cut (forall M0', (M0 ~>> M0') -> P K). *)
+ (*  firstorder. *)
+ (* intros. *)
+ (* assert (SN M0') by admit. *)
+ (* induction H1. *)
+ (* induction H; eauto. *)
+ (* apply IH. *)
+ (* intros. *)
+ 
+Qed.
+
+(* Lemma reducts_ReducibleK K T: *)
+(*   (forall K', Krw K K' -> ReducibleK Reducible T K') -> ReducibleK Reducible T K. *)
+(* Proof. *)
+(*  unfold ReducibleK. *)
+(*  intros H M H0. *)
+(*  redseq_induction M. *)
+(*  apply reducts_SN. *)
+(*  intros. *)
+(*  induction K; simpl in *. *)
+(*   inversion H2; subst. *)
+(*   apply SN_TmSingle. *)
+(*   eapply Rw_trans_preserves_SN; eauto. *)
+(*  apply Neutral_Lists in H2. *)
+(*   destruct H2 as [[M' [H2 H3]] | [K' [H2 H3]]]; subst. *)
+(*    inversion H3; subst. *)
+(*     admit. *)
+(*    assert (SN m'). *)
+(*     inversion H6; subst. *)
+(*     apply SN_TmSingle. *)
+(*     eapply Rw_trans_preserves_SN; eauto. *)
+(*    inversion H6; subst. *)
+(*    apply IHM; eauto. *)
+(*   assert (SN (plug (Iterate t K') (TmSingle M))). *)
+(*    apply H; auto. *)
+(*    apply iterate_reduce; auto. *)
+(*   change (SN (plug (Iterate t K') (TmSingle M0))). *)
+(*   assert (TmSingle M ~>> TmSingle M0). *)
+(*    auto using TmSingle_rw_rt. *)
+(*   eauto using plug_SN_rw_rt. *)
+(*  solve [apply Neutral_TmBind]. *)
+(* Qed. *)
+
+(* Lemma reducts_SNK K: *)
+(*   (forall K', Krw K K' -> SNK K') -> SNK K. *)
+(* Proof. *)
+(*  unfold SNK. *)
+(*  intros H M H0. *)
+(*  redseq_induction M. *)
+(*  apply reducts_SN. *)
+(*  intros. *)
+(*  induction K; simpl in *. *)
+(*   inversion H2; subst. *)
+(*   apply SN_TmSingle. *)
+(*   eapply Rw_trans_preserves_SN; eauto. *)
+(*  apply Neutral_Lists in H2. *)
+(*   destruct H2 as [[M' [H2 H3]] | [K' [H2 H3]]]; subst. *)
+(*    inversion H3; subst. *)
+(*     admit. *)
+(*    assert (SN m'). *)
+(*     inversion H6; subst. *)
+(*     apply SN_TmSingle. *)
+(*     eapply Rw_trans_preserves_SN; eauto. *)
+(*    inversion H6; subst. *)
+(*    apply IHM; eauto. *)
+(*   assert (SN (plug (Iterate t K') (TmSingle M))). *)
+(*    apply H; auto. *)
+(*    apply iterate_reduce; auto. *)
+(*   change (SN (plug (Iterate t K') (TmSingle M0))). *)
+(*   assert (TmSingle M ~>> TmSingle M0). *)
+(*    auto using TmSingle_rw_rt. *)
+(*   eauto using plug_SN_rw_rt. *)
+(*  solve [apply Neutral_TmBind]. *)
+(* Admitted. *)
+
+(* Lemma reducts_SNK K: *)
+(*   (forall K', Krw K K' -> SNK K') -> SNK K. *)
+(* Proof. *)
+(*  unfold SNK. *)
+(*  intros H M H0. *)
+(*  redseq_induction M. *)
+(*  apply reducts_SN. *)
+(*  intros. *)
+(*  induction K; simpl in *. *)
+(*   inversion H2; subst. *)
+(*   apply SN_TmSingle. *)
+(*   eapply Rw_trans_preserves_SN; eauto. *)
+(*  apply Neutral_Lists in H2. *)
+(*   destruct H2 as [[M' [H2 H3]] | [K' [H2 H3]]]; subst. *)
+(*    inversion H3; subst. *)
+(*     admit. *)
+(*    assert (SN m'). *)
+(*     inversion H6; subst. *)
+(*     apply SN_TmSingle. *)
+(*     eapply Rw_trans_preserves_SN; eauto. *)
+(*    inversion H6; subst. *)
+(*    apply IHM; eauto. *)
+(*   assert (SN (plug (Iterate t K') (TmSingle M))). *)
+(*    apply H; auto. *)
+(*    apply iterate_reduce; auto. *)
+(*   change (SN (plug (Iterate t K') (TmSingle M0))). *)
+(*   assert (TmSingle M ~>> TmSingle M0). *)
+(*    auto using TmSingle_rw_rt. *)
+(*   eauto using plug_SN_rw_rt. *)
+(*  solve [apply Neutral_TmBind]. *)
+(* Admitted. *)
+
+(* Lemma SNK_induction_strong K P: *)
+(*   SNK K -> *)
+(*   (forall K', (forall K'', Krw K' K'' -> P K'') -> P K') -> *)
+(*   P K. *)
+(* Proof. *)
+(*  intro H. *)
+(*  assert (Krw_rt K K). *)
+(*   apply Krw_rt_refl; auto. *)
+(*  revert H0. *)
+(*  pattern K at 2 3. *)
+(*  generalize K at 2. *)
+(*  intros. *)
+(*  unfold SNK in H. *)
+(*  specialize (H TmConst). *)
+(*  assert (H1:SN TmConst) by auto. *)
+(*  specialize (H H1). *)
+(*  remember (plug K (TmSingle TmConst)) as M. *)
+(*  redseq_induction M. *)
+(*  apply X. *)
+(*  intros. *)
+ 
+(* Qed. *)
+
+(* Lemma SNK_induction K P: *)
+(*   SNK K -> *)
+(*   (forall K', Krw_rt K K' -> *)
+(*               (forall K'', Krw K' K'' -> P K'') -> P K') -> *)
+(*   P K. *)
+(* Proof. *)
+(* Admitted. *)
+
+(* Lemma reducts_ReducibleK K T: *)
+(*   (forall M, Reducible M T -> SN M) -> *)
+(*   (forall K', Krw K K' -> ReducibleK Reducible T K') -> ReducibleK Reducible T K. *)
+(* Proof. *)
+(*  unfold ReducibleK. *)
+(*  intros Ass H M H0. *)
+(*  assert (SN_M : SN M) by auto. *)
+(*  redseq_induction M. *)
+(*  apply reducts_SN. *)
+(*  intros. *)
+(*  induction K; simpl in *. *)
+(*   inversion H2; subst. *)
+(*   apply SN_TmSingle. *)
+(*   eapply Rw_trans_preserves_SN; eauto. *)
+(*  apply Neutral_Lists in H2. *)
+(*   destruct H2 as [[M' [H2 H3]] | [K' [H2 H3]]]; subst. *)
+(*    inversion H3; subst. *)
+(*     assert (Reducible M0 T). *)
+(*      admit. *)
+(* (* Ugh *) *)
+(*     cut (SN (plug K (subst_env 0 (M0::nil) t))). *)
+(*      admit. *)
+    
+(*     admit. *)
+(*    assert (SN m'). *)
+(*     inversion H6; subst. *)
+(*     apply SN_TmSingle. *)
+(*     eapply Rw_trans_preserves_SN; eauto. *)
+(*    inversion H6; subst. *)
+(*    apply IHM; eauto. *)
+(*   assert (SN (plug (Iterate t K') (TmSingle M))). *)
+(*    apply H; auto. *)
+(*    apply iterate_reduce; auto. *)
+(*   change (SN (plug (Iterate t K') (TmSingle M0))). *)
+(*   assert (TmSingle M ~>> TmSingle M0). *)
+(*    auto using TmSingle_rw_rt. *)
+(*   eauto using plug_SN_rw_rt. *)
+(*  solve [apply Neutral_TmBind]. *)
+(* Admitted. *)
+
+(* Lemma RedKRed K T: *)
+(*   (forall M : Term, *)
+(*      Reducible M T -> SN (plug K (TmSingle M))) -> *)
+(*   (forall M : Term, *)
+(*      Reducible M (TyList T) -> SN (plug K M)). *)
+(* Proof. *)
+(*  intros. *)
+(*  simpl in X0. *)
+(*  destruct X0. *)
+(*  auto. *)
+(* Qed. *)
+
+(* Lemma ReducibleK_induction P K T: *)
+(*   ReducibleK Reducible T K -> *)
+(*   (forall K' K'', (Krw K' K'') -> P K'' -> P K') -> *)
+(*   P K. *)
+(* Proof. *)
+(*  intros. *)
+(*  unfold ReducibleK in X. *)
+ 
+(* Admitted. *)
 
 (** The [Reducible] predicate has these important properties which
     must be proved in a mutually-inductive way. They are:
@@ -442,7 +1045,7 @@ Proof.
     apply TApp with T1; seauto.
    intros M'' red.
    (* Take cases on the reductions. *)
-   inversion red as [ | ? Z ? redn_Z | | | | | | | | | |] ; subst.
+   inversion red as [ | ? Z ? redn_Z | | | | | | | | | | | | ] ; subst.
    (* beta reduction *)
      (* BUG: should be able to put these all as args to congruence. *)
      pose subst_dummyvar; pose subst_nil; pose unshift_shift.
@@ -502,31 +1105,46 @@ Proof.
  assert (Reducible (M@L) T2).
   apply X; sauto.
  seauto.
- (* Case TyAny *)
- admit.
  (* Case TyList *)
  destruct IHT as [[[N N_Red] Red_T_tms_SN] IHT_Red_neutral_withdraw].
  splitN 3.
+ (* Existence of a reducible term. *)
    exists (TmSingle N).
    simpl.
    auto.
+ (* Reducible terms are strongly normalizing. *)
   simpl.
   intros tm X.
   destruct X as [X0 X1].
   set (X2 := X1 Empty).
   simpl in X2.
   apply X2.
-  unfold ReducibleK.
   simpl.
   intros M H.
-  cut (SN M).
-  apply SN_TmSingle.
-  apply Red_T_tms_SN; auto.
+  apply SN_TmSingle; sauto.
+ (* Reducible Neutral Withdrawal for list terms. *)
  intros.
  simpl.
  split; auto.
+ intros.
+ simpl; split; auto.
  simpl in X.
- (* Need a lemma: SN M -> ReducibleK K -> SN (plug K M). *)
+ change (ReducibleK Reducible K T) in X0.
+ pattern K.
+ apply ReducibleK_induction with (T:=T) (K:=K); [auto|].
+ intros.
+ apply Neutral_Lists in H3; auto.
+ destruct H3 as [[M' [s1 s2]] | [K1 [s1 s2]]].
+  Focus 2.
+  apply reducts_SN; intros.
+  subst m'.
+  apply H2 with K1; auto.
+  (* apply Krw_rt_SNK with K; sauto. *)
+
+ subst m'.
+ apply X; auto.
+ change (ReducibleK Reducible K0 T).
+ eapply Krw_rt_preserves_ReducibleK; seauto.
 Qed.
 
 (** Now we extract the three lemmas in their separate, useful form. *)
@@ -565,12 +1183,39 @@ Qed.
 (** Every term [λN] is [Reducible] in a closing, [Reducible]
     environment, provided that every [Reducible] argument [V] substituted
     into [N] gives a [Reducible] term. *)
+Set Printing Universes.
+
+Definition env_property Vs Ts P := foreach2_ty Term Ty Vs Ts P.
+
+(* Definition env_Reducible Vs Ts := env_property Vs Ts Reducible. *)
+Definition env_Reducible Vs Ts := ahem Vs Ts.
+
+Lemma Reducible_env_value:
+  forall Vs Ts x V T,
+    env_Reducible Vs Ts -> value V = nth_error Vs x -> value T = nth_error Ts x
+    -> Reducible V T.
+Proof.
+ induction Vs; intros.
+  exfalso.
+  destruct x; simpl in *; discriminate.
+ destruct Ts.
+  simpl in X; contradiction.
+ destruct x; simpl in *.
+  destruct X.
+  inversion H0.
+  inversion H.
+  subst.
+  auto.
+ destruct X.
+ eapply IHVs; eauto.
+Qed.
+
 Lemma lambda_reducibility:
   forall N T S,
   forall (Ts : list Ty) Vs,
     Typing (S::Ts) N T ->
     env_typing Vs Ts ->
-    foreach2_ty Term Ty Vs Ts Reducible ->
+    env_Reducible Vs Ts ->
     (forall V,
       Reducible V S ->
       Reducible (subst_env 0 (V::Vs) N) T) ->
@@ -620,7 +1265,7 @@ Proof.
  apply Neutral_Reducible_withdraw; [solve [auto] | solve [eauto] |].
  intros M' redn.
 
- inversion redn as [N0 M0 V M'_eq| ? ? ? L_redn | | | | | | | ].
+ inversion redn as [N0 M0 V M'_eq| ? ? ? L_redn | | | | | | | | | | | | ].
 
  (* Case: beta reduction. *)
    subst V M0 N0.
@@ -673,13 +1318,14 @@ Proof.
 
  apply Neutral_Reducible_withdraw; auto.
  (* Discharge the typing obligation. *)
-  assert (Typing nil y T) by (eapply Rw_preserves_types; eauto).
+  assert (Typing nil y T).
+  apply Rw_rt_preserves_types with N; auto.
   assert (Typing nil x S) by (eapply Rw_preserves_types; eauto).
   destruct b; eauto.
  (* All reducts are reducible. *)
  intros M' H3.
  (* Take cases on the reduction. *)
- inversion H3 as [ | | | | | | m n1 n2 H7 | m n | m n]; subst.
+ inversion H3 as [ | | | | | | m n1 n2 H7 | m n | m n | | | | | ]; subst.
  (* Case: reduction under the operation. *)
    inversion H7; subst.
     apply X1; seauto.
@@ -707,74 +1353,691 @@ Proof.
  apply (TmProj_reducible M N S T true X X0 H1 H2).
 Qed.
 
+Lemma ReducibleK_Empty :
+  forall T, ReducibleK Reducible Empty T.
+Proof.
+Admitted.
+
+Hint Resolve ReducibleK_Empty.
+
+Lemma ReducibleK_lose_frame :
+  forall T K T' N,
+    Ktyping K T' ->
+    ReducibleK Reducible (Iterate N K) T -> ReducibleK Reducible K T'.
+Proof.
+ induction K; simpl; intros.
+  eauto.
+Admitted.
+
+Lemma ReducibleK_Null:
+  forall K T,
+    (forall M : Term,
+       Reducible M T -> SN (plug K (TmSingle M)))
+    -> SN (plug K TmNull).
+Proof.
+ induction K.
+  simpl.
+  intros.
+  apply reducts_SN.
+  intros.
+  inversion H.
+ intros.
+ change (ReducibleK Reducible (Iterate t K) T) in X.
+ change (forall T, ReducibleK Reducible K T -> SN (plug K TmNull)) in IHK.
+ assert ({T' : Ty & Ktyping K T'}).
+  admit.
+ destruct H as [T' H0].
+ assert (ReducibleK Reducible K T').
+ solve [eauto using ReducibleK_lose_frame].
+ specialize (IHK T' X0).
+ simpl.
+ assert (forall KZ, Krw_rt K KZ -> SN (plug KZ TmNull)).
+ intros.
+  admit. (* SN is preserved by Krw_rt. *)
+
+ pattern K.
+ apply ReducibleK_induction with T'; auto.
+ intros.
+ apply reducts_SN.
+ intros.
+ apply Neutral_Lists in H3.
+  destruct H3.
+   destruct s as [M' [m'_def rw]].
+   inversion rw; subst.
+    auto.
+   inversion H6.
+  destruct s as [K' [m'_def rw]].
+  subst.
+  apply H2; auto.
+ eauto.
+Admitted.
+
+Lemma SN_Union: forall M N, SN M -> SN N -> SN (TmUnion M N).
+Proof.
+ intros.
+ apply reducts_SN.
+ intros Z H1.
+ inversion H1.
+Qed.
+
+Lemma Rw_under_K:
+  forall K M N,
+    (M ~> N) -> (plug K M ~> plug K N).
+Proof.
+ induction K; simpl; intros.
+  auto.
+ apply IHK.
+ auto.
+Qed.
+
+Lemma Rw_rt_under_K:
+  forall K M N,
+    (M ~>> N) -> (plug K M ~>> plug K N).
+Proof.
+ intros K M N red.
+ induction red.
+   subst; auto.
+  eauto using Rw_rt_step, Rw_under_K.
+ eauto.
+Qed.
+
+(* (* TODO: Should be able to get "induction on Krw sequences" directly
+      from SN . plug like this: *)
+SN (plug K M) ->
+(forall K0, Krw_rt K K0 -> (forall K', Krw K0 K' -> (P K' -> P K0))) ->
+P K.
+ *)
+
+Fixpoint enumerate_reducts M :=
+  match M with
+      TmConst => nil
+    | TmVar x => nil
+    | TmPair M N => map (fun m => TmPair m N) (enumerate_reducts M) ++
+                        map (TmPair M) (enumerate_reducts N)
+    | TmProj b M =>
+      match M with
+          TmPair M1 M2 =>
+          if b then
+            M2 :: nil
+          else M1 :: nil
+        | _ => nil
+      end ++ map (TmProj b) (enumerate_reducts M)
+    | TmAbs N => map TmAbs (enumerate_reducts N)
+    | TmApp L M =>
+      (match L with
+           TmAbs N => unshift 0 1 (subst_env 0 (shift 0 1 M :: nil) N) :: nil
+         | _ => nil
+       end) ++
+           map (fun l => TmApp l M) (enumerate_reducts L) ++
+           map (TmApp L) (enumerate_reducts M)
+    | TmNull => nil
+    | TmSingle M => map TmSingle (enumerate_reducts M)
+    | TmUnion M N =>
+      map (fun m => TmPair m N) (enumerate_reducts M) ++ map (TmPair M) (enumerate_reducts N)
+    | TmBind N L =>
+      (match N with
+           TmNull => TmNull :: nil
+         | TmSingle N' => TmApp (TmAbs L) N' :: nil
+         | TmUnion N1 N2 => TmUnion (TmBind N1 L) (TmBind N2 L) :: nil
+         | _ => nil
+       end) ++
+            map (fun n => TmBind n L) (enumerate_reducts N) ++
+            map (TmBind N) (enumerate_reducts L)
+  end.
+
+Lemma enumerate_reducts_complete :
+  forall M M',
+    (M ~> M') ->
+    In M' (enumerate_reducts M).
+Proof.
+ induction M; intros M' H; inversion H; simpl; subst.
+ (* Case Rw_Pair_left *)
+              apply in_or_app.
+              left.
+              rename m2 into m1.
+              assert (In m1 (enumerate_reducts M1)) by (auto using IHM1).
+              remember (fun m => TmPair m M2) as f.
+              replace (TmPair m1 M2) with (f m1).
+               apply in_map.
+               auto.
+              subst f.
+              auto.
+ (* Case Rw_Pair_right *)
+             apply in_or_app.
+             right.
+             rename n2 into m2.
+             assert (In m2 (enumerate_reducts M2)) by (auto using IHM2).
+             apply in_map.
+             auto.
+ (* Case Rw_Proj *)
+            apply in_or_app; right.
+            apply in_map.
+            auto.
+ (* Case Rw_Proj_beta1 *)
+           auto.
+ (* Case Rw_Proj_beta2 *)
+          auto.
+ (* Case Rw_Abs_body *)
+         auto using in_map, IHM.
+ (* Case Rw_beta *)
+        auto.
+ (* Case Rw_App_left *)
+       rename m2 into m1.
+       apply in_or_app; right.
+       apply in_or_app; left.
+       remember (fun l => (l @ M2)) as f.
+       replace (m1 @ M2) with (f m1).
+       auto using in_map, IHM1, IHM2.
+       subst; sauto.
+ (* Case Rw_App_right *)
+      rename n2 into m2.
+      apply in_or_app; right.
+      apply in_or_app; right.
+      solve [eauto using in_map, IHM2].
+ (* Case Rw_Single *)
+     solve [auto using in_map, IHM].
+ (* Case Rw_Bind_null *)
+    sauto.
+ (* Case Rw_Bind_beta *)
+   sauto.
+ (* Case Rw_Bind_union *)
+  auto.
+ (* Case Rw_Bind_subject *)
+ apply in_or_app; right.
+ apply in_or_app; left.
+ remember (fun n => TmBind n M2) as f.
+ replace (TmBind m' M2) with (f m').
+ auto using in_map, IHM1.
+ subst; sauto.
+Qed.
+
+Lemma enumerate_reducts_sound :
+  forall M M',
+    In M' (enumerate_reducts M) ->
+    (M ~> M').
+Proof.
+ induction M; simpl; intros M' H.
+          intuition.
+         intuition.
+        apply in_app_or in H.
+        admit.
+        (* destruct H. (* FIXME: Set vs Prop!!! *) *)
+Admitted.
+
+(* (* Next we have a function that enumerates all the reducts, together *)
+(* with the witness of the reduction. Not sure the type-checker will take it. *) *)
+
+(* Fixpoint enumerate_reducts_2 M : list ({M' : Term & M ~> M'}) := *)
+(*   match M with *)
+(*       TmConst => nil *)
+(*     | TmVar x => nil *)
+(*     | TmPair M N => map (fun X => *)
+(*                            match X with *)
+(*                                existT _ m r => existT _ (TmPair m N) (Rw_Pair_left _ _ _ r) *)
+(*                            end) *)
+(*                         (enumerate_reducts_2 M) ++ *)
+(*                     map (fun (X: {N' : Term & N ~> N'}) => *)
+(*                            match X with *)
+(*                                existT _ n r => *)
+(*                                existT _ (TmPair M n) (Rw_Pair_right _ _ _ r) *)
+(*                            end) *)
+(*                     (enumerate_reducts_2 N) *)
+(*     | TmProj b M => *)
+(*       match M with *)
+(*           TmPair M1 M2 => *)
+(*           if b then *)
+(*             (* (existT _ M2 (Rw_Proj_beta2 _ _)) :: *) nil *)
+(*           else *)
+(*             (* (existT _ M1 (Rw_Proj_beta1 _ _)) :: *) nil *)
+(*         | _ => nil *)
+(*       end ++ *)
+(*           map (fun X => *)
+(*                  match X with *)
+(*                      existT _ M' r => *)
+(*                      existT _ (TmProj b M') (Rw_Proj _ _ _ r) *)
+(*                  end) (enumerate_reducts_2 M) *)
+(*     | TmAbs N => map (fun X => *)
+(*                         match X with *)
+(*                             existT _ n' r => *)
+(*                             existT _ (TmAbs n') (Rw_Abs_body _ _ r) *)
+(*                         end) *)
+(*                      (enumerate_reducts_2 N) *)
+(*     | TmApp (TmAbs N) M => *)
+(*            (* existT _ (unshift 0 1 (subst_env 0 (shift 0 1 M :: nil) N)) *) *)
+(*            (*        (Rw_beta _ _ _) *) *)
+(*           ( Rw_beta N M (unshift 0 1 (subst_env 0 (shift 0 1 M :: nil) N)) _ *)
+(*                    :: nil *)
+(* ) ++ *)
+(*             map (fun X => *)
+(*                    match X with *)
+(*                        existT _ l r => existT _ (TmApp l M) (Rw_App_left _ _ _ r) *)
+(*                    end) *)
+(*             (enumerate_reducts_2 L) ++ *)
+(*             map (fun X => *)
+(*                    match X with *)
+(*                        existT _ m r => *)
+(*                        existT _ (TmApp (TmAbs N) m) (Rw_App_right _ _ _ r) *)
+(*                    end) *)
+(*             (enumerate_reducts_2 M) *)
+(*     | TmApp L M => *)
+(*             map (fun X => *)
+(*                    match X with *)
+(*                        existT _ l r => existT _ (TmApp l M) (Rw_App_left _ _ _ r) *)
+(*                    end) *)
+(*             (enumerate_reducts_2 L) ++ *)
+(*             map (fun X => *)
+(*                    match X with *)
+(*                        existT _ m r => *)
+(*                        existT _ (TmApp L m) (Rw_App_right _ _ _ r) *)
+(*                    end) *)
+(*             (enumerate_reducts_2 M) *)
+(*     | TmNull => nil *)
+(*     | TmSingle M => map TmSingle (enumerate_reducts_2 M) *)
+(*     | TmUnion M N => *)
+(*       map (fun m => TmPair m N) (enumerate_reducts_2 M) ++ map (TmPair M) (enumerate_reducts_2 N) *)
+(*     | TmBind N L => *)
+(*       (match N with *)
+(*            TmNull => TmNull :: nil *)
+(*          | TmSingle N' => TmApp (TmAbs L) N' :: nil *)
+(*          | TmUnion N1 N2 => TmUnion (TmBind N1 L) (TmBind N2 L) :: nil *)
+(*          | _ => nil *)
+(*        end) ++ *)
+(*             map (fun n => TmBind n L) (enumerate_reducts_2 N) ++ *)
+(*             map (TmBind N) (enumerate_reducts_2 L) *)
+(*   end. *)
+
+(* Fixpoint maxred M (X : SN M) {struct X} := *)
+(*   match X with *)
+(*       reducts_SN _ reduct_normalizer => *)
+(*         1 + fold_left max (map (fun M' => maxred M' (reduct_normalizer M' _)) (enumerate_reducts M)) 0 *)
+(*   end. *)
+
+(* Inductive Triple_SN K M N := *)
+(*   | triple_sn : *)
+(*        (forall K', (Krw K K') -> Triple_SN K' M N) *)
+(*     -> (forall M', (M ~> M') -> Triple_SN K M' N) *)
+(*     -> (forall N', (N ~> N') -> Triple_SN K M N') *)
+(*     -> Triple_SN K M N. *)
+
+Inductive Triple_SN K M N :=
+  | triple_sn :
+       (forall K' t, K = Iterate t K' -> Triple_SN K' M N)
+    -> (forall M', (M ~> M') -> Triple_SN K M' N)
+    -> (forall N', (N ~> N') -> Triple_SN K M N')
+    -> Triple_SN K M N.
+
+Lemma nifty:
+  forall M, SN M -> forall N, SN N -> forall K, Triple_SN K M N.
+Proof.
+ intros M SN_M.
+ induction SN_M.
+ intros N SN_N.
+ induction SN_N.
+ rename m into M.
+ rename m0 into N.
+ induction K.
+  apply triple_sn.
+    discriminate.
+   auto.
+  auto.
+  apply triple_sn.
+   intros.
+   inversion H1; subst.
+   auto.
+  intros.
+  auto.
+ auto.
+Qed.
+
+(* (* TODO: Actually, the lemma that follows requires lexicographical *)
+(*    induction on K followed by SN M * SN N *)
+(*  *) *)
+
+(* Lemma SN_triple_induction (P : Continuation -> Term -> Term -> Type): *)
+(*   (forall k x y, *)
+(*     (forall k' t, k = Iterate t k' -> P k' x y) -> *)
+(*     (forall x', (x ~> x') -> P k x' y) -> *)
+(*     (forall y', (y ~> y') -> P k x y') -> P k x y) -> *)
+(*   forall k x y, SN x -> SN y -> P k x y. *)
+(* Proof. *)
+(*  intros. *)
+(*  pose (Ind3 := nifty _ H _ H0 k). *)
+(*  induction Ind3. *)
+(*  apply X. *)
+(*    intros. eapply X0; eauto. *)
+(*   intros. apply X1; auto. *)
+(*   inversion H; auto. *)
+(*  intros. apply X2; auto. *)
+(*  inversion H0; auto. *)
+(* Qed. *)
+
+Lemma wowza P K M N:
+  (forall M0 N0,
+     (M ~>> M0) ->
+     (N ~>> N0) ->
+     (
+       (forall K', (Krw K K') -> P K' M N)
+       -> (forall M', (M ~> M') -> P K M' N)
+       -> ((forall N', (N ~> N') -> P K M N'))
+       -> P K M N))
+  ->
+  SN (plug K M) -> SN (plug K N) -> P K M N.
+Proof.
+Admitted.
+
+Lemma SN_K_Union:
+  forall K,
+  forall M N, SN (plug K M) -> SN (plug K N) -> SN (plug K (TmUnion M N)).
+Proof.
+ induction K.
+ intros.
+  simpl in *.
+  double_induction_SN M N.
+  intros.
+  apply SN_Union; auto.
+   eauto using Rw_trans_preserves_SN.
+  eauto using Rw_trans_preserves_SN.
+  intros.
+ remember (Iterate t K) as K0.
+ apply wowza with (K := K0) (M := M) (N := N); [|sauto|sauto].
+ intros.
+ subst; simpl.
+
+ apply reducts_SN.
+ intros Z H_rw.
+ simpl in H_rw.
+ apply Neutral_Lists in H_rw; [| sauto].
+ destruct H_rw as [[M' [Z_def rw]] | [K' [Z_def rw]]].
+ (* Case: rw is within TmBind (TmUnion M N) t *)
+  subst.
+  inversion rw; subst.
+   apply IHK.
+    simpl in *.
+    auto.
+   simpl in *.
+   auto.
+  inversion H9.
+ (* Case: rw is within K *)
+ subst.
+ change (SN (plug (Iterate t K') (TmUnion M N))).
+ apply H3.
+ apply iterate_reduce.
+ auto.
+Qed.
+
+(* Lemma ReducibleK_peel: *)
+(*   forall K N T, *)
+(*    ReducibleK Reducible (Iterate N K) T -> *)
+(*    ReducibleK Reducible K T. *)
+(* Proof. *)
+(*  induction K; simpl; intros. *)
+(*   auto. *)
+(*  unfold ReducibleK in *. *)
+(*  simpl in X |- *. *)
+(*  intros. *)
+(* Admitted. *)
+
+(* Lemma x: *)
+(*   forall K T, *)
+(*   (forall M : Term, *)
+(*      Reducible M T -> *)
+(*      SN (plug K (TmSingle M))) -> *)
+(*   forall M N, *)
+(*     Reducible M (TyList T) -> *)
+(*     Reducible N (TyList T) -> *)
+(*     SN (plug K (TmUnion M N)). *)
+(* Proof. *)
+(*  induction K; simpl; intros. *)
+(*   intuition. *)
+(*   apply SN_Union. *)
+(*    apply (b Empty); auto. *)
+(*   apply (b0 Empty); auto. *)
+(*  apply reducts_SN. *)
+(*  intros. *)
+(*  apply Neutral_Lists in H; [ | sauto]. *)
+(*  destruct H as [[M' [m'_def rw]] | [K' [m'_def rw]]]. *)
+(*   subst. *)
+(*   inversion rw. *)
+(*    subst. *)
+   
+(* Qed. *)
+
+Lemma ReducibleK_Union:
+  forall T M N,
+    Reducible M (TyList T) -> Reducible N (TyList T) -> Reducible (TmUnion M N) (TyList T).
+Proof.
+ simpl.
+ intros T M N.
+ intros.
+ destruct X, X0.
+ split.
+  auto.
+ intros.
+ change (forall K, ReducibleK Reducible K T -> SN (plug K M)) in s.
+ change (forall K, ReducibleK Reducible K T -> SN (plug K N)) in s0.
+ change (ReducibleK Reducible K T) in X.
+ eauto using SN_K_Union.
+Qed.
+
+Lemma twostep:
+  forall L N,
+    SN L -> SN N ->
+    SN (unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) N))
+    -> SN (TmBind (TmSingle L) N).
+Proof.
+ intros.
+ double_induction_SN L N.
+ intros.
+ apply reducts_SN.
+ intros.
+ inversion H6; subst.
+  apply reducts_SN.
+  intros.
+  inversion H7; subst.
+    assert (SN (unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) x))).
+     eapply Rw_trans_preserves_SN with (unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) N)).
+      auto.
+     admit. (* rw_rt under unshift. *)
+    eapply Rw_trans_preserves_SN with (unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) x)).
+     auto.
+    admit. (* rw_rt under unshift. *)
+   admit. (* Might be easier to prove the twostep in two steps. *)
+  admit.
+ admit.
+Admitted.
+
+Lemma bind_sn_withdraw:
+  forall K L N,
+    SN L ->
+    SN (plug K (unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) N))) ->
+    SN (plug K (TmBind (TmSingle L) N)).
+Proof.
+ induction K.
+  simpl; intros.
+  apply twostep.
+    auto.
+   admit (* i'm hoping to prove SN N from a larger term that contains it. *).
+  auto.
+ intros.
+ apply wowza with (K:=Iterate t K) (M := TmSingle L) (N:=N).
+   intros.
+   apply reducts_SN.
+   intros.
+   apply Neutral_Lists in H6.
+    destruct H6 as [[M' [eq red]] | [K' [eq red]]].
+     inversion red.
+      subst.
+      admit (* easy: show that K[TmAbs N @ L] is sn because K[N{L}] is. *).
+     subst.
+     apply H4; auto.
+    subst.
+    apply H3; auto.
+   auto.
+  admit. (* Maybe this isn't right: it's a goofy precondition of our induction principle, wowza. Might need a different induction principle for this. *)
+ admit. (* Maybe this isn't right: it's a goofy precondition of our induction principle, wowza. Might need a different induction principle for this. *)
+Admitted.
+
+Lemma Bind_Reducible :
+  forall M S N T,
+    Reducible M (TyList S)
+    -> (forall L, Reducible L S
+                  -> Reducible (unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) N))
+                               (TyList T))
+    -> Reducible (TmBind M N) (TyList T).
+Proof.
+ simpl.
+ intros.
+ intuition.
+ apply TBind with S; auto.
+  destruct (Reducible_inhabited S) as [x r].
+  pose (p := X0 x r).
+  destruct p.
+  admit. (* Need the converse of Rw_beta_preserves_types. *)
+ pose (K' := Iterate N K).
+ assert (SN (plug K' M)).
+  apply b.
+  intros.
+  subst K'.
+  simpl.
+  apply bind_sn_withdraw.
+   solve [eauto using Reducible_SN].
+  apply X0.
+   auto.
+  apply X.
+ change (SN (plug (Iterate N K) M)).
+ auto.
+Admitted.
+
+(** Given a term of the form unshift n k (subst_env 0 xs M), where the
+substitution maps all variables of M, there is a different
+substitution that directly maps all the variables of M.  *)
+
+Lemma weird_lemma:
+  forall M T tyEnv xs n k,
+    Typing tyEnv M T ->
+    env_typing xs tyEnv ->
+    {ys : list Term & unshift n k (subst_env 0 xs M) = subst_env 0 ys M}.
+Proof.
+  (* induction M; simpl; intros; exists (map (unshift n k) xs) ; firstorder. *)
+  (* admit. (* easy; i'm tired. *) *)
+Admitted.
+
 (** Every well-typed term, with a [Reducible] environment that makes it a closed
     term, is [Reducible] at its given type. *)
 Theorem reducibility:
   forall m T tyEnv Vs,
     Typing tyEnv m T ->
     env_typing Vs tyEnv ->
-    foreach2_ty _ _ Vs tyEnv Reducible ->
+    env_Reducible Vs tyEnv ->
     Reducible (subst_env 0 Vs m) T.
 Proof.
  induction m; simpl; intros T tyEnv Vs tp Vs_tp Vs_red;
    inversion tp; inversion Vs_tp.
  (* Case TmConst *)
+           simpl.
+           intuition.
+
+ (* Case TmVar *)
+          replace (x - 0) with x by omega.
+          case_eq (nth_error Vs x); [intros V V_H | intro H_bogus].
+               eapply Reducible_env_value; eauto.
+          absurd (length Vs <= x).
+           cut (length tyEnv > x); [omega|]. (* TODO: sufficient ... by omega. *)
+           seauto.
+          apply <- nth_error_overflow; sauto.
+
+ (* Case TmPair *)
+         assert (Reducible (subst_env 0 Vs m2) t) by eauto.
+         assert (Reducible (subst_env 0 Vs m1) s) by eauto.
+         simpl.
+         assert (Reducible (TmPair (subst_env 0 Vs m1) (subst_env 0 Vs m2)) (TyPair s t)).
+          apply pair_reducible; sauto.
+         simpl in X1.
+         trivial.
+
+ (* Case TmProj false *)
+        subst.
+        rename m into M, T into S, t into T.
+        assert (X0 : Reducible (subst_env 0 Vs M) (TyPair S T)).
+         seauto.
+        simpl in X0.
+        tauto.
+
+ (* Case TmProj true *)
+       subst.
+       rename m into M, s into S.
+       assert (X0 : Reducible (subst_env 0 Vs M) (TyPair S T)).
+        seauto.
+       simpl in X0.
+       tauto.
+
+ (* Case TmAbs *)
+      replace (map (shift 0 1) Vs) with Vs by (symmetry; eauto).
+      replace (TmAbs (subst_env 1 Vs m)) with (subst_env 0 Vs (TmAbs m)).
+      (* Proof of reducibility of the lambda. *)
+       apply lambda_reducibility with tyEnv; auto.
+       intros V V_red.
+       eapply IHm; eauto.
        simpl.
        intuition.
 
- (* Case TmVar *)
-      replace (x - 0) with x by omega.
-      case_eq (nth_error Vs x); [intros V V_H | intro H_bogus].
-       eapply foreach2_ty_member; eauto.
-      absurd (length Vs <= x).
-       cut (length tyEnv > x); [omega|]. (* TODO: sufficient ... by omega. *)
-       seauto.
-      apply <- nth_error_overflow; sauto.
-
- (* Case TmPair *)
-     assert (Reducible (subst_env 0 Vs m2) t) by eauto.
-     assert (Reducible (subst_env 0 Vs m1) s) by eauto.
-     simpl.
-     assert (Reducible (TmPair (subst_env 0 Vs m1) (subst_env 0 Vs m2)) (TyPair s t)).
-      apply pair_reducible; sauto.
-     simpl in X2.
-     trivial.
-
- (* Case TmProj false *)
-    subst.
-    rename m into M, T into S, t into T.
-    assert (X0 : Reducible (subst_env 0 Vs M) (TyPair S T)).
-     seauto.
-    simpl in X0.
-    tauto.
-
- (* Case TmProj true *)
-   subst.
-   rename m into M, s into S.
-   assert (X0 : Reducible (subst_env 0 Vs M) (TyPair S T)).
-    seauto.
-   simpl in X0.
-   tauto.
-
- (* Case TmAbs *)
-  replace (map (shift 0 1) Vs) with Vs by (symmetry; eauto).
-  replace (TmAbs (subst_env 1 Vs m)) with (subst_env 0 Vs (TmAbs m)).
-  (* Proof of reducibility of the lambda. *)
-   apply lambda_reducibility with tyEnv; auto.
-   intros V V_red.
-   eapply IHm; eauto.
-   rewrite foreach2_ty_cons; sauto.
-
   (* Obligation: TmAbs (subst_env 1 Vs m)) = (subst_env 0 Vs (TmAbs m)). *)
-  simpl.
-  erewrite env_typing_shift_noop; eauto.
+      simpl.
+      erewrite env_typing_shift_noop; eauto.
 
  (* Case TmApp *)
+     subst.
+     assert (Reducible (subst_env 0 Vs m1) (TyArr a T)) by eauto.
+     assert (Reducible (subst_env 0 Vs m2) a) by eauto.
+     firstorder.
+
+ (* Case TmNull *)
+    simpl.
+    split.
+     auto.
+    intro K.
+    apply ReducibleK_Null.
+
+ (* Case TmSingle *)
+   simpl.
+   split.
+    eauto.
+   intros.
+   eauto.
+
+ (* Case TmUnion *)
+  subst.
+  assert (Reducible (subst_env 0 Vs m2) (TyList t)) by eauto.
+  assert (Reducible (subst_env 0 Vs m1) (TyList t)) by eauto.
+  apply ReducibleK_Union; sauto.
+
+ (* Case TmBind *)
  subst.
- assert (Reducible (subst_env 0 Vs m1) (TyArr a T)) by eauto.
- assert (Reducible (subst_env 0 Vs m2) a) by eauto.
- firstorder.
-Qed.
+ apply Bind_Reducible with s.
+  seauto.
+ intros.
+ replace (subst_env 0 (shift 0 1 L :: nil) (subst_env 1 (map (shift 0 1) Vs) m2))
+ with (subst_env 0 (map (shift 0 1) (L :: Vs)) m2).
+  pose (weird_lemma m2 (TyList t) (s :: tyEnv) (map (shift 0 1) (L :: Vs)) 0 1).
+  specialize (s0 H3).
+  assert (H : env_typing (map (shift 0 1) (L :: Vs)) (s :: tyEnv)).
+   admit. (* easy; i'm tired *)
+  specialize (s0 H).
+  destruct s0 as [ys e].
+  rewrite e.
+  eapply IHm2.
+    apply H3.
+   admit. (* typing of ys needs to be an output of weird_lemma. *)
+  admit. (* omg disaster. we need the output of weird_lemma to be reducible! *)
+ simpl.
+ rewrite subst_env_concat with (env := s :: tyEnv).
+  simpl.
+  auto.
+ simpl.
+ apply env_typing_cons.
+  admit.
+ rewrite env_typing_shift_noop with (env:=tyEnv); auto.
+Admitted.
 
 (** Every well-typed term is strongly normalizing. *)
 Lemma normalization :
@@ -783,6 +2046,7 @@ Lemma normalization :
     SN M.
 Proof.
  intros M T tp.
+
  assert (Reducible M T).
   replace M with (subst_env 0 nil M) by seauto.
   eapply reducibility; eauto; solve [firstorder].

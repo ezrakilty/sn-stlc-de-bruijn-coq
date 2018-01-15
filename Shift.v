@@ -3,6 +3,8 @@ Load "eztactics.v".
 Require Import Arith.
 Require Import List.
 
+Add Rec LoadPath "Listkit" as Listkit.
+
 Require Import Listkit.NthError.
 Require Import Listkit.Foreach.
 
@@ -377,7 +379,7 @@ Lemma shift_preservs_env_typing:
   env_typing_env env Vs Ts
    -> env_typing_env (env1 ++ env' ++ env2) (map (shift k n) Vs) Ts.
 Proof.
- induction Vs; intros.
+ induction Vs; intros k n env1 env2 env env' Ts H H0 H1 X.
 (* Case Vs = nil *)
   simpl.
   unfold env_typing_env.

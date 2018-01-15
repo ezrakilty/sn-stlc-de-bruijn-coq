@@ -2,6 +2,8 @@ Require Import Arith.
 Require Import Omega.
 Require Import List.
 
+Add Rec LoadPath "Listkit" as Listkit.
+
 Require Import Listkit.Foreach.
 
 (** Definitions *)
@@ -9,7 +11,7 @@ Inductive Ty : Set :=
   TyBase
 | TyPair : Ty -> Ty -> Ty
 | TyArr : Ty -> Ty -> Ty
-| TyAny : Ty
+(* | TyAny : Ty *)
 | TyList : Ty -> Ty.
 
 (** Terms *)
@@ -52,8 +54,8 @@ Inductive Typing env : Term -> Ty -> Set :=
     Typing env m t ->
     Typing env (TmSingle m) (TyList t)
 | TUnion : forall m n t,
-    Typing env m t ->
-    Typing env n t ->
+    Typing env m (TyList t) ->
+    Typing env n (TyList t) ->
     Typing env (TmUnion m n) (TyList t)
 | TNull : forall t,
     Typing env TmNull (TyList t)
@@ -101,7 +103,7 @@ Lemma env_typing_elim:
     (env_typing_env env Vs Ts
     * Typing env V T).
 Proof.
- intros.
+ intros env V Vs T Ts X.
  unfold env_typing_env in X.
  unfold foreach2_ty in X.
  unfold env_typing_env.
@@ -128,7 +130,7 @@ Proof.
   auto.
  simpl.
  intros Ws Ts H.
- inversion H.
+ inversion H as [H0 X].
  simpl in H0.
  destruct Ts.
  simpl in H0.

@@ -3,11 +3,12 @@ Require Import List.
 
 Add LoadPath "Listkit" as Listkit.
 
-Require Import NthError.
+Require Import Listkit.NthError.
 
 Require Import Term.
 Require Import Shift.
 Require Import Subst.
+Require Import Omega.
 
 Inductive RewritesTo : Term -> Term -> Type :=
 | Rw_beta : forall N M V,
@@ -19,15 +20,18 @@ Inductive RewritesTo : Term -> Term -> Type :=
 | Rw_App_right : forall m n1 n2,
     RewritesTo n1 n2 ->
     RewritesTo (TmApp m n1) (TmApp m n2)
+
 | Rw_Abs_body : forall n n',
     RewritesTo n n' ->
     RewritesTo (TmAbs n) (TmAbs n')
+
 | Rw_Pair_left : forall m1 m2 n,
     RewritesTo m1 m2 ->
     RewritesTo (TmPair m1 n) (TmPair m2 n)
 | Rw_Pair_right : forall m n1 n2,
     RewritesTo n1 n2 ->
     RewritesTo (TmPair m n1) (TmPair m n2)
+
 | Rw_Proj : forall m1 m2 b,
     RewritesTo m1 m2 ->
     RewritesTo (TmProj b m1) (TmProj b m2)
@@ -35,6 +39,19 @@ Inductive RewritesTo : Term -> Term -> Type :=
     RewritesTo (TmProj false (TmPair m n)) m
 | Rw_Proj_beta2 : forall m n,
     RewritesTo (TmProj true (TmPair m n)) n
+
+| Rw_Bind_null : forall n,
+    RewritesTo (TmBind (TmNull) n) TmNull
+| Rw_Bind_beta : forall n x,
+    RewritesTo (TmBind (TmSingle x) n) (TmApp (TmAbs n) x)
+| Rw_Bind_union : forall n xs ys,
+    RewritesTo (TmBind (TmUnion xs ys) n) (TmUnion (TmBind xs n) (TmBind ys n))
+| Rw_Bind_subject : forall m n m',
+    RewritesTo m m' -> RewritesTo (TmBind m n) (TmBind m' n)
+| Rw_Single : forall m m',
+                RewritesTo m m' -> RewritesTo (TmSingle m) (TmSingle m')
+(* TODO: Rw_Bind_assoc. *)
+(* TODO: Should probably allow reductions in the body of a TmBind.*)
 .
 
 Hint Constructors RewritesTo.
@@ -146,7 +163,7 @@ Proof.
     destruct (le_gt_dec (length env) x).
      destruct (eq_nat_dec x (length env)).
      (* 'x' points to the type 'S' *)
-      subst x.
+     subst x.
       replace (length env - length env) with 0 by omega.
       replace (nth_error (shift 0 1 M :: nil) 0)
         with (value (shift 0 1 M)); auto.
@@ -237,17 +254,28 @@ Proof.
  intros M M' red.
  induction red;
    intros env T T_tp;
-   inversion T_tp as [| | | ? ? S T' TmAbs_N_tp | | | | | | |]; eauto.
+   inversion T_tp as
+       [| | | ? ? S T' TmAbs_N_tp | | ? ? ? H | ? ? ? H | ? ? H | | |? ? ? ? H H0];
+   eauto.
  (* Case Beta_reduction -> *)
     inversion TmAbs_N_tp.
     subst.
     eapply Rw_beta_preserves_types; eauto.
  (* Case Beta reduction TPair (1) *)
-  subst T.
-  inversion H0; auto.
+    subst T.
+    inversion H; sauto.
  (* Case Beta reduction TPair (2) *)
- subst T.
- inversion H0; auto.
+   subst T.
+   inversion H; sauto.
+ (* Case Beta reduction [] *)
+  subst T n0 m.
+  inversion H.
+  subst.
+  eauto.
+ (* Case TmUnion/TmBind *)
+ inversion H.
+ subst.
+ apply TUnion; eapply TBind; eauto.
 Qed.
 
 (** The reflexive-transitive rewrite relation preserves the [Typing] judgment. *)
@@ -280,7 +308,12 @@ Proof.
                   | M N1 N2
                   | M1 M2 b
                   | M N
-                  | M N ];
+                  | M N
+                  | N
+                  | M N M'
+                  | M N
+                  | M N
+                  | M];
    intros n env.
 
  (* Case BetaRed *)
@@ -425,6 +458,35 @@ Proof.
  (* Case: Beta reduction of TmProj false *)
  simpl.
  apply Rw_Proj_beta2.
+
+ simpl.
+ apply Rw_Bind_null.
+
+ (* Case: Beta reduction of TmBind *)
+ simpl.
+ apply Rw_Bind_beta.
+
+ (* Case: Union/Bind commuting-conversion *)
+ simpl.
+ apply Rw_Bind_union.
+
+ (* Case: Subject reduction of TmBind *)
+ simpl.
+ apply Rw_Bind_subject.
+ eauto.
+
+ simpl.
+ apply Rw_Single.
+ eauto.
+Qed.
+
+Lemma TmSingle_shift_inversion:
+  forall x k M,
+    TmSingle x = shift k 1 M -> {M' : Term & TmSingle M' = M}.
+Proof.
+ intros.
+ destruct M; simpl in *; try discriminate.
+ exists M; auto.
 Qed.
 
 Lemma subst_env_compat_Rw_trans:
@@ -452,6 +514,14 @@ Lemma shift_Rw_inversion:
     (shift k 1 N ~> M) ->
     {N' : Term & ((M = shift k 1 N') * (N ~> N')) %type}.
 Proof.
+(*  N - - - -> N'
+    |          :
+   f|          : f
+    |          :
+    V          V
+   f N ------> M
+          R
+ *)
  induction N; simpl; intros M k red.
  (* Case TmConst *)
       inversion red.
@@ -492,7 +562,7 @@ Proof.
   subst.
   destruct (IHN n' (S k) H0) as [N' N'_def].
   exists (TmAbs N').
-  destruct (N'_def) as [N'_def N_red_N'].
+  destruct N'_def as [N'_def N_red_N'].
   simpl.
   subst.
   eauto.
@@ -547,8 +617,57 @@ Proof.
  eauto.
 
  inversion red.
+
  inversion red.
+
+ subst.
+ destruct (IHN m' k); auto.
+ exists (TmSingle x).
+ simpl.
+ intuition.
+ subst.
+ auto.
+
  inversion red.
 
  inversion red.
+
+ (* Case: Null for Bind *)
+ subst.
+ assert (N1 = TmNull).
+ destruct N1; simpl in *; try discriminate.
+ auto.
+ subst N1.
+ exists TmNull.
+ solve [intuition].
+
+ (* Case: Beta for Bind *)
+ subst M n.
+ destruct (TmSingle_shift_inversion x _ _ H0).
+ exists (TmAbs N2 @ x0).
+ simpl.
+ subst N1.
+ simpl in H0.
+ inversion H0.
+ intuition.
+
+ (* Case: Bind/Union *)
+ assert (A : {xs' : Term & {ys' : Term & ((N1 = TmUnion xs' ys') * (xs = shift k 1 xs') * (ys = shift k 1 ys'))%type}}).
+ destruct N1; simpl in H0; try discriminate.
+ exists N1_1; exists N1_2.
+ inversion H0.
+ intuition.
+ destruct A as [xs' [ys' [[]]]].
+ subst N1.
+ exists (TmUnion (TmBind xs' N2) (TmBind ys' N2)).
+ simpl.
+ subst xs ys.
+ split; auto.
+
+ (* Case: reduction in subject of TmBind. *)
+ destruct (IHN1 m' k) as [x [e r]]; [auto | ].
+ exists (TmBind x N2).
+ simpl.
+ subst m'.
+ eauto.
 Qed.

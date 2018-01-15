@@ -37,6 +37,8 @@ LISTKIT_FILES = Listkit/logickit.v Listkit/NthError.v			\
                 Listkit/AllType.v Listkit/Map.v Listkit/Sets.v		\
                 Listkit/Subseteq.v
 
+Listkit/listkit.vo:
+	make -f Listkit/Makefile $@
 
 FILES = Term.v Shift.v Subst.v Rewrites.v \
 	Norm.v Typing.v Monomorphism.v OutsideRange.v \

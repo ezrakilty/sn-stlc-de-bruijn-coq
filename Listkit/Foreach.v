@@ -1,5 +1,7 @@
 Require Import List.
 
+Set Universe Polymorphism.
+
 Fixpoint zip A B xs ys {struct xs} : list (A*B) :=
   match xs with
   | nil => nil

@@ -4,7 +4,7 @@ Require Import Term.
 Require Import Rewrites.
 
 (** Strong normalization: a term is strongly normalizing if all its
-    reducts are strongly normalizing. 
+    reducts are strongly normalizing.
 
     The well-foundedness of inductive objects in Coq means that the
     reduction trees are well-founded or strongly-normalizing.
