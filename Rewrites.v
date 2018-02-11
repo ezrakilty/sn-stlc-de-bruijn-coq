@@ -137,6 +137,69 @@ Proof.
  auto.
 Qed.
 
+Lemma Rw_beta_preserves_types_general_var:
+  forall S env' x T M env k,
+   k = length env ->
+   Typing env' M S ->
+   Typing (env++(S::env')) (TmVar x) T ->
+      Typing (env++env')
+             (unshift k 1 (subst_env k (shift 0 (k+1) M :: nil) (TmVar x)))
+	     T.
+Proof.
+ intros S env' x.
+ intros T M env k k_def M_tp N_tp; simpl; inversion N_tp; eauto.
+ subst.
+ assert (H: x < length (env++(S::env'))).
+  eapply nth_error_to_length; eauto.
+ rewrite app_length in H.
+ simpl in H.
+ destruct (le_gt_dec (length env) x).
+  destruct (eq_nat_dec x (length env)).
+  (* 'x' points to the type 'S' *)
+  subst x.
+   replace (length env - length env) with 0 by omega.
+   replace (nth_error (shift 0 1 M :: nil) 0)
+     with (value (shift 0 1 M)); auto.
+   simpl.
+   rewrite fancy_unshift_shift; auto; [|omega].
+   replace (length env+1-1) with (length env); auto; [|omega].
+   replace (env++env') with (nil++env++env'); auto.
+   eapply shift_preserves_typing with env'; auto.
+   apply nth_error_app in H0; auto.
+   replace (length env - length env) with 0 in H0 by omega.
+   simpl in H0.
+   inversion H0.
+   auto.
+  (* 'x' is in the second environment. *)
+  assert (length env < x) by omega.
+  assert (0 < x-length env) by omega.
+  replace (nth_error (shift 0 (length env + 1) M::nil) (x-length env))
+    with (error : option Term).
+   simpl.
+   apply TVar.
+   unfold unshift_var.
+   destruct (le_gt_dec (1 + length env) x); [ | omega].
+   apply nth_error_app in H0; auto.
+   replace (S::env') with ((S::nil)++env') in H0; auto.
+   apply nth_error_app in H0; auto.
+   simpl in H0.
+   rewrite rewrite_nth_error_app.
+    replace (x - 1 - length env) with (x - length env - 1) by omega.
+    auto.
+   omega.
+
+  (* Prove that nth_error (_::nil) z = error when z > 0. *)
+  symmetry; apply nth_error_overflow.
+  simpl.
+  omega.
+
+ (* x is in the first environment *)
+ apply TVar.
+ replace (unshift_var (length env) 1 x) with x.
+  rewrite <- nth_error_ext_length; auto.
+  rewrite <- nth_error_ext_length in H0; auto.
+ rewrite unshift_var_lo; auto.
+Qed.
 
 (** Beta reduction preserves types:
       [E      |- N{M/k} : T] when
@@ -155,57 +218,7 @@ Proof.
  induction N; intros T M env k k_def M_tp N_tp; simpl; inversion N_tp; eauto.
 (* TmConst--handled by eauto *)
 (* TmVar *)
-    subst.
-    assert (H: x < length (env++(S::env'))).
-     eapply nth_error_to_length; eauto.
-    rewrite app_length in H.
-    simpl in H.
-    destruct (le_gt_dec (length env) x).
-     destruct (eq_nat_dec x (length env)).
-     (* 'x' points to the type 'S' *)
-     subst x.
-      replace (length env - length env) with 0 by omega.
-      replace (nth_error (shift 0 1 M :: nil) 0)
-        with (value (shift 0 1 M)); auto.
-      simpl.
-      rewrite fancy_unshift_shift; auto; [|omega].
-      replace (length env+1-1) with (length env); auto; [|omega].
-      replace (env++env') with (nil++env++env'); auto.
-      eapply shift_preserves_typing with env'; auto.
-      apply nth_error_app in H0; auto.
-      replace (length env - length env) with 0 in H0 by omega.
-      simpl in H0.
-      inversion H0.
-      auto.
-     (* 'x' is in the second environment. *)
-     assert (length env < x) by omega.
-     assert (0 < x-length env) by omega.
-     replace (nth_error (shift 0 (length env + 1) M::nil) (x-length env))
-       with (error : option Term).
-      simpl.
-      apply TVar.
-      unfold unshift_var.
-      destruct (le_gt_dec (1 + length env) x); [ | omega].
-      apply nth_error_app in H0; auto.
-      replace (S::env') with ((S::nil)++env') in H0; auto.
-      apply nth_error_app in H0; auto.
-      simpl in H0.
-      rewrite rewrite_nth_error_app.
-       replace (x - 1 - length env) with (x - length env - 1) by omega.
-       auto.
-      omega.
-
-     (* Prove that nth_error (_::nil) z = error when z > 0. *)
-     symmetry; apply nth_error_overflow.
-     simpl.
-     omega.
-
-    (* x is in the first environment *)
-    apply TVar.
-    replace (unshift_var (length env) 1 x) with x.
-     rewrite <- nth_error_ext_length; auto.
-     rewrite <- nth_error_ext_length in H0; auto.
-    rewrite unshift_var_lo; auto.
+   eapply Rw_beta_preserves_types_general_var; seauto.
 
 (* TmPair *)
  (* handled by eauto *)

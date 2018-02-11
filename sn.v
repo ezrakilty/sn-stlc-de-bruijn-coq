@@ -1262,7 +1262,7 @@ Proof.
 
  assert (Typing nil P' S) by eauto.
  assert (Reducible P' S) by eauto.
- apply Neutral_Reducible_withdraw; [solve [auto] | solve [eauto] |].
+ apply Neutral_Reducible_withdraw; [sauto | seauto |].
  intros M' redn.
 
  inversion redn as [N0 M0 V M'_eq| ? ? ? L_redn | | | | | | | | | | | | ].
@@ -1522,6 +1522,20 @@ Lemma triple_induction P K M N:
 Proof.
 Admitted.
 
+Lemma triple_induction2 P K M N:
+  (forall M0 N0,
+     (M ~>> M0) ->
+     (N ~>> N0) ->
+     (
+       (forall K', (Krw K K') -> P K' M N)
+       -> (forall M', (M ~> M') -> P K M' N)
+       -> ((forall N', (N ~> N') -> P K M N'))
+       -> P K M N))
+  ->
+  SN M -> SN N -> P K M N.
+Proof.
+Admitted.
+
 Lemma SN_K_Union:
   forall K,
   forall M N, SN (plug K M) -> SN (plug K N) -> SN (plug K (TmUnion M N)).
@@ -1643,59 +1657,196 @@ Proof.
  admit.
 Admitted.
 
-Lemma substitution_preserves_rw:
-  forall L M M',
+Lemma unshift_var_unshift_var_commute:
+  forall x k k' n,
+    k' <= k ->
+    unshift_var k n (unshift_var k' 1 x) =
+    unshift_var k' 1 (unshift_var (S k) n x).
+Proof.
+ intros x k k' n H.
+ unfold unshift_var at 2 4.
+ break; break.
+    unfold unshift_var.
+    break; break; omega.
+   unfold unshift_var.
+   break; break; omega.
+  unfold unshift_var.
+  break; break; omega.
+ unfold unshift_var.
+ break; break; omega.
+Qed.
+
+Lemma unshift_unshift_commute:
+  forall M k k' n,
+    k' <= k ->
+    unshift k n (unshift k' 1 M) =
+    unshift k' 1 (unshift (S k) n M).
+Proof.
+ induction M; simpl; intros.
+          auto.
+         rewrite unshift_var_unshift_var_commute; sauto.
+        rewrite IHM1, IHM2; sauto.
+       rewrite IHM; sauto.
+      rewrite IHM; auto.
+      omega.
+     rewrite IHM1, IHM2; sauto.
+    auto.
+   rewrite IHM; sauto.
+  rewrite IHM1, IHM2; sauto.
+ rewrite IHM1, IHM2; solve [auto|omega].
+Qed.
+(* TODO: Move above 2 lemmas to Shift.v *)
+
+Lemma shift_var_unshift_var_commute:
+  forall x k k' n,
+    k' <= k ->
+    unshift_var (S k) n (shift_var k' 1 x) = shift_var k' 1 (unshift_var k n x).
+Proof.
+ intros x k k' n H.
+ unfold unshift_var.
+ break; break.
+    unfold shift_var.
+    break; break; omega.
+   unfold shift_var in *.
+   break; omega.
+  unfold shift_var in *.
+  break; break; omega.
+ unfold shift_var in *.
+ break; omega.
+Qed.
+
+Lemma shift_unshift_commute:
+  forall M k k' n,
+    k' <= k ->
+    unshift (S k) n (shift k' 1 M) = shift k' 1 (unshift k n M).
+Proof.
+ induction M; simpl; intros.
+          auto.
+         rewrite shift_var_unshift_var_commute; sauto.
+        rewrite IHM1, IHM2; sauto.
+       rewrite IHM; sauto.
+      rewrite IHM; solve [auto|omega].
+     rewrite IHM1, IHM2; sauto.
+    auto.
+   rewrite IHM; sauto.
+  rewrite IHM1, IHM2; sauto.
+ rewrite IHM1, IHM2; solve [auto|omega].
+Qed.
+
+Lemma beta_with_unshift:
+  forall N M n n' k,
+    n >= n' ->
+    unshift n k (unshift n' 1 (subst_env n' (shift 0 1 M :: nil) N)) =
+    unshift n' 1
+            (subst_env n' (shift 0 1 (unshift n k M) :: nil) (unshift (S n) k N)).
+Proof.
+ induction N; intros; simpl.
+          auto.
+         destruct (nth_error_dichot _ (shift 0 1 M :: nil) (x - n')) as [[H1 H2] | [H1 H2]].
+          simpl in H1.
+          rewrite H2.
+          destruct (nth_error_dichot _ (shift 0 1 (unshift n k M) :: nil) (unshift_var (S n) k x - n')) as [[H3 H4]|[H3 H4]].
+          rewrite H4.
+           simpl.
+           break; break.
+              rewrite unshift_unshift_commute; solve [auto | omega].
+             rewrite unshift_unshift_commute; solve [auto | omega].
+            rewrite unshift_unshift_commute; solve [auto | omega].
+           rewrite unshift_unshift_commute; solve [auto | omega].
+          destruct H4 as [V H4].
+          rewrite H4.
+          simpl in *.
+          exfalso.
+          assert (H0 : unshift_var (S n) k x - n' = 0) by omega.
+          unfold unshift_var in H0.
+          destruct (le_gt_dec (k + S n) x) in H0; solve [omega].
+         destruct H2 as [V H2].
+         rewrite H2.
+         simpl.
+         destruct (nth_error_dichot _ (shift 0 1 (unshift n k M) :: nil) (unshift_var (S n) k x - n')) as [[H3 H4]|[H3 H4]].
+          rewrite H4.
+          simpl in *.
+          exfalso.
+          unfold unshift_var in H3.
+          destruct (le_gt_dec (k + S n) x); solve [omega].
+         destruct H4 as [W H4].
+         rewrite H4.
+         simpl in *.
+         break; break.
+            assert (x < S n) by omega.
+            assert (unshift_var (S n) k x = x).
+             unfold unshift_var.
+             destruct (le_gt_dec (k + S n) x); solve [omega].
+            replace (unshift_var (S n) k x) with x in * by auto.
+            replace (x - n') with 0 in * by omega.
+            simpl in *.
+            inversion H2. inversion H4.
+            rewrite unshift_unshift_commute.
+             rewrite shift_unshift_commute.
+              auto.
+             omega.
+            omega.
+           exfalso.
+           unfold unshift_var in g.
+           destruct (le_gt_dec (k + S n) x); solve [omega].
+          exfalso.
+          unfold unshift_var in l.
+          destruct (le_gt_dec (k + S n) x); solve [omega].
+         unfold unshift, unshift_var.
+         break; break; break; break; solve [omega | auto].
+        rewrite IHN1, IHN2; sauto.
+       rewrite IHN; sauto.
+      rewrite IHN.
+       rewrite shift_unshift_commute; solve [omega | auto].
+      solve [omega].
+     rewrite IHN1, IHN2; sauto.
+    trivial.
+   rewrite IHN; sauto.
+  rewrite IHN1, IHN2; sauto.
+ rewrite IHN1, IHN2.
+   rewrite shift_unshift_commute; solve [omega | auto].
+  solve [omega].
+ sauto.
+Qed.
+
+Lemma unshift_preserves_rw:
+  forall M M' n k,
+    (M ~> M') ->
+    unshift n k M ~>
+    unshift n k M'.
+Proof.
+ induction M; intros; inversion H; subst; simpl.
+              eauto.
+             eauto.
+            eauto.
+           eauto.
+          eauto.
+         eauto.
+        apply Rw_beta.
+        apply beta_with_unshift.
+        omega.
+       eauto.
+      eauto.
+     eauto.
+    eauto.
+   eauto.
+  eauto.
+ eauto.
+Qed.
+
+Lemma unshift_substitution_preserves_rw:
+  forall M M' L,
     (M ~> M') ->
     unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) M) ~>
     unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) M').
 Proof.
  intros.
- induction M.
-          inversion H.
-         inversion H.
-        inversion H.
-         subst.
-         rename M1 into M1_0, m2 into M1_1.
-Admitted.
+ apply unshift_preserves_rw.
+ apply subst_env_compat_rw.
+ auto.
+Qed.
 
 Lemma bind_sn_withdraw:
-  forall K T S L N,
-    ReducibleK Reducible K T ->
-    Reducible L S ->
-    SN (plug K (unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) N))) ->
-    SN (plug K (TmBind (TmSingle L) N)).
-Proof.
- induction K.
- simpl; intros.
-  apply twostep.
-    eauto using Reducible_SN.
-   apply SN_embedding with (f := fun x => unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) x))
-                             (Q := unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) N)).
-     apply substitution_preserves_rw.
-    auto.
-   auto.
-  auto.
- intros.
- apply triple_induction with (K:=Iterate t K) (M := TmSingle L) (N:=N).
-   intros.
-   apply reducts_SN.
-   intros.
-   apply Neutral_Lists in H5.
-    destruct H5 as [[M' [eq red]] | [K' [eq red]]].
-     inversion red.
-      subst.
-      admit (* easy: show that K[TmAbs N @ L] is sn because K[N{L}] is. *).
-     subst.
-     apply H3; auto.
-    subst.
-    apply H2; auto.
-   auto.
-  unfold ReducibleK in X.
-  admit. (* Maybe this isn't right: it's a goofy precondition of our induction principle, triple_induction. Might need a different induction principle for this. *)
- admit. (* Maybe this isn't right: it's a goofy precondition of our induction principle, triple_induction. Might need a different induction principle for this. *)
-Admitted.
-
-Lemma bind_sn_withdraw_alt:
   forall K L N,
     SN L ->
     SN (plug K (unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) N))) ->
@@ -1707,12 +1858,12 @@ Proof.
     auto.
    apply SN_embedding with (f := fun x => unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) x))
                              (Q := unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) N)).
-     apply substitution_preserves_rw.
+     intros; apply unshift_substitution_preserves_rw; auto.
     auto.
    auto.
   auto.
  intros.
- apply triple_induction with (K:=Iterate t K) (M := TmSingle L) (N:=N).
+ apply triple_induction2 with (K:=Iterate t K) (M := TmSingle L) (N:=N).
    intros.
    apply reducts_SN.
    intros.
@@ -1720,18 +1871,79 @@ Proof.
     destruct H6 as [[M' [eq red]] | [K' [eq red]]].
      inversion red.
       subst.
-      admit (* easy: show that K[TmAbs N @ L] is sn because K[N{L}] is. *).
+Lemma one:
+  forall L N,
+    SN (unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) N)) ->
+    SN L.
+Proof.
+Admitted.
+Lemma two:
+  forall L N,
+    SN (unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) N)) ->
+    SN N.
+Proof.
+Admitted.
+Lemma SN_beta_withdraw:
+  forall L N,
+  SN (unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) N)) ->
+  SN (TmAbs N @ L).
+Proof.
+ intros.
+ assert (SN L).
+  eauto using one.
+ assert (SN N).
+  eauto using two.
+ double_induction_SN N L.
+ intros.
+ apply reducts_SN.
+ intros.
+Admitted.
+Lemma SN_withdraw_under_k:
+  forall K M,
+  Neutral M ->
+  SN M ->
+  SN (plug K M).
+Proof.
+Admitted.
+Lemma SN_push_under_k:
+  forall K M,
+  SN (plug K M) ->
+  SN M.
+Proof.
+Admitted.
+Lemma SN_beta_withdraw_under_k:
+  forall K L N,
+  SN (plug K (unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) N))) ->
+  SN (plug K (TmAbs N @ L)).
+Proof.
+ intros.
+ apply SN_withdraw_under_k.
+  auto.
+ apply SN_push_under_k in H.
+ apply SN_beta_withdraw.
+ sauto.
+Admitted.
+      admit (* show that K[TmAbs N @ L] is sn because K[N{L}] is. *).
      subst.
      apply H4; auto.
     subst.
     apply H3; auto.
    auto.
-  admit. (* Maybe this isn't right: it's a goofy precondition of our induction principle, triple_induction. Might need a different induction principle for this. *)
- admit. (* Maybe this isn't right: it's a goofy precondition of our induction principle, triple_induction. Might need a different induction principle for this. *)
+  solve [auto using SN_TmSingle].
+ apply SN_embedding with (f := fun x => plug (Iterate t K)
+            (unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) x)))
+                           (Q := plug (Iterate t K)
+            (unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) N))).
+   intros.
+   (* Note three different ways of naming symmetrical lemmas :-( *)
+   apply Rw_under_K.
+   apply unshift_preserves_rw.
+   apply subst_env_compat_rw.
+   auto.
+  auto.
+ auto.
 Admitted.
 
-(** Beta reduction preserves types, specialized to reduce at the head
-    of the environment. *)
 Lemma Rw_beta_preserves_types_conv:
   forall S env' N T M,
    Typing env' M S ->
@@ -1802,22 +2014,9 @@ Lemma closing_subst_closes:
     Typing Ts M T ->
     Typing nil (subst_env 0 Vs M) T.
 Proof.
- induction M; simpl; intros; inversion H0; subst.
-           apply TBase.
-          admit.
-         apply TPair; sauto.
-        eapply TProj1; seauto.
-       eapply TProj2; seauto.
-      eapply TAbs.
-      admit.
-     eapply TApp; seauto.
-    apply TNull.
-   apply TSingle; sauto.
-  apply TUnion; sauto.
- eapply TBind.
-  admit.
- admit.
-Admitted.
+ intros.
+ apply subst_env_preserves_typing with (env' := Ts); simpl; auto.
+Qed.
 
 (** Every well-typed term, with a [Reducible] environment that makes it a closed
     term, is [Reducible] at its given type. *)
