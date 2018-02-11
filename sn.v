@@ -1448,210 +1448,6 @@ SN (plug K M) ->
 P K.
  *)
 
-Fixpoint enumerate_reducts M :=
-  match M with
-      TmConst => nil
-    | TmVar x => nil
-    | TmPair M N => map (fun m => TmPair m N) (enumerate_reducts M) ++
-                        map (TmPair M) (enumerate_reducts N)
-    | TmProj b M =>
-      match M with
-          TmPair M1 M2 =>
-          if b then
-            M2 :: nil
-          else M1 :: nil
-        | _ => nil
-      end ++ map (TmProj b) (enumerate_reducts M)
-    | TmAbs N => map TmAbs (enumerate_reducts N)
-    | TmApp L M =>
-      (match L with
-           TmAbs N => unshift 0 1 (subst_env 0 (shift 0 1 M :: nil) N) :: nil
-         | _ => nil
-       end) ++
-           map (fun l => TmApp l M) (enumerate_reducts L) ++
-           map (TmApp L) (enumerate_reducts M)
-    | TmNull => nil
-    | TmSingle M => map TmSingle (enumerate_reducts M)
-    | TmUnion M N =>
-      map (fun m => TmPair m N) (enumerate_reducts M) ++ map (TmPair M) (enumerate_reducts N)
-    | TmBind N L =>
-      (match N with
-           TmNull => TmNull :: nil
-         | TmSingle N' => TmApp (TmAbs L) N' :: nil
-         | TmUnion N1 N2 => TmUnion (TmBind N1 L) (TmBind N2 L) :: nil
-         | _ => nil
-       end) ++
-            map (fun n => TmBind n L) (enumerate_reducts N) ++
-            map (TmBind N) (enumerate_reducts L)
-  end.
-
-Lemma enumerate_reducts_complete :
-  forall M M',
-    (M ~> M') ->
-    In M' (enumerate_reducts M).
-Proof.
- induction M; intros M' H; inversion H; simpl; subst.
- (* Case Rw_Pair_left *)
-              apply in_or_app.
-              left.
-              rename m2 into m1.
-              assert (In m1 (enumerate_reducts M1)) by (auto using IHM1).
-              remember (fun m => TmPair m M2) as f.
-              replace (TmPair m1 M2) with (f m1).
-               apply in_map.
-               auto.
-              subst f.
-              auto.
- (* Case Rw_Pair_right *)
-             apply in_or_app.
-             right.
-             rename n2 into m2.
-             assert (In m2 (enumerate_reducts M2)) by (auto using IHM2).
-             apply in_map.
-             auto.
- (* Case Rw_Proj *)
-            apply in_or_app; right.
-            apply in_map.
-            auto.
- (* Case Rw_Proj_beta1 *)
-           auto.
- (* Case Rw_Proj_beta2 *)
-          auto.
- (* Case Rw_Abs_body *)
-         auto using in_map, IHM.
- (* Case Rw_beta *)
-        auto.
- (* Case Rw_App_left *)
-       rename m2 into m1.
-       apply in_or_app; right.
-       apply in_or_app; left.
-       remember (fun l => (l @ M2)) as f.
-       replace (m1 @ M2) with (f m1).
-       auto using in_map, IHM1, IHM2.
-       subst; sauto.
- (* Case Rw_App_right *)
-      rename n2 into m2.
-      apply in_or_app; right.
-      apply in_or_app; right.
-      solve [eauto using in_map, IHM2].
- (* Case Rw_Single *)
-     solve [auto using in_map, IHM].
- (* Case Rw_Bind_null *)
-    sauto.
- (* Case Rw_Bind_beta *)
-   sauto.
- (* Case Rw_Bind_union *)
-  auto.
- (* Case Rw_Bind_subject *)
- apply in_or_app; right.
- apply in_or_app; left.
- remember (fun n => TmBind n M2) as f.
- replace (TmBind m' M2) with (f m').
- auto using in_map, IHM1.
- subst; sauto.
-Qed.
-
-Lemma enumerate_reducts_sound :
-  forall M M',
-    In M' (enumerate_reducts M) ->
-    (M ~> M').
-Proof.
- induction M; simpl; intros M' H.
-          intuition.
-         intuition.
-        apply in_app_or in H.
-        admit.
-        (* destruct H. (* FIXME: Set vs Prop!!! *) *)
-Admitted.
-
-(* (* Next we have a function that enumerates all the reducts, together *)
-(* with the witness of the reduction. Not sure the type-checker will take it. *) *)
-
-(* Fixpoint enumerate_reducts_2 M : list ({M' : Term & M ~> M'}) := *)
-(*   match M with *)
-(*       TmConst => nil *)
-(*     | TmVar x => nil *)
-(*     | TmPair M N => map (fun X => *)
-(*                            match X with *)
-(*                                existT _ m r => existT _ (TmPair m N) (Rw_Pair_left _ _ _ r) *)
-(*                            end) *)
-(*                         (enumerate_reducts_2 M) ++ *)
-(*                     map (fun (X: {N' : Term & N ~> N'}) => *)
-(*                            match X with *)
-(*                                existT _ n r => *)
-(*                                existT _ (TmPair M n) (Rw_Pair_right _ _ _ r) *)
-(*                            end) *)
-(*                     (enumerate_reducts_2 N) *)
-(*     | TmProj b M => *)
-(*       match M with *)
-(*           TmPair M1 M2 => *)
-(*           if b then *)
-(*             (* (existT _ M2 (Rw_Proj_beta2 _ _)) :: *) nil *)
-(*           else *)
-(*             (* (existT _ M1 (Rw_Proj_beta1 _ _)) :: *) nil *)
-(*         | _ => nil *)
-(*       end ++ *)
-(*           map (fun X => *)
-(*                  match X with *)
-(*                      existT _ M' r => *)
-(*                      existT _ (TmProj b M') (Rw_Proj _ _ _ r) *)
-(*                  end) (enumerate_reducts_2 M) *)
-(*     | TmAbs N => map (fun X => *)
-(*                         match X with *)
-(*                             existT _ n' r => *)
-(*                             existT _ (TmAbs n') (Rw_Abs_body _ _ r) *)
-(*                         end) *)
-(*                      (enumerate_reducts_2 N) *)
-(*     | TmApp (TmAbs N) M => *)
-(*            (* existT _ (unshift 0 1 (subst_env 0 (shift 0 1 M :: nil) N)) *) *)
-(*            (*        (Rw_beta _ _ _) *) *)
-(*           ( Rw_beta N M (unshift 0 1 (subst_env 0 (shift 0 1 M :: nil) N)) _ *)
-(*                    :: nil *)
-(* ) ++ *)
-(*             map (fun X => *)
-(*                    match X with *)
-(*                        existT _ l r => existT _ (TmApp l M) (Rw_App_left _ _ _ r) *)
-(*                    end) *)
-(*             (enumerate_reducts_2 L) ++ *)
-(*             map (fun X => *)
-(*                    match X with *)
-(*                        existT _ m r => *)
-(*                        existT _ (TmApp (TmAbs N) m) (Rw_App_right _ _ _ r) *)
-(*                    end) *)
-(*             (enumerate_reducts_2 M) *)
-(*     | TmApp L M => *)
-(*             map (fun X => *)
-(*                    match X with *)
-(*                        existT _ l r => existT _ (TmApp l M) (Rw_App_left _ _ _ r) *)
-(*                    end) *)
-(*             (enumerate_reducts_2 L) ++ *)
-(*             map (fun X => *)
-(*                    match X with *)
-(*                        existT _ m r => *)
-(*                        existT _ (TmApp L m) (Rw_App_right _ _ _ r) *)
-(*                    end) *)
-(*             (enumerate_reducts_2 M) *)
-(*     | TmNull => nil *)
-(*     | TmSingle M => map TmSingle (enumerate_reducts_2 M) *)
-(*     | TmUnion M N => *)
-(*       map (fun m => TmPair m N) (enumerate_reducts_2 M) ++ map (TmPair M) (enumerate_reducts_2 N) *)
-(*     | TmBind N L => *)
-(*       (match N with *)
-(*            TmNull => TmNull :: nil *)
-(*          | TmSingle N' => TmApp (TmAbs L) N' :: nil *)
-(*          | TmUnion N1 N2 => TmUnion (TmBind N1 L) (TmBind N2 L) :: nil *)
-(*          | _ => nil *)
-(*        end) ++ *)
-(*             map (fun n => TmBind n L) (enumerate_reducts_2 N) ++ *)
-(*             map (TmBind N) (enumerate_reducts_2 L) *)
-(*   end. *)
-
-(* Fixpoint maxred M (X : SN M) {struct X} := *)
-(*   match X with *)
-(*       reducts_SN _ reduct_normalizer => *)
-(*         1 + fold_left max (map (fun M' => maxred M' (reduct_normalizer M' _)) (enumerate_reducts M)) 0 *)
-(*   end. *)
-
 (* Inductive Triple_SN K M N := *)
 (*   | triple_sn : *)
 (*        (forall K', (Krw K K') -> Triple_SN K' M N) *)
@@ -1711,7 +1507,8 @@ Qed.
 (*  inversion H0; auto. *)
 (* Qed. *)
 
-Lemma wowza P K M N:
+(* Induction on the reduction sequences of three objects: K, M and N. *)
+Lemma triple_induction P K M N:
   (forall M0 N0,
      (M ~>> M0) ->
      (N ~>> N0) ->
@@ -1739,7 +1536,7 @@ Proof.
   eauto using Rw_trans_preserves_SN.
   intros.
  remember (Iterate t K) as K0.
- apply wowza with (K := K0) (M := M) (N := N); [|sauto|sauto].
+ apply triple_induction with (K := K0) (M := M) (N := N); [|sauto|sauto].
  intros.
  subst; simpl.
 
@@ -1846,7 +1643,59 @@ Proof.
  admit.
 Admitted.
 
+Lemma substitution_preserves_rw:
+  forall L M M',
+    (M ~> M') ->
+    unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) M) ~>
+    unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) M').
+Proof.
+ intros.
+ induction M.
+          inversion H.
+         inversion H.
+        inversion H.
+         subst.
+         rename M1 into M1_0, m2 into M1_1.
+Admitted.
+
 Lemma bind_sn_withdraw:
+  forall K T S L N,
+    ReducibleK Reducible K T ->
+    Reducible L S ->
+    SN (plug K (unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) N))) ->
+    SN (plug K (TmBind (TmSingle L) N)).
+Proof.
+ induction K.
+ simpl; intros.
+  apply twostep.
+    eauto using Reducible_SN.
+   apply SN_embedding with (f := fun x => unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) x))
+                             (Q := unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) N)).
+     apply substitution_preserves_rw.
+    auto.
+   auto.
+  auto.
+ intros.
+ apply triple_induction with (K:=Iterate t K) (M := TmSingle L) (N:=N).
+   intros.
+   apply reducts_SN.
+   intros.
+   apply Neutral_Lists in H5.
+    destruct H5 as [[M' [eq red]] | [K' [eq red]]].
+     inversion red.
+      subst.
+      admit (* easy: show that K[TmAbs N @ L] is sn because K[N{L}] is. *).
+     subst.
+     apply H3; auto.
+    subst.
+    apply H2; auto.
+   auto.
+  unfold ReducibleK in X.
+  admit. (* Maybe this isn't right: it's a goofy precondition of our induction principle, triple_induction. Might need a different induction principle for this. *)
+ admit. (* Maybe this isn't right: it's a goofy precondition of our induction principle, triple_induction. Might need a different induction principle for this. *)
+Admitted.
+
+Lemma bind_sn_withdraw_alt:
   forall K L N,
     SN L ->
     SN (plug K (unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) N))) ->
@@ -1856,10 +1705,14 @@ Proof.
   simpl; intros.
   apply twostep.
     auto.
-   admit (* i'm hoping to prove SN N from a larger term that contains it. *).
+   apply SN_embedding with (f := fun x => unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) x))
+                             (Q := unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) N)).
+     apply substitution_preserves_rw.
+    auto.
+   auto.
   auto.
  intros.
- apply wowza with (K:=Iterate t K) (M := TmSingle L) (N:=N).
+ apply triple_induction with (K:=Iterate t K) (M := TmSingle L) (N:=N).
    intros.
    apply reducts_SN.
    intros.
@@ -1873,9 +1726,20 @@ Proof.
     subst.
     apply H3; auto.
    auto.
-  admit. (* Maybe this isn't right: it's a goofy precondition of our induction principle, wowza. Might need a different induction principle for this. *)
- admit. (* Maybe this isn't right: it's a goofy precondition of our induction principle, wowza. Might need a different induction principle for this. *)
+  admit. (* Maybe this isn't right: it's a goofy precondition of our induction principle, triple_induction. Might need a different induction principle for this. *)
+ admit. (* Maybe this isn't right: it's a goofy precondition of our induction principle, triple_induction. Might need a different induction principle for this. *)
 Admitted.
+
+(** Beta reduction preserves types, specialized to reduce at the head
+    of the environment. *)
+Lemma Rw_beta_preserves_types_conv:
+  forall S env' N T M,
+   Typing env' M S ->
+   Typing env' (unshift 0 1 (subst_env 0 (shift 0 1 M :: nil) N)) T ->
+   Typing (S::env') N T.
+Proof.
+Admitted.
+(* TODO: put this in Rewrites, state it as a <-> ? *)
 
 Lemma Bind_Reducible :
   forall M S N T,
@@ -1892,7 +1756,7 @@ Proof.
   destruct (Reducible_inhabited S) as [x r].
   pose (p := X0 x r).
   destruct p.
-  admit. (* Need the converse of Rw_beta_preserves_types. *)
+  eapply Rw_beta_preserves_types_conv; seauto.
  pose (K' := Iterate N K).
  assert (SN (plug K' M)).
   apply b.
@@ -1905,21 +1769,54 @@ Proof.
    auto.
   apply X.
  change (SN (plug (Iterate N K) M)).
- auto.
-Admitted.
+ sauto.
+Qed.
 
-(** Given a term of the form unshift n k (subst_env 0 xs M), where the
-substitution maps all variables of M, there is a different
-substitution that directly maps all the variables of M.  *)
-
-Lemma weird_lemma:
-  forall M T tyEnv xs n k,
-    Typing tyEnv M T ->
-    env_typing xs tyEnv ->
-    {ys : list Term & unshift n k (subst_env 0 xs M) = subst_env 0 ys M}.
+Lemma shift_closed_noop_map:
+  forall n k Vs Ts,
+    env_typing Vs Ts
+    -> Vs = map (shift n k) Vs.
 Proof.
-  (* induction M; simpl; intros; exists (map (unshift n k) xs) ; firstorder. *)
-  (* admit. (* easy; i'm tired. *) *)
+ induction Vs; simpl; intros.
+  auto.
+ destruct Ts.
+  exfalso.
+  destruct H.
+  simpl in *.
+  discriminate.
+ destruct H.
+  simpl in *.
+ unfold foreach2_ty in f.
+ simpl in f.
+ destruct f.
+ replace (shift n k a) with a.
+  rewrite <- IHVs with (Ts := Ts).
+   auto.
+  auto.
+ solve [erewrite shift_closed_noop; eauto].
+Qed.
+
+Lemma closing_subst_closes:
+  forall Vs Ts M T,
+    env_typing Vs Ts ->
+    Typing Ts M T ->
+    Typing nil (subst_env 0 Vs M) T.
+Proof.
+ induction M; simpl; intros; inversion H0; subst.
+           apply TBase.
+          admit.
+         apply TPair; sauto.
+        eapply TProj1; seauto.
+       eapply TProj2; seauto.
+      eapply TAbs.
+      admit.
+     eapply TApp; seauto.
+    apply TNull.
+   apply TSingle; sauto.
+  apply TUnion; sauto.
+ eapply TBind.
+  admit.
+ admit.
 Admitted.
 
 (** Every well-typed term, with a [Reducible] environment that makes it a closed
@@ -1981,7 +1878,7 @@ Proof.
        simpl.
        intuition.
 
-  (* Obligation: TmAbs (subst_env 1 Vs m)) = (subst_env 0 Vs (TmAbs m)). *)
+      (* Obligation: TmAbs (subst_env 1 Vs m)) = (subst_env 0 Vs (TmAbs m)). *)
       simpl.
       erewrite env_typing_shift_noop; eauto.
 
@@ -2016,28 +1913,23 @@ Proof.
  apply Bind_Reducible with s.
   seauto.
  intros.
- replace (subst_env 0 (shift 0 1 L :: nil) (subst_env 1 (map (shift 0 1) Vs) m2))
- with (subst_env 0 (map (shift 0 1) (L :: Vs)) m2).
-  pose (weird_lemma m2 (TyList t) (s :: tyEnv) (map (shift 0 1) (L :: Vs)) 0 1).
-  specialize (s0 H3).
-  assert (H : env_typing (map (shift 0 1) (L :: Vs)) (s :: tyEnv)).
-   admit. (* easy; i'm tired *)
-  specialize (s0 H).
-  destruct s0 as [ys e].
-  rewrite e.
-  eapply IHm2.
-    apply H3.
-   admit. (* typing of ys needs to be an output of weird_lemma. *)
-  admit. (* omg disaster. we need the output of weird_lemma to be reducible! *)
- simpl.
- rewrite subst_env_concat with (env := s :: tyEnv).
-  simpl.
-  auto.
- simpl.
- apply env_typing_cons.
-  admit.
- rewrite env_typing_shift_noop with (env:=tyEnv); auto.
-Admitted.
+ pose (Reducible_welltyped_closed _ _ X).
+ replace (shift 0 1 L) with L.
+  replace (map (shift 0 1) Vs) with Vs.
+   rewrite subst_env_concat with (env := s :: tyEnv).
+    unfold app.
+    replace (unshift 0 1 (subst_env 0 (L :: Vs) m2))
+       with (subst_env 0 (L :: Vs) m2).
+     eapply IHm2; eauto.
+     simpl.
+     auto.
+    assert (Typing nil (subst_env 0 (L :: Vs) m2) (TyList t)).
+     eapply closing_subst_closes; seauto.
+    erewrite unshift_closed_noop; seauto.
+   apply env_typing_cons; sauto.
+   eapply shift_closed_noop_map; seauto.
+  erewrite shift_closed_noop; seauto.
+Qed.
 
 (** Every well-typed term is strongly normalizing. *)
 Lemma normalization :
