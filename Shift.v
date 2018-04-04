@@ -720,3 +720,10 @@ Proof.
  apply shift_freevars in H.
  omega.
 Qed.
+
+(* TODO: move to Shift.v *)
+Lemma Typing_shift_elim:
+  forall env env' M T,
+    Typing (env ++ env') (shift 0 (length env) M) T -> Typing env' M T.
+Proof.
+Admitted.

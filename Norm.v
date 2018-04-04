@@ -1,5 +1,8 @@
 Load "eztactics.v".
 
+
+Add LoadPath "Listkit" as Listkit.
+
 Require Import Term.
 Require Import Rewrites.
 
