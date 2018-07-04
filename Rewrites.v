@@ -48,10 +48,11 @@ Inductive RewritesTo : Term -> Term -> Type :=
     RewritesTo (TmBind (TmUnion xs ys) n) (TmUnion (TmBind xs n) (TmBind ys n))
 | Rw_Bind_subject : forall m n m',
     RewritesTo m m' -> RewritesTo (TmBind m n) (TmBind m' n)
+| Rw_Bind_body : forall m n n',
+    RewritesTo n n' -> RewritesTo (TmBind m n) (TmBind m n')
 | Rw_Single : forall m m',
                 RewritesTo m m' -> RewritesTo (TmSingle m) (TmSingle m')
 (* TODO: Rw_Bind_assoc. *)
-(* TODO: Should probably allow reductions in the body of a TmBind.*)
 .
 
 Hint Constructors RewritesTo.
@@ -201,28 +202,6 @@ Proof.
  rewrite unshift_var_lo; auto.
 Qed.
 
-Lemma Rw_beta_preserves_types_general_var_conv:
-  forall S env' x T M env k,
-   k = length env ->
-   Typing env' M S ->
-      Typing (env++env')
-             (unshift k 1 (subst_env k (shift 0 (k+1) M :: nil) (TmVar x)))
-	     T ->
-   Typing (env++(S::env')) (TmVar x) T.
-Proof.
- intros.
- destruct (le_gt_dec (length env) x).
-  destruct (eq_nat_dec x (length env)).
-   subst.
-   simpl in H1.
-   destruct (le_gt_dec (length env) (length env)); try (solve[exfalso;omega]).
-   replace (length env - length env) with 0 in H1 by omega.
-   simpl in H1.
-
-   apply TVar.
-   
-Qed.
-
 (** Beta reduction preserves types:
       [E      |- N{M/k} : T] when
       [E, x:S |- N : T] and
@@ -346,6 +325,7 @@ Proof.
                   | M N
                   | N
                   | M N M'
+                  | M N
                   | M N
                   | M N
                   | M];
@@ -510,6 +490,12 @@ Proof.
  apply Rw_Bind_subject.
  eauto.
 
+ (* Case: Body reduction of TmBind *)
+ simpl.
+ apply Rw_Bind_body.
+ eauto.
+
+ (* Case: Singleton list contents *)
  simpl.
  apply Rw_Single.
  eauto.
@@ -704,5 +690,12 @@ Proof.
  exists (TmBind x N2).
  simpl.
  subst m'.
+ eauto.
+
+ (* Case: reduction in body of TmBind. *)
+ destruct (IHN2 n' (S k)) as [x [e r]]; [auto | ].
+ exists (TmBind N1 x).
+ simpl.
+ subst n'.
  eauto.
 Qed.
