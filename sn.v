@@ -1364,7 +1364,7 @@ Proof.
  auto.
 Qed.
 
-Lemma two:
+Lemma SN_beta_withdraw:
   forall L N,
     SN (unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) N)) ->
     SN N.
@@ -1387,25 +1387,17 @@ Proof.
  intros.
  assert (SN N).
   apply SN_push_under_k in H0.
-  eauto using two.
- apply triple_induction2 with (K:=K) (M:=N) (N:=L).  (* XXX rename to triple_induction_SN *)
-   intros.
-   apply reducts_SN.
-   intros.
-   apply Neutral_Lists in H7; try auto.
-    destruct H7 as [[M' [H7a H7b]] | [K' [H7a H7b]]].
-    inversion H7b; subst.
-      auto.
-     inversion H10.
-     subst.
-     apply H5.
-     auto.
-    auto.
-   subst.
-   apply H4.
-   auto.
-  auto.
- auto.
+  eauto using SN_beta_withdraw.
+ apply triple_induction2 with (K:=K) (M:=N) (N:=L); auto.  (* XXX rename to triple_induction_SN *)
+ intros.
+ apply reducts_SN.
+ intros.
+ apply Neutral_Lists in H7; auto.
+ destruct H7 as [[M' [H7a H7b]] | [K' [H7a H7b]]].
+  inversion H7b; subst; eauto.
+  inversion H10; subst; eauto.
+ subst.
+ eauto.
 Qed.
 
 Lemma bind_sn_withdraw:
@@ -1417,7 +1409,7 @@ Proof.
  intros.
  assert (SN N).
   apply SN_push_under_k in H0.
-  eauto using two.
+  eauto using SN_beta_withdraw.
  apply triple_induction2 with (K:=K) (M:=N) (N:=L); auto.  (* XXX rename to triple_induction_SN *)
  intros.
  apply reducts_SN.
