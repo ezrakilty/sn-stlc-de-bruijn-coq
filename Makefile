@@ -21,8 +21,10 @@ Typing.vo: Term.vo
 
 OutsideRange.vo: eztactics.v
 
+Continuation.vo: Term.vo Norm.vo
+
 sn.vo: eztactics.v Listkit/listkit.vo Term.vo Shift.vo Subst.vo Rewrites.vo \
-	Norm.vo Typing.vo Monomorphism.vo OutsideRange.vo
+	Norm.vo Typing.vo Monomorphism.vo OutsideRange.vo Continuation.vo
 
 %.html: %.v %.vo
 	coqdoc -g -d docs $<
@@ -41,10 +43,10 @@ Listkit/listkit.vo:
 	make -f Listkit/Makefile $@
 
 FILES = Term.v Shift.v Subst.v Rewrites.v \
-	Norm.v Typing.v Monomorphism.v OutsideRange.v \
+	Norm.v Typing.v Monomorphism.v OutsideRange.v Continuation.v \
 	$(LISTKIT_FILES)
 
 index.html: Listkit/listkit.v Term.v Shift.v Subst.v Rewrites.v \
-	Norm.v Typing.v Monomorphism.v OutsideRange.v
+	Norm.v Typing.v Monomorphism.v OutsideRange.v Continuation.v
 	mkdir -p docs
 	coqdoc -g --utf8 -d docs $(FILES)

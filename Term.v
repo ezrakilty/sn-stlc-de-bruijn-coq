@@ -211,3 +211,20 @@ Lemma in_env_domain_map :
  auto.
 Qed.
 
+(** A term [M] is [Neutral] if, when it reduces in context, [C[M] ~> Z], the
+    reduction either in C or in M:
+      C[M] ~> Z  ==  C[M] ~> C[M']  or
+      C[M] ~> Z  ==  C[M] ~> C'[M].
+    In other words, [M] cannot react with [C] immediately.
+
+    But we define it here by the cases that we know have that property.
+ *)
+Inductive Neutral : Term -> Type :=
+  | Neutral_App : forall L M, Neutral (TmApp L M)
+  | Neutral_Proj : forall b M, Neutral (TmProj b M)
+  | Neutral_TmBind : forall M N, Neutral (TmBind M N).
+
+Hint Constructors Neutral.
+
+Hint Resolve Neutral_App.
+Hint Resolve Neutral_Proj.

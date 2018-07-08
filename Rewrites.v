@@ -699,3 +699,14 @@ Proof.
  subst n'.
  eauto.
 Qed.
+
+Lemma TmBind_Neutral_reducts:
+  forall M N Z,
+    Neutral M ->
+    (TmBind M N ~> Z) ->
+    {M' : Term & ((Z = TmBind M' N) * (M ~> M'))%type}
+  + {N' : Term & ((Z = TmBind M N') * (N ~> N'))%type}.
+Proof.
+ intros.
+ inversion H0; subst; solve [inversion H | firstorder].
+Qed.
