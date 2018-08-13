@@ -62,7 +62,7 @@ Proof.
  intros IH_x IH_y x y SN_x SN_y.
  induction SN_x; induction SN_y.
  eauto.
-Qed.
+ Qed.
 
 (** [Double_SN] holds for a pair of terms iff all of the immediate
     reducts of each one is also [Double_SN]. TODO: I think this is the

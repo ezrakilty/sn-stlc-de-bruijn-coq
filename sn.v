@@ -246,17 +246,50 @@ Proof.
  induction H; subst; eauto using Krw_preserves_ReducibleK.
 Qed.
 
-Lemma ReducibleK_induction:
-  forall T K, ReducibleK Reducible K T ->
-  forall P,
-      (forall K0, Krw_rt K K0 -> (forall K', Krw K0 K' -> P K') -> P K0) ->
-      P K.
+Inductive Krw_norm K :=
+  reducts_Krw_norm : (forall K', Krw K K' -> Krw_norm K') -> Krw_norm K.
+
+Lemma SN_plug_Krw_norm:
+  forall X, SN X
+            -> forall X', (X ~>> X')
+            -> forall K, {M : Term & X' = plug K M}
+                         -> Krw_norm K.
 Proof.
- intros T K H P IH.
- apply IH.
-   apply Krw_rt_refl; auto.
+ intros X SN_X X' X_red_X'.
+ assert (SN_X' : SN X').
+  eapply Rw_trans_preserves_SN; seauto.
+ induction SN_X'.
+ intros K ex_M.
+ constructor.
+ intros K' K_K'.
+ destruct ex_M as [M H1].
+ assert (plug K M ~> plug K' M) by auto.
+ subst.
+ apply H with (m':=plug K' M); eauto.
+Qed.
+
+Lemma ReducibleK_Krw_norm:
+  forall T K, ReducibleK Reducible K T ->
+              {M : Term & Reducible M T} ->
+              Krw_norm K.
+Proof.
+ unfold ReducibleK.
  intros.
-Admitted.
+ destruct X0.
+ apply SN_plug_Krw_norm with (X := plug K (TmSingle x)) (X' := plug K (TmSingle x)); eauto.
+Qed.
+
+(* Lemma ReducibleK_induction: *)
+(*   forall T K, ReducibleK Reducible K T -> *)
+(*   forall P, *)
+(*       (forall K0, Krw_rt K K0 -> (forall K', Krw K0 K' -> P K') -> P K0) -> *)
+(*       P K. *)
+(* Proof. *)
+(*  intros T K H P IH. *)
+(*  apply IH. *)
+(*    apply Krw_rt_refl; auto. *)
+(*  intros. *)
+(* Admitted. *)
 
 (** The [Reducible] predicate has these important properties which
     must be proved in a mutually-inductive way. They are:
@@ -490,24 +523,22 @@ Proof.
  simpl.
  split; auto.
  intros.
- simpl; split; auto.
- simpl in X.
  change (ReducibleK Reducible K T) in X0.
- pattern K.
- apply ReducibleK_induction with (T:=T) (K:=K); [auto|].
- intros.
+ assert (Krw_norm K).
+  apply ReducibleK_Krw_norm with T; seauto.
+
+ induction H1.
+ constructor.
+ intros m' H3.
+ let T := type of H3 in copy T.
  apply Neutral_Lists in H3; auto.
  destruct H3 as [[M' [s1 s2]] | [K1 [s1 s2]]].
-  Focus 2.
-  apply reducts_SN; intros.
-  subst m'.
-  apply H2 with K1; auto.
-  (* apply Krw_rt_SNK with K; sauto. *)
+  subst.
+  apply X; auto.
 
- subst m'.
- apply X; auto.
- change (ReducibleK Reducible K0 T).
- eapply Krw_rt_preserves_ReducibleK; seauto.
+ subst.
+ apply X1; auto.
+ apply Krw_preserves_ReducibleK with K; auto.
 Qed.
 
 (** Now we extract the three lemmas in their separate, useful form. *)
@@ -749,21 +780,6 @@ Hint Resolve ReducibleK_Empty.
 (*  intros. apply X2; auto. *)
 (*  inversion H0; auto. *)
 (* Qed. *)
-
-(* Induction on the reduction sequences of three objects: K, M and N. *)
-Lemma triple_induction P K M N:
-  (forall M0 N0,
-     (M ~>> M0) ->
-     (N ~>> N0) ->
-     (
-       (forall K', (Krw K K') -> P K' M N)
-       -> (forall M', (M ~> M') -> P K M' N)
-       -> ((forall N', (N ~> N') -> P K M N'))
-       -> P K M N))
-  ->
-  SN (plug K M) -> SN (plug K N) -> P K M N.
-Proof.
-Admitted.
 
 (**
  When we have a form of term, specified by g, whose reductions are
@@ -1053,63 +1069,178 @@ Proof.
  inversion H1.
 Qed.
 
-(* Inductive Triple_SN K M N := *)
-(*   | triple_sn : *)
-(*        (forall K', (Krw K K') -> Triple_SN K' M N) *)
-(*     -> (forall M', (M ~> M') -> Triple_SN K M' N) *)
-(*     -> (forall N', (N ~> N') -> Triple_SN K M N') *)
-(*     -> Triple_SN K M N. *)
-
 Inductive Triple_SN K M N :=
   | triple_sn :
-       (forall K' t, K = Iterate t K' -> Triple_SN K' M N)
+       (forall K', (Krw K K') -> Triple_SN K' M N)
     -> (forall M', (M ~> M') -> Triple_SN K M' N)
     -> (forall N', (N ~> N') -> Triple_SN K M N')
     -> Triple_SN K M N.
 
-Lemma nifty:
-  forall M, SN M -> forall N, SN N -> forall K, Triple_SN K M N.
+(* Inductive Triple_SN K M N := *)
+(*   | triple_sn : *)
+(*        (forall K' t, K = Iterate t K' -> Triple_SN K' M N) *)
+(*     -> (forall M', (M ~> M') -> Triple_SN K M' N) *)
+(*     -> (forall N', (N ~> N') -> Triple_SN K M N') *)
+(*     -> Triple_SN K M N. *)
+
+(* Lemma nifty: *)
+(*   forall M, SN M -> forall N, SN N -> forall K, Triple_SN K M N. *)
+(* Proof. *)
+(*  intros M SN_M. *)
+(*  induction SN_M. *)
+(*  intros N SN_N. *)
+(*  induction SN_N. *)
+(*  rename m into M. *)
+(*  rename m0 into N. *)
+(*  induction K. *)
+(*   apply triple_sn. *)
+(*     intros K' H'. *)
+(*     unfold Krw in H'. *)
+(*     simpl in H'. *)
+(*    auto. *)
+(*   auto. *)
+(*   apply triple_sn. *)
+(*    intros. *)
+(*    inversion H1; subst. *)
+(*    auto. *)
+(*   intros. *)
+(*   auto. *)
+(*  auto. *)
+(* Qed. *)
+
+Lemma triple_induction2_weak P K M N:
+  (forall K M N, (forall K', (Krw K K') -> P K' M N) -> P K M N)
+  -> (forall K M N, (forall M', (M ~> M') -> P K M' N) -> P K M N)
+  -> (forall K M N, (forall N', (N ~> N') -> P K M N') -> P K M N)
+  ->
+  Krw_norm K -> SN M -> SN N -> P K M N.
 Proof.
+ intros IHK IHM IHN.
+ intros SN_K SN_M SN_N.
+ induction SN_K.
+ induction SN_M.
+ induction SN_N.
+ auto.
+Qed.
+
+Lemma triple_induction2_strong P:
+  (forall K M N,
+        (forall K',  (Krw K K') -> P K' M N)
+     -> (forall M',  (M ~> M') ->  P K M' N)
+     -> ((forall N', (N ~> N') ->  P K M N'))
+     -> P K M N)
+  ->
+  forall K M N,
+    Triple_SN K M N -> P K M N.
+Proof.
+ intros IH K M N SN_K_M_N.
+ induction SN_K_M_N.
+ auto.
+Qed.
+
+Hint Constructors Krw_rt.
+
+Lemma triple_induction2_strong_scoped P:
+  forall K0 M0 N0,
+  (forall K M N,
+     Krw_rt K0 K -> (M0 ~>> M) -> (N0 ~>> N) ->
+        (forall K',  (Krw K K') -> P K' M N)
+     -> (forall M',  (M ~> M') ->  P K M' N)
+     -> ((forall N', (N ~> N') ->  P K M N'))
+     -> P K M N)
+  ->
+    Triple_SN K0 M0 N0 -> P K0 M0 N0.
+Proof.
+ intros K0 M0 N0 IH SN_K0_M0_N0.
+ induction SN_K0_M0_N0.
+ apply IH; auto.
+ intros; apply X; auto.
+ intros; apply IH; eauto.
+ intros; apply X0; auto.
+ intros; apply IH; eauto.
+ intros; apply X1; auto.
+ intros; apply IH; eauto.
+Qed.
+
+Lemma Triple_SN_intro:
+  forall K, Krw_norm K -> forall M, SN M -> forall N, SN N -> Triple_SN K M N.
+Proof.
+ intros K SN_K.
+ induction SN_K.
  intros M SN_M.
  induction SN_M.
  intros N SN_N.
  induction SN_N.
- rename m into M.
- rename m0 into N.
- induction K.
-  apply triple_sn.
-    discriminate.
-   auto.
-  auto.
-  apply triple_sn.
-   intros.
-   inversion H1; subst.
-   auto.
-  intros.
-  auto.
- auto.
+ constructor; sauto.
 Qed.
 
-Lemma triple_induction2 P K M N:
-  (forall M0 N0,
-     (M ~>> M0) ->
-     (N ~>> N0) ->
+Lemma triple_induction3 P:
+  (forall K M N,
+        (forall K',  (Krw K K') -> P K' M N)
+     -> (forall M',  (M ~> M') ->  P K M' N)
+     -> ((forall N', (N ~> N') ->  P K M N'))
+     -> P K M N)
+  ->
+  forall K M N,
+    Krw_norm K -> SN M -> SN N -> P K M N.
+Proof.
+ intros IH K M N SN_K SN_M SN_N.
+ apply triple_induction2_strong; auto.
+ apply Triple_SN_intro; auto.
+Qed.
+
+Lemma triple_induction3_scoped P:
+  forall K0 M0 N0,
+  (forall K M N,
+     Krw_rt K0 K -> (M0 ~>> M) -> (N0 ~>> N) ->
+        (forall K',  (Krw K K') -> P K' M N)
+     -> (forall M',  (M ~> M') ->  P K M' N)
+     -> ((forall N', (N ~> N') ->  P K M N'))
+     -> P K M N)
+  ->
+    Krw_norm K0 -> SN M0 -> SN N0 -> P K0 M0 N0.
+Proof.
+ intros K0 M0 N0 IH SN_K0 SN_M0 SN_N0.
+ apply triple_induction2_strong_scoped; auto.
+ apply Triple_SN_intro; auto.
+Qed.
+
+Lemma SN_plug_K_M:
+  forall K M,
+    SN (plug K M) -> SN M.
+Proof.
+Admitted.
+
+(* Induction on the reduction sequences of three objects: K, M and N. *)
+Lemma triple_induction P K0 M0 N0:
+  (forall K M N,
+     (Krw_rt K0 K) ->
+     (M0 ~>> M) ->
+     (N0 ~>> N) ->
      (
        (forall K', (Krw K K') -> P K' M N)
        -> (forall M', (M ~> M') -> P K M' N)
-       -> ((forall N', (N ~> N') -> P K M N'))
+       -> (forall N', (N ~> N') -> P K M N')
        -> P K M N))
   ->
-  SN M -> SN N -> P K M N.
+  SN (plug K0 M0) -> SN (plug K0 N0) -> P K0 M0 N0.
 Proof.
-Admitted.
+  intros.
+  assert (Krw_norm K0).
+  eapply SN_plug_Krw_norm; seauto.
+  assert (SN M0).
+  eapply SN_plug_K_M; seauto.
+  assert (SN N0).
+  eapply SN_plug_K_M; seauto.
+  apply triple_induction3_scoped; eauto.
+Qed.
 
 Lemma SN_K_Union:
   forall K,
   forall M N, SN (plug K M) -> SN (plug K N) -> SN (plug K (TmUnion M N)).
 Proof.
  induction K.
- intros.
+  intros.
   simpl in *.
   double_induction_SN M N.
   intros.
@@ -1118,44 +1249,47 @@ Proof.
   eauto using Rw_trans_preserves_SN.
   intros.
  remember (Iterate t K) as K0.
- apply triple_induction with (K := K0) (M := M) (N := N); [|sauto|sauto].
- intros.
- subst; simpl.
+ subst; simpl in H, H0 |- *.
+(* DOH! This lemma got messed up when I mended triple_induction. *)
 
- apply reducts_SN.
- intros Z H_rw.
- simpl in H_rw.
- apply Neutral_Lists in H_rw; [| sauto].
- destruct H_rw as [[M' [Z_def rw]] | [K' [Z_def rw]]].
- (* Case: rw is within TmBind (TmUnion M N) t *)
-  subst.
-  inversion rw; subst.
-    apply IHK.
-     simpl in *.
-     auto.
-    simpl in *.
-    auto.
-   inversion H9.
+(*  apply triple_induction with (K0 := K) (M0 := TmBind M t) (N0 := TmBind N t); [|sauto|sauto]. *)
+(*  intros. *)
 
- (* Case: rw is within t of TmBind (TmUnion M N) t *)
-  subst.
-  change (SN (plug (Iterate n' K) (TmUnion M N))).
-  assert (Krw (Iterate t K) (Iterate n' K)).
-  unfold Krw.
-  simpl.
-  intros.
-  apply Rw_under_K.
-  eauto.
-  apply H3.
-  auto.
+(*  apply reducts_SN. *)
+(*  intros Z H_rw. *)
+(*  simpl in H_rw. *)
+(*  apply Neutral_Lists in H_rw; [| sauto]. *)
+(*  destruct H_rw as [[M' [Z_def rw]] | [K' [Z_def rw]]]. *)
+(*  (* Case: rw is within TmBind (TmUnion M N) t *) *)
+(*   subst. *)
+(*   inversion rw; subst. *)
+(*     apply IHK. *)
+(*      simpl in *. *)
+(*      auto. *)
+(*     simpl in *. *)
+(*     auto. *)
+(*    inversion H9. *)
 
- (* Case: rw is within K *)
- subst.
- change (SN (plug (Iterate t K') (TmUnion M N))).
- apply H3.
- apply iterate_reduce.
- auto.
-Qed.
+(*  (* Case: rw is within t of TmBind (TmUnion M N) t *) *)
+(*   subst. *)
+(*   change (SN (plug (Iterate n' K) (TmUnion M N))). *)
+(*   assert (Krw (Iterate t K) (Iterate n' K)). *)
+(*   unfold Krw. *)
+(*   simpl. *)
+(*   intros. *)
+(*   apply Rw_under_K. *)
+(*   eauto. *)
+(*   apply H3. *)
+(*   auto. *)
+
+(*  (* Case: rw is within K *) *)
+(*  subst. *)
+(*  change (SN (plug (Iterate t K') (TmUnion M N))). *)
+(*  apply H3. *)
+(*  apply iterate_reduce. *)
+(*  auto. *)
+(* Qed. *)
+Admitted.
 
 Lemma ReducibleK_Union:
   forall T M N,
@@ -1378,6 +1512,11 @@ Proof.
  sauto.
 Qed.
 
+(* Lemma SN_plug_Krw_norm: *)
+(*   forall K M, SN (plug K M) -> Krw_norm K. *)
+(* Proof. *)
+(* Admitted. *)
+
 Lemma SN_beta_withdraw_under_k:
   forall K L N,
     SN L ->
@@ -1388,16 +1527,118 @@ Proof.
  assert (SN N).
   apply SN_push_under_k in H0.
   eauto using SN_beta_withdraw.
- apply triple_induction2 with (K:=K) (M:=N) (N:=L); auto.  (* XXX rename to triple_induction_SN *)
+  apply triple_induction2_weak with (K:=K) (M:=N) (N:=L);
+     eauto using SN_plug_Krw_norm.  (* XXX Working HERE *)
+  (* - intros. *)
+  (*   apply reducts_SN. *)
+  (*   intros. *)
+  (*   apply Neutral_Lists in H3; auto. *)
+  (*   destruct H3 as [[M' [H7a H7b]] | [K' [H7a H7b]]]. *)
+  (*   * admit. *)
+  (*   * subst. *)
+  (*     apply H2. *)
+  (*     auto. *)
+  (* -  *)
+  (*   * inversion H7b; subst; eauto. *)
+  (*     admit. *)
+  (*     admit. *)
+  (*     admit. *)
+  (*   * *)
+Admitted.
+
+Lemma subst_env_compat_rw_2:
+  forall L L' M M',
+    (L ~> L') ->
+    (M ~> M') ->
+    forall n,
+      (subst_env n (L::nil) M ~> subst_env n (L'::nil) M').
+Proof.
+Admitted.
+
+Lemma shift_preserves_rw:
+  forall L L' n,
+    (L ~> L') ->
+    shift n 1 L ~> shift n 1 L'.
+Proof.
+ induction L; intros; inversion H; subst; simpl; eauto.
+ apply Rw_beta.
+ (* Compare beta_with_unshift. *)
+ admit.
+Admitted.
+
+Lemma unshift_substitution_doubly_preserves_rw:
+  forall M M' L L' : Term,
+  (L ~> L') ->
+  (M ~> M') ->
+  unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) M) ~>
+  unshift 0 1 (subst_env 0 (shift 0 1 L' :: nil) M').
+Proof.
  intros.
- apply reducts_SN.
- intros.
- apply Neutral_Lists in H7; auto.
- destruct H7 as [[M' [H7a H7b]] | [K' [H7a H7b]]].
-  inversion H7b; subst; eauto.
-  inversion H10; subst; eauto.
- subst.
+ apply unshift_preserves_rw. (* Should be rw_compat_unshift *)
+ apply subst_env_compat_rw_2; auto.
+ apply shift_preserves_rw; auto.
+Qed.
+
+Lemma unshift_substitution_doubly_preserves_rw_rt:
+  forall M M' L L' : Term,
+  (L ~>> L') ->
+  (M ~>> M') ->
+  unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) M) ~>>
+  unshift 0 1 (subst_env 0 (shift 0 1 L' :: nil) M').
+Proof.
+Admitted.
+
+Lemma unshift_substitution_preserves_rw_rt:
+  forall M M' L : Term,
+  (M ~>> M') ->
+  unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) M) ~>>
+  unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) M').
+Proof.
+  intros.
+  induction H.
+  * constructor 1.
+    subst; auto.
+  * constructor 2.
+    apply unshift_substitution_preserves_rw; auto.
+  * econstructor 3; eauto.
+Qed.
+
+Lemma plug_rw_rt:
+  forall K K' M M', Krw_rt K K' -> (M ~>> M') -> (plug K M ~>> plug K' M').
+Proof.
+  intros.
+ assert (plug K M ~>> plug K' M).
+ apply Krw_rt_Rw_rt; auto.
+ assert (plug K' M ~>> plug K' M').
+  apply Rw_rt_under_K; auto.
  eauto.
+Qed.
+
+Lemma onward_christian_soldiers_1:
+  forall K K0, Krw_rt K K0 ->
+  forall N N0, (N ~>> N0) ->
+  forall L L0, (L ~>> L0) ->
+    plug K (unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) N)) ~>>
+    plug K0 (unshift 0 1 (subst_env 0 (shift 0 1 L0 :: nil) N0)).
+Proof.
+ intros.
+ assert (unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) N) ~>>
+         unshift 0 1 (subst_env 0 (shift 0 1 L0 :: nil) N0)).
+ apply unshift_substitution_doubly_preserves_rw_rt; auto.
+ apply plug_rw_rt; auto.
+Qed.
+
+Lemma onward_christian_soldiers_2:
+  forall K K0, Krw_rt K K0 ->
+  forall N N0, (N ~>> N0) ->
+  forall L L0, (L ~>> L0) ->
+    SN (plug K (unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) N))) ->
+    SN (plug K0 (unshift 0 1 (subst_env 0 (shift 0 1 L0 :: nil) N0))).
+Proof.
+ intros.
+ eapply Rw_trans_preserves_SN.
+  apply H2.
+ apply onward_christian_soldiers_1; auto.
 Qed.
 
 Lemma bind_sn_withdraw:
@@ -1410,21 +1651,23 @@ Proof.
  assert (SN N).
   apply SN_push_under_k in H0.
   eauto using SN_beta_withdraw.
- apply triple_induction2 with (K:=K) (M:=N) (N:=L); auto.  (* XXX rename to triple_induction_SN *)
- intros.
+ apply triple_induction3_scoped with (K0:=K) (M0:=N) (N0:=L);
+    eauto using SN_plug_Krw_norm.  (* XXX rename to triple_induction_SN *)
+ intros K0 N0 L0 ? ? ? IHK0 IHM0 IHL0.
  apply reducts_SN.
- intros.
- apply Neutral_Lists in H7; try auto.
- destruct H7 as [[M' [H7a H7b]] | [K' [H7a H7b]]].
-  inversion H7b; subst.
-    apply SN_beta_withdraw_under_k; sauto.
-   inversion H10.
-   subst.
-   apply H6.
-   sauto.
+ intros Z redn.
+ apply Neutral_Lists in redn; try auto.
+ destruct redn as [[M' [redn_a redn_b]] | [K' [redn_a redn_b]]].
+  inversion redn_b; subst.
+    apply SN_beta_withdraw_under_k; auto.
+     apply Rw_trans_preserves_SN with L; auto.
+    eapply onward_christian_soldiers_2; seauto.
+   inversion H8.
+  subst.
+   apply IHL0; sauto.
   seauto.
  subst.
- eauto using H4.
+ eauto using IHK0.
 Qed.
 
 Lemma Bind_Reducible :
