@@ -1742,62 +1742,22 @@ Lemma Bind_Reducible_core:
     SN N ->
     forall K : Continuation,
       ReducibleK Reducible K T ->
+      Krw_norm K ->
       (forall L : Term,
          Reducible L S ->
          SN (plug K (unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) N)))) ->
-      Krw_norm K ->
         SN (plug K (TmBind M N)).
 Proof.
  intros.
- apply triple_induction3_scoped with (K0:=K) (M0:=M) (N0:=N); auto.
+ enough (SN (plug (Iterate N K) M)) by auto.
+ simpl in X.
+ apply X.
+ simpl.
  intros.
- constructor.
- intros.
- apply Neutral_Lists in H9; auto.
- destruct H9 as [[M' [s1 s2]] | [K1 [s1 s2]]]; subst.
- (* Case: Reduction is in TmBind M0 N0 *)
-  inversion s2; subst.
-  (* Case: Subject is TmNull; redend is TmNull *)
-      assert (ReducibleK Reducible K0 T).
-       apply Krw_rt_preserves_ReducibleK with K; sauto.
-      eauto using ReducibleK_Null.
-  (* Case: Subject is TmSingle; substitution occurs *)
-     constructor; intros.
-     apply Neutral_Lists in H9; auto.
-     destruct H9 as [[M' [A B]] | [K' [A B]]]; subst.
-      inversion B; subst.
-        lapply (X1 x).
-         apply onward_christian_soldiers_2; auto.
-        apply Reducible_TmSingle_inv.
-        eauto using Rw_rt_preserves_Reducible.
-       inversion H12; subst.
-       specialize (H8 n').
-       specialize (H8 H10).
-       inversion H8.
-       apply H9.
-       apply Rw_under_K.
-       sauto.
-      specialize (H7 (TmSingle n2)).
-      lapply H7; intros.
-       inversion H9.
-       apply H10.
-       apply Rw_under_K.
-       sauto.
-      sauto.
-     lapply (H6 K'); auto.
-     apply plug_SN_rw; auto.
-  (* Case: Subject is TmUnion; redend unzips *)
-    assert (ReducibleK Reducible K0 T).
-     eauto using Krw_rt_preserves_ReducibleK.
-    (* TO DO: Need induction on K *)
-    apply SN_K_Union.
-     admit (* Actually false b/c no context reduction inside TmUnion *).
-    admit (* Actually false b/c no context reduction inside TmUnion *).
-   apply H7; auto.
-  apply H8; auto.
- (* Case: Reduction is in K *)
- apply H6; auto.
-Admitted.
+ apply bind_sn_withdraw.
+  eauto using Reducible_SN.
+ auto.
+Qed.
 
 Lemma Bind_Reducible :
   forall M S N T,
