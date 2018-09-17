@@ -857,16 +857,6 @@ Proof.
  auto.
 Qed.
 
-Lemma Krw_rt_Rw:
-   forall K K' M, Krw_rt K K' -> (plug K M ~>> plug K' M).
- intros.
- induction H.
-   subst; sauto.
-  apply Rw_rt_step.
-  sauto.
- seauto.
-Qed.
-
 Lemma rw_step_induction:
   forall P,
     (forall M N, (M ~> N) -> P M -> P N)
@@ -1559,42 +1549,6 @@ Proof.
  sauto.
 Qed.
 
-(* Lemma SN_plug_Krw_norm: *)
-(*   forall K M, SN (plug K M) -> Krw_norm K. *)
-(* Proof. *)
-(* Admitted. *)
-
-Lemma SN_beta_withdraw_under_k:
-  forall K L N,
-    SN L ->
-    SN (plug K (unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) N))) ->
-    SN (plug K (TmAbs N @ L)).
-Proof.
- intros.
- assert (SN N).
-  apply SN_push_under_k in H0.
-  eauto using SN_beta_withdraw.
-  assert (Krw_norm K).
-  eauto using SN_plug_Krw_norm.
-  apply triple_induction2_weak with (K:=K) (M:=N) (N:=L);
-     eauto using SN_plug_Krw_norm.  (* XXX Working HERE *)
-  (* - intros. *)
-  (*   apply reducts_SN. *)
-  (*   intros. *)
-  (*   apply Neutral_Lists in H3; auto. *)
-  (*   destruct H3 as [[M' [H7a H7b]] | [K' [H7a H7b]]]. *)
-  (*   * admit. *)
-  (*   * subst. *)
-  (*     apply H2. *)
-  (*     auto. *)
-  (* -  *)
-  (*   * inversion H7b; subst; eauto. *)
-  (*     admit. *)
-  (*     admit. *)
-  (*     admit. *)
-  (*   * *)
-Admitted.
-
 Lemma subst_env_compat_rw_2:
   forall L L' M M',
     (L ~> L') ->
@@ -1611,9 +1565,23 @@ Lemma shift_preserves_rw:
 Proof.
  induction L; intros; inversion H; subst; simpl; eauto.
  apply Rw_beta.
- (* Compare beta_with_unshift. *)
- admit.
-Admitted.
+ rewrite <- shift_shift_commute by omega.
+ replace (shift (S n) 1 (shift 0 1 L2) :: nil)
+    with (map (shift (S n) 1) ((shift 0 1 L2) :: nil)) by auto.
+ rewrite <- shift_subst_commute_hi by (simpl; omega).
+ rewrite <- Shift.shift_unshift_commute; try omega.
+  trivial.
+ intro.
+ pose (subst_Freevars N (shift 0 1 L2 :: nil) 0).
+ apply set_union_elim with (a:=0) in i.
+ simpl in i.
+  destruct i.
+   pose (shift_freevars L2 0 0).
+   intuition.
+ apply set_filter_elim in H1.
+ intuition.
+ auto.
+Qed.
 
 Lemma unshift_substitution_doubly_preserves_rw:
   forall M M' L L' : Term,
@@ -1628,14 +1596,14 @@ Proof.
  apply shift_preserves_rw; auto.
 Qed.
 
-Lemma unshift_substitution_doubly_preserves_rw_rt:
-  forall M M' L L' : Term,
-  (L ~>> L') ->
-  (M ~>> M') ->
-  unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) M) ~>>
-  unshift 0 1 (subst_env 0 (shift 0 1 L' :: nil) M').
+Lemma unshift_preserves_rw_rt
+     : forall (M M' : Term) (n k : nat),
+       (M ~>> M') -> unshift n k M ~>> unshift n k M'.
 Proof.
-Admitted.
+ intros.
+ induction H; subst; eauto.
+ auto using Rw_rt_step, unshift_preserves_rw.
+Qed.
 
 Lemma unshift_substitution_preserves_rw_rt:
   forall M M' L : Term,
@@ -1650,6 +1618,157 @@ Proof.
   * constructor 2.
     apply unshift_substitution_preserves_rw; auto.
   * econstructor 3; eauto.
+Qed.
+
+Lemma Rw_rt_Pair_left:
+  forall m1 m2 n : Term, (m1 ~>> m2) -> (〈 m1, n 〉) ~>> (〈 m2, n 〉).
+Proof.
+ intros.
+ induction H; subst; eauto.
+Qed.
+
+Lemma Rw_rt_Pair_right:
+  forall m n1 n2 : Term, (n1 ~>> n2) -> (〈 m, n1 〉) ~>> (〈 m, n2 〉).
+Proof.
+ intros.
+ induction H; subst; eauto.
+Qed.
+
+Lemma Rw_rt_App_left:
+  forall m1 m2 n : Term, (m1 ~>> m2) -> (m1@n) ~>> (m2@n).
+Proof.
+ intros.
+ induction H; subst; eauto.
+Qed.
+
+Lemma Rw_rt_App_right:
+  forall m n1 n2 : Term, (n1 ~>> n2) -> (m@n1) ~>> (m@n2).
+Proof.
+ intros.
+ induction H; subst; eauto.
+Qed.
+
+Lemma Rw_rt_Proj:
+  forall (b:bool) (M M' : Term), (M ~>> M') -> (TmProj b M) ~>> (TmProj b M').
+Proof.
+ intros.
+ induction H; subst; eauto.
+Qed.
+
+Lemma Rw_rt_Abs:
+  forall (M M' : Term), (M ~>> M') -> (TmAbs M) ~>> (TmAbs M').
+Proof.
+ intros.
+ induction H; subst; eauto.
+Qed.
+
+Lemma Rw_rt_Single:
+  forall (M M' : Term), (M ~>> M') -> (TmSingle M) ~>> (TmSingle M').
+Proof.
+  apply TmSingle_rw_rt. (* To do: Redundant! *)
+Qed.
+
+Lemma Rw_rt_Union_left:
+  forall m1 m2 n : Term, (m1 ~>> m2) -> (TmUnion m1 n) ~>> (TmUnion m2 n).
+Proof.
+ intros.
+ induction H; subst; eauto.
+ admit (* Actually not true! *).
+Admitted.
+
+Lemma Rw_rt_Union_right:
+  forall m n1 n2 : Term, (n1 ~>> n2) -> (TmUnion m n1) ~>> (TmUnion m n2).
+Proof.
+ intros.
+ induction H; subst; eauto.
+ admit (* Actually not true! *).
+Admitted.
+
+Lemma Rw_rt_Bind_left:
+  forall m1 m2 n : Term, (m1 ~>> m2) -> (TmBind m1 n) ~>> (TmBind m2 n).
+Proof.
+ intros.
+ induction H; subst; eauto.
+Qed.
+
+Lemma Rw_rt_Bind_right:
+  forall m n1 n2 : Term, (n1 ~>> n2) -> (TmBind m n1) ~>> (TmBind m n2).
+Proof.
+ intros.
+ induction H; subst; eauto.
+Qed.
+
+Lemma Rw_rt_shift:
+  forall L L', (L ~>> L') -> shift 0 1 L ~>> shift 0 1 L'.
+Proof.
+ intros.
+ induction H; subst; eauto.
+ auto using Rw_rt_step, shift_preserves_rw.
+Qed.
+
+Lemma subst_env_compat_rw_rt_A
+: forall M L L' : Term,
+    (L ~>> L') ->
+    forall n : nat, subst_env n (L :: nil) M ~>> subst_env n (L' :: nil) M.
+Proof.
+ induction M; subst; simpl; eauto; intros.
+        break; auto.
+        destruct (x - n).
+         destruct (le_gt_dec (x - n) 0); simpl; auto.
+        unfold nth_error; destruct n0; simpl; auto.
+       apply Rw_rt_trans with (TmPair (subst_env n (L'::nil) M1) (subst_env n (L::nil) M2)).
+        apply Rw_rt_Pair_left; auto.
+       apply Rw_rt_Pair_right; auto.
+      apply Rw_rt_Proj; auto.
+     apply Rw_rt_Abs; auto.
+     apply IHM.
+     apply Rw_rt_shift; auto.
+    apply Rw_rt_trans with (TmApp (subst_env n (L'::nil) M1) (subst_env n (L::nil) M2)).
+     apply Rw_rt_App_left; auto.
+    apply Rw_rt_App_right; auto.
+   apply Rw_rt_Single; auto.
+  apply Rw_rt_trans with (TmUnion (subst_env n (L'::nil) M1) (subst_env n (L::nil) M2)).
+   apply Rw_rt_Union_left; auto.
+  apply Rw_rt_Union_right; auto.
+ apply Rw_rt_trans with (TmBind (subst_env n (L'::nil) M1) (subst_env (S n) (shift 0 1 L::nil) M2)).
+  apply Rw_rt_Bind_left; auto.
+ apply Rw_rt_Bind_right; auto.
+ apply IHM2.
+ apply Rw_rt_shift; auto.
+Qed.
+
+Lemma subst_env_compat_rw_rt_B
+: forall L M M' : Term,
+    (M ~>> M') ->
+    forall n : nat, subst_env n (L :: nil) M ~>> subst_env n (L :: nil) M'.
+Proof.
+ intros.
+ induction H; subst; eauto using subst_env_compat_rw.
+Qed.
+
+Lemma subst_env_compat_rw_2_rt
+: forall L L' M M' : Term,
+    (L ~>> L') ->
+    (M ~>> M') ->
+    forall n : nat, subst_env n (L :: nil) M ~>> subst_env n (L' :: nil) M'.
+Proof.
+ intros.
+  apply Rw_rt_trans with (subst_env n (L :: nil) M').
+  apply subst_env_compat_rw_rt_B; auto.
+  apply subst_env_compat_rw_rt_A; auto.
+Qed.
+
+Lemma unshift_substitution_doubly_preserves_rw_rt:
+  forall M M' L L' : Term,
+  (L ~>> L') ->
+  (M ~>> M') ->
+  unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) M) ~>>
+  unshift 0 1 (subst_env 0 (shift 0 1 L' :: nil) M').
+Proof.
+ intros.
+ apply unshift_preserves_rw_rt. (* Should be rw_compat_unshift *)
+ apply subst_env_compat_rw_2_rt; auto.
+ apply Rw_rt_shift; auto.
 Qed.
 
 Lemma plug_rw_rt:
@@ -1688,6 +1807,33 @@ Proof.
  eapply Rw_trans_preserves_SN.
   apply H2.
  apply onward_christian_soldiers_1; auto.
+Qed.
+
+
+Lemma SN_beta_withdraw_under_k:
+  forall K L N,
+    SN L ->
+    SN (plug K (unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) N))) ->
+    SN (plug K (TmAbs N @ L)).
+Proof.
+ intros.
+ assert (SN N).
+  apply SN_push_under_k in H0.
+  eauto using SN_beta_withdraw.
+ assert (Krw_norm K).
+  eauto using SN_plug_Krw_norm.
+ apply triple_induction3_scoped with (K0:=K) (M0:=N) (N0:=L); auto.
+ intros.
+ apply reducts_SN.
+ intros.
+ apply Neutral_Lists in H9; auto.
+ destruct H9 as [[M' [H7a H7b]] | [K' [H7a H7b]]]; subst.
+ - inversion H7b; subst.
+   * eauto using onward_christian_soldiers_2.
+   * inversion H12; subst.
+     apply H7; sauto.
+   * apply H8; sauto.
+ - auto using H6.
 Qed.
 
 Lemma bind_sn_withdraw:
