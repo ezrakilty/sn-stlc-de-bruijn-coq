@@ -1527,6 +1527,8 @@ Proof.
  assert (SN N).
   apply SN_push_under_k in H0.
   eauto using SN_beta_withdraw.
+  assert (Krw_norm K).
+  eauto using SN_plug_Krw_norm.
   apply triple_induction2_weak with (K:=K) (M:=N) (N:=L);
      eauto using SN_plug_Krw_norm.  (* XXX Working HERE *)
   (* - intros. *)
@@ -1670,6 +1672,133 @@ Proof.
  eauto using IHK0.
 Qed.
 
+Lemma exists_reducible_continuation:
+  forall T, {K : Continuation & ReducibleK Reducible K T}.
+Proof.
+ intros.
+ exists Empty.
+ unfold ReducibleK.
+ simpl.
+ intros.
+ assert (SN M).
+  eauto using Reducible_SN.
+ auto using SN_TmSingle.
+Qed.
+
+Lemma SN_TmSingle_inv:
+  forall M : Term, SN (TmSingle M) -> SN M.
+Proof.
+  intros.
+  apply SN_embedding with (f := TmSingle) (Q := TmSingle M); auto.
+Qed.
+
+Axiom trivial : forall x, TmSingle x = plug Empty (TmSingle x).
+
+Lemma Reducible_TmSingle_inv :
+  forall T M, Reducible (TmSingle M) (TyList T) -> Reducible M T.
+(* Proof. *)
+(*  induction T; simpl; intuition; inversion a. *)
+(*          auto. *)
+(*         apply SN_TmSingle_inv. *)
+(*         replace (TmSingle M) with (plug Empty (TmSingle M)) by auto. *)
+(*         apply b. *)
+(*         intuition. *)
+(*         simpl. *)
+(*        apply SN_TmSingle; auto. *)
+(*        auto. *)
+(*       apply IHT1. *)
+(*       simpl. *)
+(*       intuition. *)
+(*        eauto. Check (b K). *)
+      
+(*       apply (b K). *)
+(*       intuition. *)
+(*       apply SN_under_K; apply SN_TmSingle; auto. *)
+(* Qed. *)
+Admitted.
+
+Hint Resolve rw_plug_lift.
+
+(* Goal *)
+(*   forall xs ys N0 K0, *)
+(*     (forall M' : Term, (TmUnion xs ys ~> M') -> SN (plug K0 (TmBind M' N0))) *)
+(*     -> SN (plug K0 (TmUnion (TmBind xs N0) (TmBind ys N0))). *)
+(* Proof. *)
+(*  induction K0; simpl. *)
+(*   intros. *)
+(*   constructor; intros Z HZ. *)
+(*   specialize (H Z). *)
+(*   lapply H. *)
+(*   admit. *)
+(* Qed. *)
+
+
+
+Lemma Bind_Reducible_core:
+  forall (M : Term) (S : Ty) (N : Term) (T : Ty),
+    Typing (S :: nil) N (TyList T) ->
+    Reducible M (TyList S) ->
+    SN M ->
+    SN N ->
+    forall K : Continuation,
+      ReducibleK Reducible K T ->
+      (forall L : Term,
+         Reducible L S ->
+         SN (plug K (unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) N)))) ->
+      Krw_norm K ->
+        SN (plug K (TmBind M N)).
+Proof.
+ intros.
+ apply triple_induction3_scoped with (K0:=K) (M0:=M) (N0:=N); auto.
+ intros.
+ constructor.
+ intros.
+ apply Neutral_Lists in H9; auto.
+ destruct H9 as [[M' [s1 s2]] | [K1 [s1 s2]]]; subst.
+ (* Case: Reduction is in TmBind M0 N0 *)
+  inversion s2; subst.
+  (* Case: Subject is TmNull; redend is TmNull *)
+      assert (ReducibleK Reducible K0 T).
+       apply Krw_rt_preserves_ReducibleK with K; sauto.
+      eauto using ReducibleK_Null.
+  (* Case: Subject is TmSingle; substitution occurs *)
+     constructor; intros.
+     apply Neutral_Lists in H9; auto.
+     destruct H9 as [[M' [A B]] | [K' [A B]]]; subst.
+      inversion B; subst.
+        lapply (X1 x).
+         apply onward_christian_soldiers_2; auto.
+        apply Reducible_TmSingle_inv.
+        eauto using Rw_rt_preserves_Reducible.
+       inversion H12; subst.
+       specialize (H8 n').
+       specialize (H8 H10).
+       inversion H8.
+       apply H9.
+       apply Rw_under_K.
+       sauto.
+      specialize (H7 (TmSingle n2)).
+      lapply H7; intros.
+       inversion H9.
+       apply H10.
+       apply Rw_under_K.
+       sauto.
+      sauto.
+     lapply (H6 K'); auto.
+     apply plug_SN_rw; auto.
+  (* Case: Subject is TmUnion; redend unzips *)
+    assert (ReducibleK Reducible K0 T).
+     eauto using Krw_rt_preserves_ReducibleK.
+    (* TO DO: Need induction on K *)
+    apply SN_K_Union.
+     admit (* Actually false b/c no context reduction inside TmUnion *).
+    admit (* Actually false b/c no context reduction inside TmUnion *).
+   apply H7; auto.
+  apply H8; auto.
+ (* Case: Reduction is in K *)
+ apply H6; auto.
+Admitted.
+
 Lemma Bind_Reducible :
   forall M S N T,
     Typing (S :: nil) N (TyList T)
@@ -1679,27 +1808,32 @@ Lemma Bind_Reducible :
                                (TyList T))
     -> Reducible (TmBind M N) (TyList T).
 Proof.
- simpl.
  intros.
- intuition.
- apply TBind with S; auto.
-  (* destruct (Reducible_inhabited S) as [x r]. *)
-  (* pose (p := X0 x r). *)
-  (* destruct p. *)
-  (* eapply Rw_beta_preserves_types_conv; seauto. *)
- pose (K' := Iterate N K).
- assert (SN (plug K' M)).
-  apply b.
-  intros.
-  subst K'.
-  simpl.
-  apply bind_sn_withdraw.
-   solve [eauto using Reducible_SN].
-  apply X0.
-   auto.
-  apply X.
- change (SN (plug (Iterate N K) M)).
- sauto.
+ split.
+  intuition; eauto.
+ intros.
+ simpl in X0.
+ assert (forall L, Reducible L S ->
+                   SN (plug K (unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) N)))).
+ intros.
+  apply X0; auto.
+ assert (SN M).
+ eapply Reducible_SN; eauto.
+ assert (Krw_norm K).
+ apply ReducibleK_Krw_norm with T.
+  auto.
+ solve [apply Reducible_inhabited].
+ assert (SN N).
+  destruct (Reducible_inhabited S) as [L L_red].
+  specialize (X0 L L_red).
+  destruct X0 as [t s].
+  specialize (s Empty).
+  lapply s.
+   simpl.
+   apply SN_beta_withdraw.
+  apply ReducibleK_Empty.
+ clear X0.
+ eapply Bind_Reducible_core; eauto.
 Qed.
 
 Lemma shift_closed_noop_map:
@@ -1874,3 +2008,6 @@ Qed.
 (* Print reducibility. (* Huzzah! *) *)
 
 Print Assumptions normalization.
+
+(* Until I did all this, I didn't realize that substitution was a big
+ask; a complex function with an algorithm in its own right. *)
