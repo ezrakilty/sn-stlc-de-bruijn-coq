@@ -1235,61 +1235,108 @@ Proof.
   apply triple_induction3_scoped; eauto.
 Qed.
 
+Lemma Rw_rt_TmBind:
+  forall L L' M,
+    (L ~>> L') -> (TmBind L M ~>> TmBind L' M).
+Proof.
+ intros L L' M H.
+ induction H; subst; eauto.
+Qed.
+
+Lemma SN_via_Krw_rt :
+  forall K K' M,
+    Krw_rt K K' -> SN (plug K M) -> SN (plug K' M).
+Proof.
+ intros.
+ assert (plug K M ~>> plug K' M).
+  auto using Krw_rt_Rw_rt.
+ eauto using Rw_trans_preserves_SN.
+Qed.
+
+Lemma Krw_norm_from_SN:
+  forall Q, SN Q -> forall K M, (Q ~>> plug K M) -> Krw_norm K.
+Proof.
+ intros Q H.
+ induction H.
+ constructor.
+ intros.
+ eapply last_step_first_step_lemma in H0.
+  destruct H0.
+  destruct p.
+  eapply H; eauto.
+ eauto.
+Qed.
+
 Lemma SN_K_Union:
   forall K,
   forall M N, SN (plug K M) -> SN (plug K N) -> SN (plug K (TmUnion M N)).
 Proof.
- induction K.
-  intros.
+ intros K'.
+ pattern K'.
+ apply Ksize_induction_strong; intros.
+  (* clear K'. *)
+  (* destruct K; simpl in *. *)
+  (* double_induction_SN M N. *)
+  (* intros. *)
+  (* apply SN_Union; auto. *)
+  (*  eauto using Rw_trans_preserves_SN. *)
+  (* eauto using Rw_trans_preserves_SN. *)
+  (* easy. *)
+
+ clear K'.
+
+ assert (SN M) by (eauto using SN_push_under_k).
+ assert (SN N) by (eauto using SN_push_under_k).
+ assert (Krw_norm K) by (eauto using Krw_norm_from_SN).
+ apply triple_induction3_scoped with (K0 := K) (M0 := M) (N0 := N); auto.
+ intros.
+
+ apply reducts_SN.
+ intros Z H_rw.
+
+ destruct K0.
   simpl in *.
-  double_induction_SN M N.
-  intros.
-  apply SN_Union; auto.
-   eauto using Rw_trans_preserves_SN.
-  eauto using Rw_trans_preserves_SN.
-  intros.
- remember (Iterate t K) as K0.
- subst; simpl in H, H0 |- *.
-(* DOH! This lemma got messed up when I mended triple_induction. *)
+  inversion H_rw.
 
-(*  apply triple_induction with (K0 := K) (M0 := TmBind M t) (N0 := TmBind N t); [|sauto|sauto]. *)
-(*  intros. *)
+ simpl in H_rw.
 
-(*  apply reducts_SN. *)
-(*  intros Z H_rw. *)
-(*  simpl in H_rw. *)
-(*  apply Neutral_Lists in H_rw; [| sauto]. *)
-(*  destruct H_rw as [[M' [Z_def rw]] | [K' [Z_def rw]]]. *)
-(*  (* Case: rw is within TmBind (TmUnion M N) t *) *)
-(*   subst. *)
-(*   inversion rw; subst. *)
-(*     apply IHK. *)
-(*      simpl in *. *)
-(*      auto. *)
-(*     simpl in *. *)
-(*     auto. *)
-(*    inversion H9. *)
+ apply Neutral_Lists in H_rw; [| sauto].
+ destruct H_rw as [[M' [Z_def rw]] | [K' [Z_def rw]]].
+ (* Case: rw is within TmBind (TmUnion M N) t *)
+  subst.
+  inversion rw; subst.
+    assert (Ksize K0 < Ksize K).
+     assert (Ksize (Iterate t K0) <= Ksize K).
+      apply Krw_rt_conserves_Ksize with (K := K); auto.
+     simpl in *; omega.
+    apply H; auto.
+     eapply plug_SN_rw_rt with (TmBind M t); auto.
+      apply Rw_rt_TmBind; sauto.
+     change (SN (plug (Iterate t K0) M)).
+     eauto using SN_via_Krw_rt.
+    eapply plug_SN_rw_rt with (TmBind N t); auto.
+     apply Rw_rt_TmBind; sauto.
+    change (SN (plug (Iterate t K0) N)).
+     eauto using SN_via_Krw_rt.
+   inversion H14. (* TO DO: Solves immediately, because TmUnion doesn't reduce. *)
 
-(*  (* Case: rw is within t of TmBind (TmUnion M N) t *) *)
-(*   subst. *)
-(*   change (SN (plug (Iterate n' K) (TmUnion M N))). *)
-(*   assert (Krw (Iterate t K) (Iterate n' K)). *)
-(*   unfold Krw. *)
-(*   simpl. *)
-(*   intros. *)
-(*   apply Rw_under_K. *)
-(*   eauto. *)
-(*   apply H3. *)
-(*   auto. *)
+ (* Case: rw is within t of TmBind (TmUnion M N) t *)
+  change (SN (plug (Iterate n' K0) (TmUnion M0 N0))).
+  assert (Krw (Iterate t K0) (Iterate n' K0)).
+   unfold Krw.
+   simpl.
+   intros.
+   apply Rw_under_K.
+   eauto.
+  apply H8.
+  sauto.
 
-(*  (* Case: rw is within K *) *)
-(*  subst. *)
-(*  change (SN (plug (Iterate t K') (TmUnion M N))). *)
-(*  apply H3. *)
-(*  apply iterate_reduce. *)
-(*  auto. *)
-(* Qed. *)
-Admitted.
+ (* Case: rw is within K *)
+ subst.
+ change (SN (plug (Iterate t K') (TmUnion M0 N0))).
+ apply H8; auto.
+ apply iterate_reduce; sauto.
+Qed.
 
 Lemma ReducibleK_Union:
   forall T M N,
