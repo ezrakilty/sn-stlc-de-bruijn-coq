@@ -2,8 +2,8 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-<link href="coqdoc.css" rel="stylesheet" type="text/css"/>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
 <title>TakeDrop</title>
 </head>
 
@@ -19,50 +19,50 @@
 <h1 class="libtitle">Library TakeDrop</h1>
 
 <div class="code">
-<span class="id" type="keyword">Require</span> <span class="id" type="keyword">Import</span> <span class="id" type="var">List</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">List</span>.<br/>
 
 <br/>
 </div>
 
 <div class="doc">
-Drop the first <span class="inlinecode"><span class="id" type="var">k</span></span> elements of a list. 
+Drop the first <span class="inlinecode"><span class="id" title="var">k</span></span> elements of a list. 
 </div>
 <div class="code">
-<span class="id" type="keyword">Fixpoint</span> <span class="id" type="var">drop</span> <span class="id" type="var">A</span> <span class="id" type="var">k</span> (<span class="id" type="var">xs</span>:<span class="id" type="var">list</span> <span class="id" type="var">A</span>) {<span class="id" type="keyword">struct</span> <span class="id" type="var">k</span>} :=<br/>
-<span class="id" type="keyword">match</span> <span class="id" type="var">k</span> <span class="id" type="keyword">with</span><br/>
-| 0 ⇒ <span class="id" type="var">xs</span><br/>
-| <span class="id" type="var">S</span> <span class="id" type="var">k'</span> ⇒ <span class="id" type="keyword">match</span> <span class="id" type="var">xs</span> <span class="id" type="keyword">with</span><br/>
-&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" type="var">x</span>::<span class="id" type="var">xs</span> ⇒ <span class="id" type="var">drop</span> <span class="id" type="var">A</span> <span class="id" type="var">k'</span> <span class="id" type="var">xs</span><br/>
-&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" type="var">nil</span> ⇒ <span class="id" type="var">nil</span><br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="keyword">end</span><br/>
-<span class="id" type="keyword">end</span>.<br/>
+<span class="id" title="keyword">Fixpoint</span> <span class="id" title="var">drop</span> <span class="id" title="var">A</span> <span class="id" title="var">k</span> (<span class="id" title="var">xs</span>:<span class="id" title="var">list</span> <span class="id" title="var">A</span>) {<span class="id" title="keyword">struct</span> <span class="id" title="var">k</span>} :=<br/>
+<span class="id" title="keyword">match</span> <span class="id" title="var">k</span> <span class="id" title="keyword">with</span><br/>
+| 0 ⇒ <span class="id" title="var">xs</span><br/>
+| <span class="id" title="var">S</span> <span class="id" title="var">k'</span> ⇒ <span class="id" title="keyword">match</span> <span class="id" title="var">xs</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">x</span>::<span class="id" title="var">xs</span> ⇒ <span class="id" title="var">drop</span> <span class="id" title="var">A</span> <span class="id" title="var">k'</span> <span class="id" title="var">xs</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">nil</span> ⇒ <span class="id" title="var">nil</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+<span class="id" title="keyword">end</span>.<br/>
 
 <br/>
 </div>
 
 <div class="doc">
-Take just the first <span class="inlinecode"><span class="id" type="var">k</span></span> elements of a list (dropping the rest). 
+Take just the first <span class="inlinecode"><span class="id" title="var">k</span></span> elements of a list (dropping the rest). 
 </div>
 <div class="code">
-<span class="id" type="keyword">Fixpoint</span> <span class="id" type="var">take</span> <span class="id" type="var">A</span> <span class="id" type="var">k</span> (<span class="id" type="var">xs</span>:<span class="id" type="var">list</span> <span class="id" type="var">A</span>) {<span class="id" type="keyword">struct</span> <span class="id" type="var">k</span>} :=<br/>
-<span class="id" type="keyword">match</span> <span class="id" type="var">k</span> <span class="id" type="keyword">with</span><br/>
-| 0 ⇒ <span class="id" type="var">nil</span><br/>
-| <span class="id" type="var">S</span> <span class="id" type="var">k'</span> ⇒ <span class="id" type="keyword">match</span> <span class="id" type="var">xs</span> <span class="id" type="keyword">with</span><br/>
-&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" type="var">x</span>::<span class="id" type="var">xs</span> ⇒ <span class="id" type="var">x</span> :: <span class="id" type="var">take</span> <span class="id" type="var">A</span> <span class="id" type="var">k'</span> <span class="id" type="var">xs</span><br/>
-&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" type="var">nil</span> ⇒ <span class="id" type="var">nil</span><br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="keyword">end</span><br/>
-<span class="id" type="keyword">end</span>.<br/>
+<span class="id" title="keyword">Fixpoint</span> <span class="id" title="var">take</span> <span class="id" title="var">A</span> <span class="id" title="var">k</span> (<span class="id" title="var">xs</span>:<span class="id" title="var">list</span> <span class="id" title="var">A</span>) {<span class="id" title="keyword">struct</span> <span class="id" title="var">k</span>} :=<br/>
+<span class="id" title="keyword">match</span> <span class="id" title="var">k</span> <span class="id" title="keyword">with</span><br/>
+| 0 ⇒ <span class="id" title="var">nil</span><br/>
+| <span class="id" title="var">S</span> <span class="id" title="var">k'</span> ⇒ <span class="id" title="keyword">match</span> <span class="id" title="var">xs</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">x</span>::<span class="id" title="var">xs</span> ⇒ <span class="id" title="var">x</span> :: <span class="id" title="var">take</span> <span class="id" title="var">A</span> <span class="id" title="var">k'</span> <span class="id" title="var">xs</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">nil</span> ⇒ <span class="id" title="var">nil</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+<span class="id" title="keyword">end</span>.<br/>
 
 <br/>
-<span class="id" type="keyword">Lemma</span> <span class="id" type="var">take_drop</span> :<br/>
-&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">A</span> <span class="id" type="var">n</span> <span class="id" type="var">xs</span>, <span class="id" type="var">take</span> <span class="id" type="var">A</span> <span class="id" type="var">n</span> <span class="id" type="var">xs</span> ++ <span class="id" type="var">drop</span> <span class="id" type="var">A</span> <span class="id" type="var">n</span> <span class="id" type="var">xs</span> = <span class="id" type="var">xs</span>.<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">take_drop</span> :<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">A</span> <span class="id" title="var">n</span> <span class="id" title="var">xs</span>, <span class="id" title="var">take</span> <span class="id" title="var">A</span> <span class="id" title="var">n</span> <span class="id" title="var">xs</span> ++ <span class="id" title="var">drop</span> <span class="id" title="var">A</span> <span class="id" title="var">n</span> <span class="id" title="var">xs</span> = <span class="id" title="var">xs</span>.<br/>
 
 <br/>
-<span class="id" type="keyword">Lemma</span> <span class="id" type="var">length_take</span> :<br/>
-&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">A</span> <span class="id" type="var">k</span> (<span class="id" type="var">xs</span> : <span class="id" type="var">list</span> <span class="id" type="var">A</span>), <span class="id" type="var">length</span> (<span class="id" type="var">take</span> <span class="id" type="var">A</span> <span class="id" type="var">k</span> <span class="id" type="var">xs</span>) = <span class="id" type="var">k</span>.<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">length_take</span> :<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">A</span> <span class="id" title="var">k</span> (<span class="id" title="var">xs</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>), <span class="id" title="var">length</span> (<span class="id" title="var">take</span> <span class="id" title="var">A</span> <span class="id" title="var">k</span> <span class="id" title="var">xs</span>) = <span class="id" title="var">k</span>.<br/>
 
 <br/>
-<span class="id" type="keyword">Hint Rewrite</span> <span class="id" type="var">take_drop</span> <span class="id" type="var">length_take</span> : <span class="id" type="var">lists</span>.<br/>
+<span class="id" title="keyword">Hint Rewrite</span> <span class="id" title="var">take_drop</span> <span class="id" title="var">length_take</span> : <span class="id" title="var">lists</span>.<br/>
 </div>
 </div>
 
