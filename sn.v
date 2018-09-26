@@ -311,196 +311,197 @@ Lemma Reducible_properties:
 Proof.
  induction T.
  (* Case TyBase *)
-   splitN 3.
-   (* Exists a Reducible term at TyBase *)
-     simpl; seauto.
-   (* Reducible -> SN *)
-    simpl.
-    solve [tauto].
-   (* Neutral terms withdraw *)
-   unfold Reducible in *.
-   intuition (apply reducts_SN).
-   solve [firstorder].
+    splitN 3.
+    (* Exists a Reducible term at TyBase *)
+      simpl; seauto.
+    (* Reducible -> SN *)
+     simpl.
+     solve [tauto].
+    (* Neutral terms withdraw *)
+    unfold Reducible in *.
+    intuition (apply reducts_SN).
+    solve [firstorder].
 
-  (* Case TyPair *)
-  splitN 3.
-  (* Case: exists a reducible term *)
-    destruct IHT1 as [[[M M_red] Reducible_SN_T1] Neutral_Reducible_T1].
-    destruct IHT2 as [[[N N_red] Reducible_SN_T2] Neutral_Reducible_T2].
-    exists (TmPair M N).
-    simpl.
-    split.
-    (* Case: that <M, N> : TyPair T1 T2 *)
+ (* Case TyPair *)
+    splitN 3.
+    (* Case: exists a reducible term *)
+     destruct IHT1 as [[[M M_red] Reducible_SN_T1] Neutral_Reducible_T1].
+     destruct IHT2 as [[[N N_red] Reducible_SN_T2] Neutral_Reducible_T2].
+     exists (TmPair M N).
+     simpl.
+     split.
+     (* Case: that <M, N> : TyPair T1 T2 *)
       sauto.
 
-  (* Case: When continuation frames (left & right projections) are applied, a
-       reducible term is formed. *)
-    split.
+     (* Case: When continuation frames (left & right projections) are applied, a
+        reducible term is formed. *)
+     split.
 
-    (* Case: left projection *)
-    (* TODO: double_induction_SN needs us to prove that an arbitrary
-       transitive reduct of the term is reducible; but I think it
-       would be fine to prove just that the term itself is so. *)
+     (* Case: left projection *)
+     (* TODO: double_induction_SN needs us to prove that an arbitrary
+        transitive reduct of the term is reducible; but I think it
+        would be fine to prove just that the term itself is so. *)
+      double_induction_SN_intro M N.
+      (* Because (TmProj _ _) is Neutral, it's sufficient to show that all its
+         reducts are reducible. *)
+      apply Neutral_Reducible_T1; [seauto | seauto | ].
+      intros Z H.
+      inversion H.
+      (* Case: <M', N'> itself reduces *)
+       subst.
+       inversion H3.
+       (* Case: reduction in rhs *)
+        subst m1 n m2.
+        apply IHM; seauto.
+       (* Case: reduction in lhs *)
+       subst m n1 m2.
+       apply IHN; seauto.
+      (* Case: The reduct is at the head; we project. *)
+      subst m n Z.
+      seauto.
+
+     (* Case: right projection *)
+     (* TODO: refactor between the TmProj true / TmProj false cases. *)
      double_induction_SN_intro M N.
      (* Because (TmProj _ _) is Neutral, it's sufficient to show that all its
         reducts are reducible. *)
-     apply Neutral_Reducible_T1; [seauto | seauto | ].
+     apply Neutral_Reducible_T2; [seauto | | ].
+      (* TODO: why does the TProj1 case go with seauto but this needs me
+         to tell is what lemma to use? *)
+      apply TProj2 with T1; seauto.
      intros Z H.
      inversion H.
      (* Case: <M', N'> itself reduces *)
       subst.
       inversion H3.
-      (* Case: reduction in rhs *)
        subst m1 n m2.
        apply IHM; seauto.
-      (* Case: reduction in lhs *)
       subst m n1 m2.
       apply IHN; seauto.
      (* Case: The reduct is at the head; we project. *)
      subst m n Z.
      seauto.
 
-    (* Case: right projection *)
-    (* TODO: refactor between the TmProj true / TmProj false cases. *)
-    double_induction_SN_intro M N.
-    (* Because (TmProj _ _) is Neutral, it's sufficient to show that all its
-       reducts are reducible. *)
-    apply Neutral_Reducible_T2; [seauto | | ].
-     (* TODO: why does the TProj1 case go with seauto but this needs me
-        to tell is what lemma to use? *)
-     apply TProj2 with T1; seauto.
-    intros Z H.
+   (* Case: Reducible pair-type terms are strongly normalizing *)
+    simpl.
+    intuition.
+    assert (SN (TmProj false tm)) by auto.
+    eapply SN_context_Proj; seauto.
+
+   (* Case: Neutral terms at pair type whose reducts are reducible are
+      themselves reducible (reducibility "withdraws"). *)
+   intros M M_Neutral M_Typing M_reducts_Reducible.
+   destruct IHT1 as [[? ?] l_withdraws].
+   destruct IHT2 as [[? ?] r_withdraws].
+   simpl. (* this is only true if both destructors (projections) are reducible. *)
+   split; [sauto | ].
+   (* Split into left and right projections. *)
+   split; [apply l_withdraws | apply r_withdraws]; eauto.
+   (* Case: left projection. *)
+    intros M' H. (* Consider all reducts of the projection. *)
     inversion H.
-    (* Case: <M', N'> itself reduces *)
-     subst.
-     inversion H3.
-      subst m1 n m2.
-      apply IHM; seauto.
-     subst m n1 m2.
-     apply IHN; seauto.
-    (* Case: The reduct is at the head; we project. *)
-    subst m n Z.
-    seauto.
-
-  (* Case: Reducible pair-type terms are strongly normalizing *)
-   simpl.
-   intuition.
-   assert (SN (TmProj false tm)) by auto.
-   eapply SN_context_Proj; seauto.
-
-  (* Case: Neutral terms at pair type whose reducts are reducible are
-     themselves reducible (reducibility "withdraws"). *)
-  intros M M_Neutral M_Typing M_reducts_Reducible.
-  destruct IHT1 as [[? ?] l_withdraws].
-  destruct IHT2 as [[? ?] r_withdraws].
-  simpl. (* this is only true if both destructors (projections) are reducible. *)
-  split; [sauto | ].
-  (* Split into left and right projections. *)
-  split; [apply l_withdraws | apply r_withdraws]; eauto.
-  (* Case: left projection. *)
-   intros M' H. (* Consider all reducts of the projection. *)
+    (* Case: The reduction is in the subject term. *)
+     pose (M_reducts_Reducible m2 H3). (* Then the subject's reduct is Reducible. *)
+     simpl in r.
+     solve [intuition]. (* Which by definition entails our goal. *)
+    (* Case: The reduction is at the head; it is the projection. But the subject
+             being neutral, it is not a pair, so contradiction. *)
+    subst m M.
+    solve [inversion M_Neutral].
+   (* Case: right projection. *)
+   intros M' H.
    inversion H.
-   (* Case: The reduction is in the subject term. *)
-    pose (M_reducts_Reducible m2 H3). (* Then the subject's reduct is Reducible. *)
+    pose (r := M_reducts_Reducible m2 H3).
     simpl in r.
-    solve [intuition]. (* Which by definition entails our goal. *)
-   (* Case: The reduction is at the head; it is the projection. But the subject
-            being neutral, it is not a pair, so contradiction. *)
-   subst m M.
+    solve [intuition].
+   subst n M.
    solve [inversion M_Neutral].
-  (* Case: right projection. *)
-  intros M' H.
-  inversion H.
-   pose (r := M_reducts_Reducible m2 H3).
-   simpl in r.
-   solve [intuition].
-  subst n M.
-  solve [inversion M_Neutral].
 
- (* Case TyArr *)
- splitN 3.
- (* Exists a reducible term at T1->T2 *)
-   destruct IHT2 as [[[N N_Red] Red_T2_tms_SN] IHT2_Red_neutral_withdraw].
-   (* Given any term at T2, we can abstract it with a dummy argument.
-      (shift 0 1) gives us uniqueness of the argument. *)
-   exists (TmAbs (shift 0 1 N)).
-   split.
-   (* The dummy abstraction has the appropriate type. *)
-    sauto.
-   (* It is reducible at -> type; it applied to any reducible term gives
-      a reducible application. *)
-   intros M M_tp M_Red.
-   assert (SN N) by auto.
-   destruct IHT1 as [[_ Red_T1_tms_SN] _].
-   assert (SN M) by auto.
-   pattern N, M.
-   (* TODO: The double redseq induction pattern. Abstract out! *)
-   double_induction_SN_intro M N.
-   (* We'll show that all reducts are reducible. *)
-   apply IHT2_Red_neutral_withdraw; eauto.
-    apply TApp with T1; seauto.
-   intros M'' red.
-   (* Take cases on the reductions. *)
-   inversion red as [ | ? Z ? redn_Z | | | | | | | | | | | | | ] ; subst.
-   (* beta reduction *)
-     (* BUG: should be able to put these all as args to congruence. *)
-     pose subst_dummyvar; pose subst_nil; pose unshift_shift.
-     replace (unshift 0 1 (subst_env 0 (shift 0 1 M' :: nil) (shift 0 1 N')))
-       with N' by congruence.
-     apply Rw_rt_preserves_Reducible with N; sauto.
-   (* Reduction of the function position. *)
-    inversion redn_Z.
-    subst Z.
-    destruct (shift_Rw_inversion _ _ _ H2) as [N'' [N''_def N'0_rew_N'']].
-    subst n'.
-    apply IHN; seauto.
-   (* Reduction of the argument position. *)
-   apply IHM; seauto.
+  (* Case TyArr *)
+  splitN 3.
+  (* Exists a reducible term at T1->T2 *)
+    destruct IHT2 as [[[N N_Red] Red_T2_tms_SN] IHT2_Red_neutral_withdraw].
+    (* Given any term at T2, we can abstract it with a dummy argument.
+       (shift 0 1) gives us uniqueness of the argument. *)
+    exists (TmAbs (shift 0 1 N)).
+    split.
+    (* The dummy abstraction has the appropriate type. *)
+     sauto.
+    (* It is reducible at -> type; it applied to any reducible term gives
+       a reducible application. *)
+    intros M M_tp M_Red.
+    assert (SN N) by auto.
+    destruct IHT1 as [[_ Red_T1_tms_SN] _].
+    assert (SN M) by auto.
+    pattern N, M.
+    (* TODO: The double redseq induction pattern. Abstract out! *)
+    double_induction_SN_intro M N.
+    (* We'll show that all reducts are reducible. *)
+    apply IHT2_Red_neutral_withdraw; eauto.
+     apply TApp with T1; seauto.
+    intros M'' red.
+    (* Take cases on the reductions. *)
+    inversion red as [ | ? Z ? redn_Z | | | | | | | | | | | | | | | ] ; subst.
+    (* beta reduction *)
+       (* BUG: should be able to put these all as args to congruence. *)
+       pose subst_dummyvar; pose subst_nil; pose unshift_shift.
+       replace (unshift 0 1 (subst_env 0 (shift 0 1 M' :: nil) (shift 0 1 N')))
+         with N' by congruence.
+       apply Rw_rt_preserves_Reducible with N; sauto.
+    (* Reduction of the function position. *)
+      inversion redn_Z.
+      subst Z.
+      destruct (shift_Rw_inversion _ _ _ H2) as [N'' [N''_def N'0_rew_N'']].
+      subst n'.
+      apply IHN; seauto.
+    (* Reduction of the argument position. *)
+     apply IHM; seauto.
 
- (* Reducibile S->T terms are SN. *)
-  intros M M_red.
-  destruct M_red as [M_tp M_applied_Red].
-  destruct IHT1 as [[[X Red_X] _] _].
-  assert (Reducible (M@X) T2).
-   apply M_applied_Red; seauto.
-  assert (SN (M@X)).
-   solve [firstorder] (* Finds the needed lemma in IHT2 *).
-  apply SN_context_App_left with X; sauto.
+  (* Reducibile S->T terms are SN. *)
+   intros M M_red.
+   destruct M_red as [M_tp M_applied_Red].
+   destruct IHT1 as [[[X Red_X] _] _].
+   assert (Reducible (M@X) T2).
+    apply M_applied_Red; seauto.
+   assert (SN (M@X)).
+    solve [firstorder] (* Finds the needed lemma in IHT2 *).
+   apply SN_context_App_left with X; sauto.
 
- (* Reducible Neutral withdraw for (->) *)
- intros M Neutral_M M_tp M_reducts_Reducible.
- simpl.
- split; [auto|].
- intros L L_tp L_Red.
- apply IHT2; [sauto|seauto|].
- (* Now to show that all the reducts of the application M@L are reducible. *)
- intros M_L_reduct H.
- assert (X : forall L', (L ~>> L') -> Reducible (TmApp M L') T2).
-  intros L' L_redto_L'.
-  assert (SN L').
-   apply Rw_trans_preserves_SN with L; auto.
-   apply IHT1; sauto.
-  redseq_induction L'.
-  apply IHT2; auto.
-   seauto (* typing *).
-  intros Z Z_red.
-  (* Take cases on the reduction M@M0 ~> Z *)
-  inversion Z_red.
-  (* Beta-reduction case: bogus because M is neutral. *)
-    subst.
-    solve [inversion Neutral_M].
-  (* Left of (@) case: easy from M_reducts_Reducible. *)
-   subst m1 n.
-   assert (Reducible_m2: Reducible m2 (TyArr T1 T2)).
-    apply M_reducts_Reducible; sauto.
-   simpl in Reducible_m2.
-   apply Reducible_m2; seauto.
-  (* Right of (@) case: by inductive hypothesis. *)
-  rename n2 into L''.
-  apply IHL'; seauto.
- assert (Reducible (M@L) T2).
-  apply X; sauto.
- seauto.
+  (* Reducible Neutral withdraw for (->) *)
+  intros M Neutral_M M_tp M_reducts_Reducible.
+  simpl.
+  split; [auto|].
+  intros L L_tp L_Red.
+  apply IHT2; [sauto|seauto|].
+  (* Now to show that all the reducts of the application M@L are reducible. *)
+  intros M_L_reduct H.
+  assert (X : forall L', (L ~>> L') -> Reducible (TmApp M L') T2).
+   intros L' L_redto_L'.
+   assert (SN L').
+    apply Rw_trans_preserves_SN with L; auto.
+    apply IHT1; sauto.
+   redseq_induction L'.
+   apply IHT2; auto.
+    seauto (* typing *).
+   intros Z Z_red.
+   (* Take cases on the reduction M@M0 ~> Z *)
+   inversion Z_red.
+   (* Beta-reduction case: bogus because M is neutral. *)
+     subst.
+     solve [inversion Neutral_M].
+   (* Left of (@) case: easy from M_reducts_Reducible. *)
+    subst m1 n.
+    assert (Reducible_m2: Reducible m2 (TyArr T1 T2)).
+     apply M_reducts_Reducible; sauto.
+    simpl in Reducible_m2.
+    apply Reducible_m2; seauto.
+   (* Right of (@) case: by inductive hypothesis. *)
+   rename n2 into L''.
+   apply IHL'; seauto.
+  assert (Reducible (M@L) T2).
+   apply X; sauto.
+  seauto.
+
  (* Case TyList *)
  destruct IHT as [[[N N_Red] Red_T_tms_SN] IHT_Red_neutral_withdraw].
  splitN 3.
@@ -658,7 +659,7 @@ Proof.
  apply Neutral_Reducible_withdraw; [sauto | seauto |].
  intros M' redn.
 
- inversion redn as [N0 M0 V M'_eq| ? ? ? L_redn | | | | | | | | | | | | | ].
+ inversion redn as [N0 M0 V M'_eq| ? ? ? L_redn | | | | | | | | | | | | | | |].
 
  (* Case: beta reduction. *)
    subst V M0 N0.
@@ -718,7 +719,7 @@ Proof.
  (* All reducts are reducible. *)
  intros M' H3.
  (* Take cases on the reduction. *)
- inversion H3 as [ | | | | | | m n1 n2 H7 | m n | m n | | | | | | ]; subst.
+ inversion H3 as [ | | | | | | m n1 n2 H7 | m n | m n | | | | | | | |]; subst.
  (* Case: reduction under the operation. *)
    inversion H7; subst.
     apply X1; seauto.
@@ -1057,7 +1058,7 @@ Proof.
  apply reducts_SN.
  intros Z H1.
  inversion H1.
-Qed.
+Admitted.
 
 Inductive Triple_SN K M N :=
   | triple_sn :
@@ -1286,8 +1287,8 @@ Proof.
 
  destruct K0.
   simpl in *.
-  inversion H_rw.
-
+  inversion H_rw; subst; auto.
+   
  simpl in H_rw.
 
  apply Neutral_Lists in H_rw; [| sauto].
@@ -1308,7 +1309,7 @@ Proof.
      apply Rw_rt_TmBind; sauto.
     change (SN (plug (Iterate t K0) N)).
      eauto using SN_via_Krw_rt.
-   inversion H14. (* TO DO: Solves immediately, because TmUnion doesn't reduce. *)
+   inversion H14; subst; seauto.
 
  (* Case: rw is within t of TmBind (TmUnion M N) t *)
   change (SN (plug (Iterate n' K0) (TmUnion M0 N0))).
@@ -1503,24 +1504,11 @@ Lemma unshift_preserves_rw:
     unshift n k M ~>
     unshift n k M'.
 Proof.
- induction M; intros; inversion H; subst; simpl.
-               eauto.
-              eauto.
-             eauto.
-            eauto.
-           eauto.
-          eauto.
-         apply Rw_beta.
-         apply beta_with_unshift.
-         omega.
-        eauto.
-       eauto.
-      eauto.
-     eauto.
-    eauto.
-   eauto.
-  eauto.
- eauto.
+ induction M; intros; inversion H; subst; simpl; eauto.
+
+ apply Rw_beta.
+ apply beta_with_unshift.
+ omega.
 Qed.
 
 Lemma unshift_substitution_preserves_rw:
@@ -1673,16 +1661,14 @@ Lemma Rw_rt_Union_left:
 Proof.
  intros.
  induction H; subst; eauto.
- admit (* Actually not true! *).
-Admitted.
+Qed.
 
 Lemma Rw_rt_Union_right:
   forall m n1 n2 : Term, (n1 ~>> n2) -> (TmUnion m n1) ~>> (TmUnion m n2).
 Proof.
  intros.
  induction H; subst; eauto.
- admit (* Actually not true! *).
-Admitted.
+Qed.
 
 Lemma Rw_rt_Bind_left:
   forall m1 m2 n : Term, (m1 ~>> m2) -> (TmBind m1 n) ~>> (TmBind m2 n).

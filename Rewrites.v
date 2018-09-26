@@ -20,18 +20,15 @@ Inductive RewritesTo : Term -> Term -> Type :=
 | Rw_App_right : forall m n1 n2,
     RewritesTo n1 n2 ->
     RewritesTo (TmApp m n1) (TmApp m n2)
-
 | Rw_Abs_body : forall n n',
     RewritesTo n n' ->
     RewritesTo (TmAbs n) (TmAbs n')
-
 | Rw_Pair_left : forall m1 m2 n,
     RewritesTo m1 m2 ->
     RewritesTo (TmPair m1 n) (TmPair m2 n)
 | Rw_Pair_right : forall m n1 n2,
     RewritesTo n1 n2 ->
     RewritesTo (TmPair m n1) (TmPair m n2)
-
 | Rw_Proj : forall m1 m2 b,
     RewritesTo m1 m2 ->
     RewritesTo (TmProj b m1) (TmProj b m2)
@@ -39,7 +36,12 @@ Inductive RewritesTo : Term -> Term -> Type :=
     RewritesTo (TmProj false (TmPair m n)) m
 | Rw_Proj_beta2 : forall m n,
     RewritesTo (TmProj true (TmPair m n)) n
-
+| Rw_Union_left : forall M N M',
+    RewritesTo M M' ->
+    RewritesTo (TmUnion M N) (TmUnion M' N)
+| Rw_Union_right : forall M N N',
+    RewritesTo N N' ->
+    RewritesTo (TmUnion M N) (TmUnion M N')
 | Rw_Bind_null : forall n,
     RewritesTo (TmBind (TmNull) n) TmNull
 | Rw_Bind_beta : forall n x,
@@ -49,7 +51,7 @@ Inductive RewritesTo : Term -> Term -> Type :=
 | Rw_Bind_subject : forall m n m',
     RewritesTo m m' -> RewritesTo (TmBind m n) (TmBind m' n)
 | Rw_Bind_body : forall m n n',
-    RewritesTo n n' -> RewritesTo (TmBind m n) (TmBind m n')
+                   RewritesTo n n' -> RewritesTo (TmBind m n) (TmBind m n')
 | Rw_Single : forall m m',
                 RewritesTo m m' -> RewritesTo (TmSingle m) (TmSingle m')
 (* TODO: Rw_Bind_assoc. *)
@@ -323,6 +325,8 @@ Proof.
                   | M1 M2 b
                   | M N
                   | M N
+                  |
+                  |
                   | N
                   | M N M'
                   | M N
@@ -474,6 +478,17 @@ Proof.
  simpl.
  apply Rw_Proj_beta2.
 
+ (* Case: Union left *)
+ simpl.
+ apply Rw_Union_left.
+ apply IHRewritesTo.
+
+ (* Case: Union right *)
+ simpl.
+ apply Rw_Union_right.
+ apply IHRewritesTo.
+
+ (* Case: Bind with subject null *)
  simpl.
  apply Rw_Bind_null.
 
@@ -559,7 +574,7 @@ Proof.
     exists (TmPair N1 x).
     simpl.
     subst n2.
-    eauto.
+    seauto.
  (* Case TmProj *)
    inversion red; subst.
      destruct (IHN m2 k) as [N' [? ?]]; [auto|].
@@ -637,8 +652,10 @@ Proof.
  subst n2.
  eauto.
 
+ (* Case TmNull *)
  inversion red.
 
+ (* Case TmSingle *)
  inversion red.
 
  subst.
@@ -647,10 +664,23 @@ Proof.
  simpl.
  intuition.
  subst.
- auto.
+ sauto.
 
- inversion red.
+ (* Case: TmUnion *)
+  inversion red.
+  destruct (IHN1 M' k) as [x [e r]]; [sauto | ].
+  subst; simpl.
+  exists (TmUnion x N2).
+  simpl.
+  subst.
+  seauto.
+ destruct (IHN2 N' k) as [x [? ?]]; [auto | ].
+ exists (TmUnion N1 x).
+ simpl.
+ subst.
+ seauto.
 
+ (* Case TmBind *)
  inversion red.
 
  (* Case: Null for Bind *)
