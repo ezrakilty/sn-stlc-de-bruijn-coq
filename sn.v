@@ -1450,8 +1450,6 @@ Lemma shift_closed_noop_map:
   forall n k vs ts,
     env_typing vs ts
     -> vs = map (shift n k) vs.
-(* TO DO: Should be able to simplify because the map f is already
-   known to be a no-op on every item. *)
 Proof.
  induction vs as [|a vs]; simpl; intros.
   auto.
