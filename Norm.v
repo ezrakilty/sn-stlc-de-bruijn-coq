@@ -1,6 +1,5 @@
 Load "eztactics.v".
 
-
 Add LoadPath "Listkit" as Listkit.
 
 Require Import Term.
@@ -163,6 +162,7 @@ Proof.
  auto.
 Qed.
 
+Hint Resolve Rw_trans_preserves_SN.
 
 (* (        ~>          )      (               )
    (   M ---------> M'  )      (            N  )
@@ -196,6 +196,70 @@ Proof.
   apply last_step_first_step_lemma with (f M); auto.
  destruct H5 as [x [q_x x_f_m']].
  apply H0 with x; auto.
+Qed.
+
+
+(** Consider terms of the form [g M]. Suppose that every one has all its reducts satisfying either:
+    (a) reduct is of the form [g M'] and there is a parallel reduction [f M ~> f M'] or
+    (b) reduct is known to be SN.
+
+Then, if some [f M] is SN, the corresponding [g M] is too.
+
+Further, everything about this lemma is relative to some ancestor
+term, so it only has to be true for descendents of that ancestor.
+*)
+
+Lemma SN_embedding2 A f g:
+  forall Q' : Term,
+    (forall (M : A) (Z : Term),
+       (Q' ~>> g M) ->
+       (g M ~> Z) ->
+       ({M' : A & ((Z = g M') *
+                   (f M ~> f M'))%type}
+        + SN Z)) ->
+    forall Q : Term, SN Q ->
+    forall M : A,
+      (Q ~>> f M) ->
+      (Q' ~>> g M) ->
+      SN (g M).
+Proof.
+ intros Q' H Q H0.
+ induction H0.
+ rename m into q.
+ intros M Q_def Q'_def.
+ apply reducts_SN.
+ assert (H2 : SN (f M)) by eauto.
+ inversion H2 as [H3].
+ intros m' H4.
+ copy (g M ~> m').
+ apply H in H4; try auto.
+ destruct H4 as [[M' [m'_form f_M_f_M']] | bailout].
+  assert (H5 : {x:Term & ((q ~> x) * (x ~>> f M'))%type}).
+   apply last_step_first_step_lemma with (f M); auto.
+  destruct H5 as [x [q_x x_f_m']].
+  subst m'.
+  apply X with (m' := x); auto.
+  eauto.
+ auto.
+Qed.
+
+Lemma SN_embedding2' A f g:
+    (forall (M : A) (Z : Term),
+       (g M ~> Z) ->
+       ({M' : A & ((Z = g M') *
+                   (f M ~> f M'))%type}
+        + SN Z)) ->
+    forall M : A,
+      SN (f M) ->
+        SN (g M).
+Proof.
+ intros.
+ apply SN_embedding2 with (f:=f)(Q:=f M)(Q':=g M).
+    intros.
+    auto.
+   auto.
+  auto.
+ auto.
 Qed.
 
 Lemma SN_context_Proj : forall b M,

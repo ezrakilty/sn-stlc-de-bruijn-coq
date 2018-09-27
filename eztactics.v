@@ -209,3 +209,9 @@ Ltac double_case := (* Another form of if_irrelevant! *)
           replace (if X then Y else Y) with (Y) by breakauto
   end.
 
+Ltac splitN n :=
+  match n with
+    | 2 => split
+    | 3 => split; [splitN 2 | ]
+    | S n => split; [splitN n | ]
+  end.

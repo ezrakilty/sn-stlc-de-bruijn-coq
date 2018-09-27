@@ -740,3 +740,81 @@ Proof.
  intros.
  inversion H0; subst; solve [inversion H | firstorder].
 Qed.
+
+
+Lemma Rw_rt_Pair_left:
+  forall m1 m2 n : Term, (m1 ~>> m2) -> (〈 m1, n 〉) ~>> (〈 m2, n 〉).
+Proof.
+ intros.
+ induction H; subst; eauto.
+Qed.
+
+Lemma Rw_rt_Pair_right:
+  forall m n1 n2 : Term, (n1 ~>> n2) -> (〈 m, n1 〉) ~>> (〈 m, n2 〉).
+Proof.
+ intros.
+ induction H; subst; eauto.
+Qed.
+
+Lemma Rw_rt_App_left:
+  forall m1 m2 n : Term, (m1 ~>> m2) -> (m1@n) ~>> (m2@n).
+Proof.
+ intros.
+ induction H; subst; eauto.
+Qed.
+
+Lemma Rw_rt_App_right:
+  forall m n1 n2 : Term, (n1 ~>> n2) -> (m@n1) ~>> (m@n2).
+Proof.
+ intros.
+ induction H; subst; eauto.
+Qed.
+
+Lemma Rw_rt_Proj:
+  forall (b:bool) (M M' : Term), (M ~>> M') -> (TmProj b M) ~>> (TmProj b M').
+Proof.
+ intros.
+ induction H; subst; eauto.
+Qed.
+
+Lemma Rw_rt_Abs:
+  forall (M M' : Term), (M ~>> M') -> (TmAbs M) ~>> (TmAbs M').
+Proof.
+ intros.
+ induction H; subst; eauto.
+Qed.
+
+Lemma Rw_rt_Single:
+  forall (M M' : Term), (M ~>> M') -> (TmSingle M) ~>> (TmSingle M').
+Proof.
+ intros.
+ induction H; subst; eauto.
+Qed.
+
+Lemma Rw_rt_Union_left:
+  forall m1 m2 n : Term, (m1 ~>> m2) -> (TmUnion m1 n) ~>> (TmUnion m2 n).
+Proof.
+ intros.
+ induction H; subst; eauto.
+Qed.
+
+Lemma Rw_rt_Union_right:
+  forall m n1 n2 : Term, (n1 ~>> n2) -> (TmUnion m n1) ~>> (TmUnion m n2).
+Proof.
+ intros.
+ induction H; subst; eauto.
+Qed.
+
+Lemma Rw_rt_Bind_left:
+  forall m1 m2 n : Term, (m1 ~>> m2) -> (TmBind m1 n) ~>> (TmBind m2 n).
+Proof.
+ intros.
+ induction H; subst; eauto.
+Qed.
+
+Lemma Rw_rt_Bind_right:
+  forall m n1 n2 : Term, (n1 ~>> n2) -> (TmBind m n1) ~>> (TmBind m n2).
+Proof.
+ intros.
+ induction H; subst; eauto.
+Qed.

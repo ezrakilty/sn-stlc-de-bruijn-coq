@@ -1,4 +1,4 @@
-(* *)
+Add LoadPath "Listkit" as Listkit.
 
 Require Import Norm.
 Require Import Rewrites.
@@ -15,11 +15,6 @@ Fixpoint plug (K : Continuation) (M : Term) : Term :=
     | Iterate N K' => plug K' (TmBind M N)
   end.
 
-(* Inductive Krw_explicit : Continuation -> Continuation -> Type := *)
-(* | A : forall N N' K, (N ~> N') -> Krw_explicit (Iterate N K) (Iterate N' K) *)
-(* | B : forall N K K', (Krw_explicit K K') -> Krw_explicit (Iterate N K) (Iterate N K') *)
-(* . *)
-
 Definition SNK (K : Continuation) :=
   forall M,
     SN M ->
@@ -30,36 +25,22 @@ Definition ReducibleK (Reducible:Term->Ty -> Type) (K : Continuation) (T : Ty) :
       Reducible M T ->
       SN (plug K (TmSingle M)).
 
+Lemma Rw_under_K:
+  forall K M N,
+    (M ~> N) -> (plug K M ~> plug K N).
+Proof.
+ induction K; simpl; intros; auto.
+Qed.
+
+Hint Resolve Rw_under_K.
+
 Lemma plug_SN_rw:
   forall K M M',
     (M ~> M') -> SN (plug K M) -> SN (plug K M').
 Proof.
- induction K.
-  simpl.
-  intuition.
-  inversion H0.
-  auto.
- simpl.
  intros.
- apply IHK with (TmBind M t); sauto.
-Qed.
-
-(* Lemma KM_rw_inversion: *)
-(*   forall K M km', *)
-(*     (plug K M ~> km') -> {M' : Term & km' = plug K M'}. *)
-(* Proof. *)
- 
-(* Qed. *)
-
-Lemma rw_plug_lift :
-  forall K M M',
-    (M ~> M') -> (plug K M ~> plug K M').
-Proof.
- induction K.
-  auto.
-  simpl.
- intros.
- apply IHK.
+ inversion H0.
+ apply H1.
  auto.
 Qed.
 
@@ -75,41 +56,14 @@ Inductive Krw_rt : Continuation -> Continuation -> Type :=
 | Krw_rt_trans : forall l m n, Krw_rt l m -> Krw_rt m n
                 -> Krw_rt l n.
 
-(* Inductive SNK K := *)
-(*   Reducts_SNK : (forall K', Krw K K' -> SNK K') -> SNK K. *)
-
-(* Lemma Krw_Iterate: *)
-(*   forall K K' t, *)
-(*     Krw K K'-> Krw (Iterate t K) (Iterate t K'). *)
-(* Proof. *)
-(*  induction K; simpl. *)
-(*   unfold Krw. *)
-(*   intros. *)
-(*   simpl in *. *)
-(*   assert (K' = Empty). *)
-  
-(*   assert (TmBind M t ~> TmBind (plug K' M) t). *)
-(*    apply Rw_Bind_subject. *)
-(*    auto. *)
-
-(* Qed. *)
+Hint Constructors Krw_rt.
 
 Lemma iterate_reduce K K' : Krw K K' -> forall F, Krw (Iterate F K) (Iterate F K').
 Proof.
-unfold Krw.
-intros.
-simpl.
-apply H.
-Qed.
-
-Lemma Rw_under_K:
-  forall K M N,
-    (M ~> N) -> (plug K M ~> plug K N).
-Proof.
- induction K; simpl; intros.
-  auto.
- apply IHK.
- auto.
+ unfold Krw.
+ intros.
+ simpl.
+ apply H.
 Qed.
 
 Lemma rw_in_K_body:

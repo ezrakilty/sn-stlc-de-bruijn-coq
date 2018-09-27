@@ -417,7 +417,8 @@ Lemma shift_unshift_commute :
   forall M k k',
     ~ set_In k' (freevars M) ->
     k' <= k ->
-    shift k 1 (unshift k' 1 M) = unshift k' 1 (shift (S k) 1 M).
+    shift k 1 (unshift k' 1 M) =
+    unshift k' 1 (shift (S k) 1 M).
 Proof.
  induction M; intros k k' k'_not_free k'_le_k.
 
@@ -721,9 +722,79 @@ Proof.
  omega.
 Qed.
 
-(* TODO: move to Shift.v *)
-Lemma Typing_shift_elim:
-  forall env env' M T,
-    Typing (env ++ env') (shift 0 (length env) M) T -> Typing env' M T.
+Lemma unshift_var_unshift_var_commute:
+  forall x k k' n,
+    k' <= k ->
+    unshift_var k n (unshift_var k' 1 x) =
+    unshift_var k' 1 (unshift_var (S k) n x).
 Proof.
-Admitted.
+ intros x k k' n H.
+ unfold unshift_var at 2 4.
+ break; break.
+    unfold unshift_var.
+    break; break; omega.
+   unfold unshift_var.
+   break; break; omega.
+  unfold unshift_var.
+  break; break; omega.
+ unfold unshift_var.
+ break; break; omega.
+Qed.
+
+Lemma unshift_unshift_commute:
+  forall M k k' n,
+    k' <= k ->
+    unshift k n (unshift k' 1 M) =
+    unshift k' 1 (unshift (S k) n M).
+Proof.
+ induction M; simpl; intros.
+          auto.
+         rewrite unshift_var_unshift_var_commute; sauto.
+        rewrite IHM1, IHM2; sauto.
+       rewrite IHM; sauto.
+      rewrite IHM; auto.
+      omega.
+     rewrite IHM1, IHM2; sauto.
+    auto.
+   rewrite IHM; sauto.
+  rewrite IHM1, IHM2; sauto.
+ rewrite IHM1, IHM2; solve [auto|omega].
+Qed.
+(* TODO: Move above 2 lemmas to Shift.v *)
+
+Lemma shift_var_unshift_var_commute:
+  forall x k k' n,
+    k' <= k ->
+    unshift_var (S k) n (shift_var k' 1 x) = shift_var k' 1 (unshift_var k n x).
+Proof.
+ intros x k k' n H.
+ unfold unshift_var.
+ break; break.
+    unfold shift_var.
+    break; break; omega.
+   unfold shift_var in *.
+   break; omega.
+  unfold shift_var in *.
+  break; break; omega.
+ unfold shift_var in *.
+ break; omega.
+Qed.
+
+Lemma unshift_shift_commute:
+  forall M k k' n,
+    k' <= k ->
+    unshift (S k) n (shift k' 1 M) =
+    shift k' 1 (unshift k n M).
+Proof.
+ induction M; simpl; intros.
+          auto.
+         rewrite shift_var_unshift_var_commute; sauto.
+        rewrite IHM1, IHM2; sauto.
+       rewrite IHM; sauto.
+      rewrite IHM; solve [auto|omega].
+     rewrite IHM1, IHM2; sauto.
+    auto.
+   rewrite IHM; sauto.
+  rewrite IHM1, IHM2; sauto.
+ rewrite IHM1, IHM2; solve [auto|omega].
+Qed.
