@@ -1431,21 +1431,6 @@ Proof.
  eapply Bind_Reducible_core; eauto.
 Qed.
 
-Lemma env_typing_cons_inv:
-  forall V Vs T env,
-    env_typing (V :: Vs) (T :: env) -> Typing nil V T * env_typing Vs env.
-Proof.
- intros.
- unfold env_typing in H.
- destruct H.
- unfold foreach2_ty in f.
- (* XXX: Defining env_tpying in terms of foreach2_ty was a terrible
- idea. Must be a nice general inductive structure that gives the same
- thing and is easier to use. *)
- destruct f.
- auto.
-Qed.
-
 Lemma shift_closed_noop_map:
   forall n k vs ts,
     env_typing vs ts
@@ -1454,11 +1439,11 @@ Proof.
  induction vs as [|a vs]; simpl; intros.
   auto.
  destruct ts; simpl in *; try (destruct H; discriminate).
- apply env_typing_cons_inv in H.
+ apply env_typing_elim in H.
  destruct H.
  f_equal.
- erewrite shift_closed_noop; eauto.
- eauto.
+ - erewrite shift_closed_noop; eauto.
+ - eauto.
 Qed.
 
 Lemma closing_subst_closes:
