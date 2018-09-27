@@ -1431,6 +1431,21 @@ Proof.
  eapply Bind_Reducible_core; eauto.
 Qed.
 
+Lemma env_typing_cons_inv:
+  forall V Vs T env,
+    env_typing (V :: Vs) (T :: env) -> Typing nil V T * env_typing Vs env.
+Proof.
+ intros.
+ unfold env_typing in H.
+ destruct H.
+ unfold foreach2_ty in f.
+ (* XXX: Defining env_tpying in terms of foreach2_ty was a terrible
+ idea. Must be a nice general inductive structure that gives the same
+ thing and is easier to use. *)
+ destruct f.
+ auto.
+Qed.
+
 Lemma shift_closed_noop_map:
   forall n k vs ts,
     env_typing vs ts
@@ -1440,21 +1455,12 @@ Lemma shift_closed_noop_map:
 Proof.
  induction vs as [|a vs]; simpl; intros.
   auto.
- destruct ts.
-  exfalso.
-  destruct H.
-  simpl in *.
-  discriminate.
+ destruct ts; simpl in *; try (destruct H; discriminate).
+ apply env_typing_cons_inv in H.
  destruct H.
-  simpl in *.
- unfold foreach2_ty in f.
- simpl in f.
- destruct f.
- replace (shift n k a) with a.
-  rewrite <- IHvs with (ts := ts).
-   auto.
-  auto.
- solve [erewrite shift_closed_noop; eauto].
+ f_equal.
+ erewrite shift_closed_noop; eauto.
+ eauto.
 Qed.
 
 Lemma closing_subst_closes:
@@ -1559,30 +1565,28 @@ Proof.
  (* Case TmBind *)
  subst.
  apply Bind_Reducible with s.
-  eapply subst_env_preserves_typing with (env' := tyEnv).
-     rewrite env_typing_shift_noop with (env := tyEnv); auto.
-    simpl.
-    auto.
-   auto.
+   eapply subst_env_preserves_typing with (env' := tyEnv); auto.
+   rewrite env_typing_shift_noop with (env := tyEnv); auto.
   eapply IHM1; eauto.
+
+ clear H1 IHM1 M1 tp.
 
  intros.
  pose (Reducible_welltyped_closed _ _ X).
+ assert (Typing nil (subst_env 0 (L :: Vs) M2) (TyList t)).
+  eapply closing_subst_closes; seauto.
+
  replace (shift 0 1 L) with L.
   replace (map (shift 0 1) Vs) with Vs.
    rewrite subst_env_concat with (env := s :: tyEnv).
     unfold app.
-    replace (unshift 0 1 (subst_env 0 (L :: Vs) M2))
-       with (subst_env 0 (L :: Vs) M2).
-     eapply IHM2; eauto.
-     simpl.
-     auto.
-    assert (Typing nil (subst_env 0 (L :: Vs) M2) (TyList t)).
-     eapply closing_subst_closes; seauto.
-    erewrite unshift_closed_noop; seauto.
+    erewrite unshift_closed_noop; eauto.
+    eapply IHM2; eauto.
+    simpl.
+    sauto.
    apply env_typing_cons; sauto.
-   eapply shift_closed_noop_map; seauto.
-  erewrite shift_closed_noop; seauto.
+  eapply shift_closed_noop_map; seauto.
+ erewrite shift_closed_noop; eauto.
 Qed.
 
 (** Every well-typed term is strongly normalizing. *)
