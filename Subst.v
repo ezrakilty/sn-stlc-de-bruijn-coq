@@ -459,17 +459,6 @@ Require Import Listkit.AllType.
 
 Definition set_remove := Listkit.Sets.set_remove.
 
-Require Import Coq.Logic.FunctionalExtensionality.  (* Assumes an axiom. *)
-
-Lemma pred_is_minus_1:
-   (fun x => x-1) = pred.
-Proof.
- extensionality x.
- omega.
-Qed.
-
-(* Hint Resolve pred_is_minus_1. *)
-
 (** [unshift q k] commutes with subst, if we offset the environment by
     [k] and [shift q k] all its terms.
 
@@ -538,8 +527,6 @@ Proof.
   lapply fvs_dichot.
   unfold Outside_Range; firstorder omega.
   replace x with (pred (S x)) by omega.
-  replace (fun x => x - 1) with pred.
-  2: { rewrite pred_is_minus_1; auto. }
   apply set_map_intro.
   sauto.
 
@@ -699,7 +686,7 @@ Proof.
      (* Left side *)
       rewrite <- filter_remove.
       set (f := fun x : nat => outside_range (S q) (length env + S q) x).
-      set (g := fun x : nat => outside_range q (length env + q) (x - 1)).
+      set (g := fun x : nat => outside_range q (length env + q) (pred x)).
       setoid_rewrite filter_extensionality with (g:=g); [sauto|].
       intros.
       assert (x <> 0).
@@ -714,7 +701,6 @@ Proof.
      intros x.
      setoid_replace (set_remove nat eq_nat_dec 0 (freevars (shift 0 1 x)))
                with (freevars (shift 0 1 x)).
-     replace (fun x0 : nat => x0 - 1) with pred by (rewrite pred_is_minus_1; auto).
      rewrite pred_freevars_shift; sauto.
      solve[apply remove_0_shift_0_1].
 
@@ -749,7 +735,7 @@ Proof.
  remember (set_filter nat (fun x : nat => outside_range q (length env + q) x)
             (freevars M1)).
  remember (set_filter nat (fun x : nat => outside_range q (length env + q) x)
-              (set_map eq_nat_dec (fun x : nat => x - 1) (freevars M2 % 0))).
+              (set_map eq_nat_dec pred (freevars M2 % 0))).
  setoid_replace (s ∪ (l ∪ l0)) with ((s ∪ l) ∪ (s ∪ l0)) by (apply union_distrib).
 
  apply incl_sets_union; [| sauto].
@@ -769,7 +755,7 @@ Proof.
   rewrite <- filter_remove.
   rewrite map_length.
   set (f := fun x : nat => outside_range (S q) (length env + S q) x).
-  set (g := fun x : nat => outside_range q (length env + q) (x - 1)).
+  set (g := fun x : nat => outside_range q (length env + q) (pred x)).
   setoid_rewrite filter_extensionality with (g:=g); [sauto|].
   intros.
   assert (x <> 0).
@@ -788,8 +774,7 @@ Proof.
  intros x.
  setoid_replace (set_remove nat eq_nat_dec 0 (freevars (shift 0 1 x)))
            with (freevars (shift 0 1 x)).
-  replace (fun x0 : nat => x0 - 1) with pred by (rewrite pred_is_minus_1; auto).
-   rewrite pred_freevars_shift; sauto.
+  rewrite pred_freevars_shift; sauto.
  solve[apply remove_0_shift_0_1].
 Qed.
 
@@ -845,16 +830,15 @@ Proof.
   destruct (eq_nat_dec x 0).
    unfold in_env_domain.
    omega.
-  cut (~in_env_domain n env (x-1)).
+  cut (~in_env_domain n env (pred x)).
    unfold in_env_domain.
    intros.
    omega.
   apply H.
-  remember (fun x0 => x0-1) as pred.
-  replace (x-1) with (pred x) by (subst;auto).
   apply set_map_intro.
   apply set_remove_intro.
   auto.
+
  (* Case TmApp *)
  rewrite all_union in H.
  rewrite IHM1, IHM2 by tauto; trivial.
@@ -1013,8 +997,7 @@ Proof.
      replace (S m) with (m + 1) by omega.
      replace (S n) with (n + 1) by omega.
      rewrite map_map.
-     replace (fun x => shift 0 1 (subst_env n env x))
-        with (fun x => subst_env (n+1) (map (shift 0 1) env) (shift 0 1 x)).
+     rewrite map_ext with (g:=(fun x => subst_env (n+1) (map (shift 0 1) env) (shift 0 1 x))).
       replace (map (fun x : Term => subst_env (n+1) (map (shift 0 1) env) (shift 0 1 x)) env')
          with (map (subst_env (n+1) (map (shift 0 1) env)) (map (shift 0 1) env')).
        apply IHN.
@@ -1051,7 +1034,7 @@ Proof.
 
        solve[map_omega].
       rewrite map_map; solve [trivial]...
-     extensionality Z.
+     intro.
      rewrite shift_subst_commute_lo; [auto|].
      solve [omega]...
  (* Case TmApp. *)
@@ -1070,8 +1053,7 @@ Proof.
  replace (S m) with (m + 1) by omega.
  replace (S n) with (n + 1) by omega.
  rewrite map_map.
- replace (fun x => shift 0 1 (subst_env n env x))
-    with (fun x => subst_env (n+1) (map (shift 0 1) env) (shift 0 1 x)).
+ rewrite map_ext with (g := fun x => subst_env (n+1) (map (shift 0 1) env) (shift 0 1 x)).
   replace (map (fun x : Term => subst_env (n+1) (map (shift 0 1) env) (shift 0 1 x)) env')
      with (map (subst_env (n+1) (map (shift 0 1) env)) (map (shift 0 1) env')).
    apply IHN2.
@@ -1103,7 +1085,7 @@ Proof.
 
    solve[map_omega].
   rewrite map_map; solve [trivial]...
- extensionality Z.
+ intro.
  rewrite shift_subst_commute_lo; [auto|].
  solve [omega]...
 Qed.

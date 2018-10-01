@@ -46,8 +46,6 @@ Import Setoid.
 
 Require Import Coq.Program.Basics. (* TODO: What's this for?? *)
 
-(* Require Import Coq.Logic.FunctionalExtensionality.  (* Assumes an axiom. *) *)
-
 Require Import Bool.
 
 Require Import OutsideRange.

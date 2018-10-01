@@ -375,7 +375,7 @@ Require Import Listkit.logickit.
 Lemma shift_var_S_pred:
   forall x k n,
     x <> 0 ->
-    shift_var (S k) n x - 1 = shift_var k n (x-1).
+    pred (shift_var (S k) n x) = shift_var k n (pred x).
 Proof.
  unfold shift_var.
  intros.
@@ -475,7 +475,7 @@ Proof.
       remember (set_remove _ eq_nat_dec 0 (freevars M)) as M_fvs_less_0.
       assert (H : ~set_In (S k')
                      (set_map eq_nat_dec S
-                        (set_map eq_nat_dec (fun x => x - 1)
+                        (set_map eq_nat_dec pred
                            M_fvs_less_0))).
        subst M_fvs_less_0.
        rewrite <- (map_monomorphism _ _ _ _ S _); auto.
@@ -483,7 +483,7 @@ Proof.
        auto.
 
       rewrite set_map_map in H.
-      setoid_replace (set_map eq_nat_dec (fun x => S (x-1)) M_fvs_less_0)
+      setoid_replace (set_map eq_nat_dec (fun x => S (pred x)) M_fvs_less_0)
          with (M_fvs_less_0) (* using eq_sets *) in H.
        auto.
       rewrite set_map_extensionality with (g:=idy nat).
@@ -566,14 +566,14 @@ Proof.
       auto.
      assert (eq_sets _
        (set_map eq_nat_dec
-         (fun x => x-1) (set_remove _ eq_nat_dec 0 (freevars (shift (S k) n M))))
+         pred (set_remove _ eq_nat_dec 0 (freevars (shift (S k) n M))))
        (set_map eq_nat_dec
-         (fun x => x-1)
+         pred
          (set_remove _ eq_nat_dec 0
            (set_map eq_nat_dec (shift_var (S k) n) (freevars M))))).
       rewrite H; auto.
      apply eq_sets_trans with
-       (set_map eq_nat_dec (fun x => x-1)
+       (set_map eq_nat_dec pred
          (set_remove _ eq_nat_dec 0
            (set_map eq_nat_dec (shift_var (S k) n) (freevars M)))).
       auto.
@@ -584,8 +584,8 @@ Proof.
       rewrite <- map_remove.
        rewrite set_map_map.
       replace set_remove with Sets.set_remove by auto.
-      rewrite set_map_extensionality with (g := fun x => shift_var k n (x-1)).
-       auto.
+      rewrite set_map_extensionality with (g := fun x => shift_var k n (pred x)).
+       sauto.
       intros.
       (* subst f. *)
       apply in_set_remove_not_removed in H2.
@@ -622,8 +622,8 @@ Proof.
  rewrite <- map_remove.
   rewrite set_map_map.
   rewrite set_map_map.
-  rewrite set_map_extensionality with (g := (fun x => shift_var k n (x - 1))).
-   auto.
+  rewrite set_map_extensionality with (g := (fun x => shift_var k n (pred x))).
+   sauto.
   intros.
   unfold shift_var.
   assert (x <> 0).

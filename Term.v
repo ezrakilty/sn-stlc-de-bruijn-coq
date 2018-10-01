@@ -181,14 +181,14 @@ Fixpoint freevars (M:Term) : set nat :=
   | TmVar x => set_add eq_nat_dec x (empty_set nat)
   | TmPair L M => set_union eq_nat_dec (freevars L) (freevars M)
   | TmProj b M => freevars M
-  | TmAbs N => set_map eq_nat_dec (fun x => x-1)
+  | TmAbs N => set_map eq_nat_dec pred
                  (set_remove _ eq_nat_dec 0 (freevars N))
   | TmApp L M => set_union eq_nat_dec (freevars L) (freevars M)
   | TmNull => empty_set nat
   | TmSingle x => freevars x
   | TmUnion a b => set_union eq_nat_dec (freevars a) (freevars b)
   | TmBind M N => set_union eq_nat_dec (freevars M)
-                            (set_map eq_nat_dec (fun x => x-1)
+                            (set_map eq_nat_dec pred
                                      (set_remove _ eq_nat_dec 0 (freevars N)))
   end.
 
