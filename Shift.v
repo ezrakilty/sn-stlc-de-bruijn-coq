@@ -286,6 +286,27 @@ Proof.
  destruct (le_gt_dec k x); omega.
 Qed.
 
+(** Composing one [shift] with another, where the later [k] falls in the
+    gap created by the earlier [shift], can be reduced to a single [shift]. *)
+Lemma shift_shift':
+  forall n n' M k k',
+    k' <= k -> k <= k' + n' ->
+    shift k n (shift k' n' M) = shift k' (n + n') M.
+Proof.
+ induction M; intros k k' H0 H1; simpl; try (solve [f_equal; eauto]).
+(* Case TmVar *)
+ f_equal.
+ unfold shift_var.
+ break; break; omega.
+ (* Csae TmAbs *)
+ f_equal.
+ apply IHM; omega.
+ (* Csae TmBind *)
+ f_equal.
+ apply IHM1; omega.
+ apply IHM2; omega.
+Qed.
+
 (** Composing [unshift] with [shift], given certain conditions (TODO)
     on the indices, produces the effect of a single [shift] *)
 Lemma fancy_unshift_shift:
@@ -674,7 +695,7 @@ Proof.
       unfold all in H |- *.
       intros x H0.
       pose (H1 := H x H0).
-      omega.
+      destruct H1; omega.
 
  (* Case TmApp *)
      rewrite all_union.
@@ -691,6 +712,7 @@ Proof.
  (* Case TmUnion *)
   rewrite all_union.
   auto.
+
  (* Case TmBind *)
  rewrite all_union.
  split.

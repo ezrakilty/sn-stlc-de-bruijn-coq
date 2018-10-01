@@ -10,6 +10,9 @@ Require Import Shift.
 Require Import Subst.
 Require Import Omega.
 
+Definition swap01 M :=
+  subst_env 0 (TmVar 1 :: TmVar 0 :: nil) M.
+
 Inductive RewritesTo : Term -> Term -> Type :=
 | Rw_beta : forall N M V,
     V = unshift 0 1 (subst_env 0 (shift 0 1 M :: nil) N) ->
@@ -50,11 +53,12 @@ Inductive RewritesTo : Term -> Term -> Type :=
     RewritesTo (TmBind (TmUnion xs ys) n) (TmUnion (TmBind xs n) (TmBind ys n))
 | Rw_Bind_subject : forall m n m',
     RewritesTo m m' -> RewritesTo (TmBind m n) (TmBind m' n)
+| Rw_Bind_assoc : forall l m n,
+    RewritesTo (TmBind (TmBind l m) n) (TmBind l (TmBind m (shift 1 1 n)))
 | Rw_Bind_body : forall m n n',
                    RewritesTo n n' -> RewritesTo (TmBind m n) (TmBind m n')
 | Rw_Single : forall m m',
                 RewritesTo m m' -> RewritesTo (TmSingle m) (TmSingle m')
-(* TODO: Rw_Bind_assoc. *)
 .
 
 Hint Constructors RewritesTo.
@@ -269,29 +273,36 @@ Lemma Rw_preserves_types:
 Proof.
  intros M M' red.
  induction red;
-   intros env T T_tp;
-   inversion T_tp as
-       [| | | ? ? S T' TmAbs_N_tp | | ? ? ? H | ? ? ? H | ? ? H | | |? ? ? ? H H0];
-   eauto.
+    intros env T T_tp;
+    inversion T_tp as
+        [| | | ? ? S T' TmAbs_N_tp | | ? ? ? H | ? ? ? H | ? ? H | | |? ? ? ? H H0];
+    eauto.
  (* Case Beta_reduction -> *)
-    inversion TmAbs_N_tp.
-    subst.
-    eapply Rw_beta_preserves_types; eauto.
+     inversion TmAbs_N_tp.
+     subst.
+     eapply Rw_beta_preserves_types; eauto.
  (* Case Beta reduction TPair (1) *)
+     subst T.
+     inversion H; sauto.
+ (* Case Beta reduction TPair (2) *)
     subst T.
     inversion H; sauto.
- (* Case Beta reduction TPair (2) *)
-   subst T.
-   inversion H; sauto.
  (* Case Beta reduction [] *)
-  subst T n0 m.
+   subst T n0 m.
+   inversion H.
+   subst.
+   eauto.
+ (* Case TmUnion/TmBind *)
   inversion H.
   subst.
-  eauto.
- (* Case TmUnion/TmBind *)
+  apply TUnion; eapply TBind; eauto.
+ (* Case TmBind_assoc *)
  inversion H.
  subst.
- apply TUnion; eapply TBind; eauto.
+ eapply TBind; eauto.
+ eapply TBind with (s := s); eauto. 
+ replace (s :: s0 :: env) with ((s::nil) ++ (s0::nil) ++ env) by auto.
+ eapply shift_preserves_typing; eauto.
 Qed.
 
 (** The reflexive-transitive rewrite relation preserves the [Typing] judgment. *)
@@ -331,6 +342,7 @@ Proof.
                   | M N M'
                   | M N
                   | M N
+                  | L M N
                   | M N
                   | M];
    intros n env.
@@ -505,7 +517,32 @@ Proof.
  apply Rw_Bind_subject.
  eauto.
 
- (* Case: Body reduction of TmBind *)
+ (* Case: TmBind Associativity *)
+ simpl.
+ replace (TmBind (subst_env n env L)
+                 (TmBind (subst_env (S n) (map (shift 0 1) env) M)
+                         (subst_env (S (S n)) (map (shift 0 1) (map (shift 0 1) env)) (shift 1 1 N))))
+   with
+     (TmBind (subst_env n env L)
+             (TmBind (subst_env (S n) (map (shift 0 1) env) M)
+                     (shift 1 1 (subst_env (S n) (map (shift 0 1) env) N)))).
+ { auto. }
+ rewrite shift_subst_commute_lo by omega.
+ simpl.
+ replace (n + 1) with (S n) by omega.
+ rewrite map_map.
+ rewrite map_map.
+ f_equal.
+ f_equal.
+ f_equal.
+ apply map_ext.
+ intros.
+ rewrite shift_shift' by omega.
+ rewrite shift_shift' by omega.
+ simpl.
+ auto.
+
+(* Case: Body reduction of TmBind *)
  simpl.
  apply Rw_Bind_body.
  eauto.
@@ -550,9 +587,10 @@ Lemma shift_Rw_inversion:
     (shift k 1 N ~> M) ->
     {N' : Term & ((M = shift k 1 N') * (N ~> N')) %type}.
 Proof.
-(*  N - - - -> N'
+(*
+    N - - - -> N'
     |          :
-   f|          : f
+    | f        : f = shift k 1
     |          :
     V          V
    f N ------> M
@@ -722,7 +760,18 @@ Proof.
  subst m'.
  eauto.
 
- (* Case: reduction in body of TmBind. *)
+ (* Case: TmBind assoc *)
+ subst.
+ destruct N1; simpl in H0; try discriminate.
+ inversion H0.
+ subst.
+ exists (TmBind N1_1 (TmBind N1_2 (shift 1 1 N2))).
+ simpl.
+ split.
+ { rewrite <- shift_shift_commute by omega; auto. }
+ auto.
+
+(* Case: reduction in body of TmBind. *)
  destruct (IHN2 n' (S k)) as [x [e r]]; [auto | ].
  exists (TmBind N1 x).
  simpl.
@@ -738,7 +787,8 @@ Lemma TmBind_Neutral_reducts:
   + {N' : Term & ((Z = TmBind M N') * (N ~> N'))%type}.
 Proof.
  intros.
- inversion H0; subst; solve [inversion H | firstorder].
+ inversion H0; subst; try solve [inversion H | firstorder].
+ (* Stuck: The supposedly neutral term actually reacts with its context. :( *)
 Qed.
 
 

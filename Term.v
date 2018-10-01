@@ -85,7 +85,7 @@ Hint Unfold env_typing.
 Lemma env_typing_intro:
   forall env V Vs T Ts,
     Typing env V T ->
-    env_typing_env env (Vs) (Ts) ->
+    env_typing_env env Vs Ts ->
     env_typing_env env (V::Vs) (T::Ts).
 Proof.
  intros.
@@ -218,11 +218,11 @@ Qed.
     In other words, [M] cannot react with [C] immediately.
 
     But we define it here by the cases that we know have that property.
+    TODO: Fix that!
  *)
 Inductive Neutral : Term -> Type :=
   | Neutral_App : forall L M, Neutral (TmApp L M)
-  | Neutral_Proj : forall b M, Neutral (TmProj b M)
-  | Neutral_TmBind : forall M N, Neutral (TmBind M N).
+  | Neutral_Proj : forall b M, Neutral (TmProj b M).
 
 Hint Constructors Neutral.
 

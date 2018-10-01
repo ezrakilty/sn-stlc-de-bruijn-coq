@@ -14,6 +14,10 @@ Require Import Typing.
 
 Hint Rewrite map_length: map.
 
+
+(** Until I did all this, I didn't realize that substitution was a big
+ask; a complex function with an algorithm in its own right. *)
+
 Ltac map_omega :=
    autorewrite with map; omega.
 
@@ -464,7 +468,7 @@ Proof.
  omega.
 Qed.
 
-Hint Resolve pred_is_minus_1.
+(* Hint Resolve pred_is_minus_1. *)
 
 (** [unshift q k] commutes with subst, if we offset the environment by
     [k] and [shift q k] all its terms.
@@ -534,7 +538,8 @@ Proof.
   lapply fvs_dichot.
   unfold Outside_Range; firstorder omega.
   replace x with (pred (S x)) by omega.
-  replace (fun x => x - 1) with pred by auto.
+  replace (fun x => x - 1) with pred.
+  2: { rewrite pred_is_minus_1; auto. }
   apply set_map_intro.
   sauto.
 
@@ -709,8 +714,8 @@ Proof.
      intros x.
      setoid_replace (set_remove nat eq_nat_dec 0 (freevars (shift 0 1 x)))
                with (freevars (shift 0 1 x)).
-      replace (fun x0 : nat => x0 - 1) with pred by auto.
-       rewrite pred_freevars_shift; sauto.
+     replace (fun x0 : nat => x0 - 1) with pred by (rewrite pred_is_minus_1; auto).
+     rewrite pred_freevars_shift; sauto.
      solve[apply remove_0_shift_0_1].
 
  (* Case TmApp *)
@@ -783,7 +788,7 @@ Proof.
  intros x.
  setoid_replace (set_remove nat eq_nat_dec 0 (freevars (shift 0 1 x)))
            with (freevars (shift 0 1 x)).
-  replace (fun x0 : nat => x0 - 1) with pred by auto.
+  replace (fun x0 : nat => x0 - 1) with pred by (rewrite pred_is_minus_1; auto).
    rewrite pred_freevars_shift; sauto.
  solve[apply remove_0_shift_0_1].
 Qed.

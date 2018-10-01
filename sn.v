@@ -46,7 +46,7 @@ Import Setoid.
 
 Require Import Coq.Program.Basics. (* TODO: What's this for?? *)
 
-Require Import Coq.Logic.FunctionalExtensionality.  (* Assumes an axiom. *)
+(* Require Import Coq.Logic.FunctionalExtensionality.  (* Assumes an axiom. *) *)
 
 Require Import Bool.
 
@@ -351,7 +351,7 @@ Proof.
      apply TApp with T1; seauto.
     intros M'' red.
     (* Take cases on the reductions. *)
-    inversion red as [ | ? Z ? redn_Z | | | | | | | | | | | | | | | ] ; subst.
+    inversion red as [ | ? Z ? redn_Z | | | | | | | | | | | | | | | | ] ; subst.
     (* beta reduction *)
        (* BUG: should be able to put these all as args to congruence. *)
        pose subst_dummyvar; pose subst_nil; pose unshift_shift.
@@ -442,8 +442,7 @@ Proof.
  constructor.
  intros m' H3.
  let T := type of H3 in copy T.
- apply Neutral_Lists in H3; auto.
- destruct H3 as [[M' [s1 s2]] | [K1 [s1 s2]]].
+ apply Neutral_Lists in H3 as [[M' s1 s2] | [K1 s1 s2]]; [ | | auto].
   subst.
   apply X; auto.
 
@@ -573,7 +572,7 @@ Proof.
  apply Neutral_Reducible_withdraw; [sauto | seauto |].
  intros M' redn.
 
- inversion redn as [N0 M0 V M'_eq| ? ? ? L_redn | | | | | | | | | | | | | | |].
+ inversion redn as [N0 M0 V M'_eq| ? ? ? L_redn | | | | | | | | | | | | | | | | ].
 
  (* Case: beta reduction. *)
    subst V M0 N0.
@@ -631,7 +630,7 @@ Proof.
  (* All reducts are reducible. *)
  - intros M' H3.
    (* Take cases on the reduction. *)
-   inversion H3 as [ | | | | | | m n1 n2 H7 | m n | m n | | | | | | | |]; subst.
+   inversion H3 as [ | | | | | | m n1 n2 H7 | m n | m n | | | | | | | | | ]; subst.
    (* Case: reduction under the operation. *)
    * inversion H7; subst; eauto.
    (* Case: beta-reduction on the left *)
@@ -815,8 +814,7 @@ Proof.
  intros K0 Z H2 H3.
 
  let T := type of H3 in copy T.
- apply K_TmNull_rw in H3.
- destruct H3 as [[K_shorter [N [H1a H1b]]] | [K' [H1a H1b]]].
+ apply K_TmNull_rw in H3 as [[K_shorter [N H1a H1b]] | [K' H1a H1b]].
  (* Case [plug K0 TmNull] drops a frame. *)
   right.
   subst.
@@ -953,6 +951,16 @@ Proof.
  eauto using Rw_trans_preserves_SN.
 Qed.
 
+Lemma SN_via_Krw :
+  forall K K' M,
+    Krw K K' -> SN (plug K M) -> SN (plug K' M).
+Proof.
+ intros.
+ assert (plug K M ~> plug K' M).
+  auto.
+ eauto using Rw_trans_preserves_SN.
+Qed.
+
 Lemma Krw_norm_from_SN:
   forall Q, SN Q -> forall K M, (Q ~>> plug K M) -> Krw_norm K.
 Proof.
@@ -987,47 +995,76 @@ Proof.
  intros Z H_rw.
 
  destruct K0.
-  simpl in *.
-  inversion H_rw; subst; auto.
-   
- simpl in H_rw.
+ - simpl in *.
+   inversion H_rw; subst; auto.
 
- apply Neutral_Lists in H_rw; [| sauto].
- destruct H_rw as [[M' [Z_def rw]] | [K' [Z_def rw]]].
- (* Case: rw is within TmBind (TmUnion M N) t *)
-  subst.
-  inversion rw; subst.
-    assert (Ksize K0 < Ksize K).
-     assert (Ksize (Iterate t K0) <= Ksize K).
-      apply Krw_rt_conserves_Ksize with (K := K); auto.
-     simpl in *; omega.
-    apply H; auto.
-     eapply plug_SN_rw_rt with (TmBind M t); auto.
-      apply Rw_rt_Bind_left; sauto.
-     change (SN (plug (Iterate t K0) M)).
-     eauto using SN_via_Krw_rt.
-    eapply plug_SN_rw_rt with (TmBind N t); auto.
-     apply Rw_rt_Bind_left; sauto.
-    change (SN (plug (Iterate t K0) N)).
-     eauto using SN_via_Krw_rt.
-   inversion H14; subst; seauto.
+ - simpl in H_rw.
 
- (* Case: rw is within t of TmBind (TmUnion M N) t *)
-  change (SN (plug (Iterate n' K0) (TmUnion M0 N0))).
-  assert (Krw (Iterate t K0) (Iterate n' K0)).
-   unfold Krw.
-   simpl.
-   intros.
-   apply Rw_under_K.
-   eauto.
-  apply H8.
-  sauto.
+   apply three_ways_to_reduce_at_interface in H_rw as
+       [[[[M' Z_def rw] | [K' Z_def rw]] | [H' [K' [M' ? [? ? H_bogus]]]]] | ?].
+   * (* Case: rw is within TmBind (TmUnion M N) t *)
+     subst.
+     inversion rw; subst.
+     -- (* Case: rw is zippering TmUnion thru TmBind _ _ *)
+       assert (Ksize K0 < Ksize K).
+       { assert (Ksize (Iterate t K0) <= Ksize K).
+         { apply Krw_rt_conserves_Ksize with (K := K); auto. }
+         simpl in *; omega. }
+       apply H; auto.
+       eapply plug_SN_rw_rt with (TmBind M t); auto.
+       { auto using Rw_rt_Bind_left. }
+       change (SN (plug (Iterate t K0) M)).
+       { eauto using SN_via_Krw_rt. }
+       eapply plug_SN_rw_rt with (TmBind N t); auto.
+       { auto using Rw_rt_Bind_left. }
+       change (SN (plug (Iterate t K0) N)).
+       { eauto using SN_via_Krw_rt. }
+     -- (* Case: rw is within TmUnion _ _ *)
+       inversion H14; subst; seauto.
 
- (* Case: rw is within K *)
- subst.
- change (SN (plug (Iterate t K') (TmUnion M0 N0))).
- apply H8; auto.
- apply iterate_reduce; sauto.
+   (* Case: rw is within t of TmBind (TmUnion M N) t *)
+     -- change (SN (plug (Iterate n' K0) (TmUnion M0 N0))).
+        assert (Krw (Iterate t K0) (Iterate n' K0)).
+        ** unfold Krw.
+           simpl.
+           intros.
+           apply Rw_under_K.
+           eauto.
+        ** apply H8.
+           sauto.
+
+   (* Case: rw is within K *)
+   * subst.
+     change (SN (plug (Iterate t K') (TmUnion M0 N0))).
+     apply H8; auto.
+   * (* Case: M is not a bind but it consumes a K frame. *)
+     refute.
+     unfold not in *; eauto using H_bogus.
+     apply NotBind_TmBind in H_bogus; auto.
+   * (* Case: M is a TmBind and we assoc with the context. *)
+     destruct s as [L [L' ? [K' [N' Ha Hb]]]].
+     inversion e.
+     subst.
+     rewrite reverse_plug_defn.
+     apply H.
+     simpl.
+     apply Krw_rt_conserves_Ksize in H5.
+     simpl in *.
+     omega.
+     -- apply SN_via_Krw with (Iterate L' (Iterate N' K')).
+        { apply assoc_in_K. }
+        apply SN_via_Krw_rt with K.
+        auto.
+        apply Rw_trans_preserves_SN with (plug K M).
+        { auto. }
+        { apply Rw_rt_under_K; auto. }
+     -- apply SN_via_Krw with (Iterate L' (Iterate N' K')).
+        { apply assoc_in_K. }
+        apply SN_via_Krw_rt with K.
+        auto.
+        apply Rw_trans_preserves_SN with (plug K N).
+        { auto. }
+        { apply Rw_rt_under_K; auto. }
 Qed.
 
 Lemma ReducibleK_Union:
@@ -1137,9 +1174,12 @@ Lemma unshift_preserves_rw:
 Proof.
  induction M; intros; inversion H; subst; simpl; eauto.
 
- apply Rw_beta.
- apply beta_with_unshift.
- omega.
+ - apply Rw_beta.
+   apply beta_with_unshift.
+   omega.
+ - rewrite unshift_shift_commute.
+   auto.
+   omega.
 Qed.
 
 Lemma unshift_substitution_preserves_rw:
@@ -1174,23 +1214,26 @@ Lemma shift_preserves_rw:
     shift n 1 L ~> shift n 1 L'.
 Proof.
  induction L; intros; inversion H; subst; simpl; eauto.
- apply Rw_beta.
- rewrite <- shift_shift_commute by omega.
- replace (shift (S n) 1 (shift 0 1 L2) :: nil)
-    with (map (shift (S n) 1) ((shift 0 1 L2) :: nil)) by auto.
- rewrite <- shift_subst_commute_hi by (simpl; omega).
- rewrite <- Shift.shift_unshift_commute; try omega.
-  trivial.
- intro.
- pose (subst_Freevars N (shift 0 1 L2 :: nil) 0).
- apply set_union_elim with (a:=0) in i.
- simpl in i.
-  destruct i.
-   pose (shift_freevars L2 0 0).
-   intuition.
- apply set_filter_elim in H1.
- intuition.
- auto.
+ - apply Rw_beta.
+   rewrite <- shift_shift_commute by omega.
+   replace (shift (S n) 1 (shift 0 1 L2) :: nil)
+     with (map (shift (S n) 1) ((shift 0 1 L2) :: nil)) by auto.
+   rewrite <- shift_subst_commute_hi by (simpl; omega).
+   rewrite <- Shift.shift_unshift_commute; try omega.
+   * trivial.
+   * intro.
+     pose (subst_Freevars N (shift 0 1 L2 :: nil) 0).
+     apply set_union_elim with (a:=0) in i.
+     -- simpl in i.
+        destruct i.
+        ** pose (shift_freevars L2 0 0).
+           intuition.
+        ** apply set_filter_elim in H1.
+           intuition.
+     -- auto.
+ - rewrite shift_shift_commute.
+   auto.
+   omega.
 Qed.
 
 Lemma unshift_preserves_rw_rt
@@ -1331,8 +1374,7 @@ Proof.
  intros.
  apply reducts_SN.
  intros.
- apply Neutral_Lists in H9; auto.
- destruct H9 as [[M' [H7a H7b]] | [K' [H7a H7b]]]; subst.
+ apply Neutral_Lists in H9 as [[M' H7a H7b] | [K' H7a H7b]]; [| | auto]; subst.
  - inversion H7b; subst.
    * eauto using beta_reduct_under_K_rw_rt, Rw_trans_preserves_SN.
    * inversion H12; subst.
@@ -1347,27 +1389,69 @@ Lemma bind_sn_withdraw:
     SN (plug K (unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) N))) ->
     SN (plug K (TmBind (TmSingle L) N)).
 Proof.
- intros.
- assert (SN N).
+  induction K using Ksize_induction_strong.
+  rename H into IHK.
+  (* destruct K; [simpl in * ; refute; omega | ]. *)
+  (* rename K into K'. *)
+  (* remember (Iterate t K') as K. *)
+  intros L N H H0.
+  assert (SN N).
   apply SN_push_under_k in H0.
   eauto using SN_beta_withdraw.
- apply triple_induction_scoped with (K0:=K) (M0:=N) (N0:=L);
+  apply triple_induction_scoped with (K0:=K) (M0:=N) (N0:=L);
     eauto using SN_context_Krw_norm.  (* XXX rename to triple_induction_SN *)
- intros K0 N0 L0 ? ? ? IHK0 IHM0 IHL0.
- apply reducts_SN.
- intros Z redn.
- apply Neutral_Lists in redn; try auto.
- destruct redn as [[M' [redn_a redn_b]] | [K' [redn_a redn_b]]].
-  inversion redn_b; subst.
-    apply SN_beta_withdraw_under_k; auto.
-     apply Rw_trans_preserves_SN with L; auto.
-    eauto using beta_reduct_under_K_rw_rt, Rw_trans_preserves_SN.
-   inversion H8.
-  subst.
-   apply IHL0; sauto.
-  seauto.
- subst.
- eauto using IHK0.
+  intros K0 N0 L0 ? ? ? IHK0 IHM0 IHL0.
+  apply reducts_SN.
+  intros Z redn.
+  ezcopy redn.
+  apply three_ways_to_reduce_at_interface in redn
+    as [[[[M' redn_a redn_b] | [K'' redn_a redn_b]] | ?] | ?].
+  * inversion redn_b; subst.
+    -- apply SN_beta_withdraw_under_k; auto.
+       { apply Rw_trans_preserves_SN with L; auto. }
+       (* assert (Krw_rt (Iterate t K) (Iterate t K0)) by admit. *)
+       eauto using beta_reduct_under_K_rw_rt, Rw_trans_preserves_SN.
+    -- inversion H9.
+       subst.
+       apply IHL0; sauto.
+    -- seauto.
+  * subst.
+    apply IHK0; auto.
+  * refute.
+    destruct p as [A [K' [M' H6 [N' H7 H8]]]].
+    apply NotBind_TmBind in H8; auto.
+  * destruct s as [L1 [L1' H8 [K'' [N1 H9 H10]]]].
+    inversion H8.
+    subst Z L1 L1' K0.
+    apply IHK.
+    apply Krw_rt_conserves_Ksize in H2.
+    simpl in H2.
+    omega.
+    eauto.
+    (* assert (SN (plug (Iterate N1 K'') (unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) N)))). *)
+    (* eapply SN_via_Krw_rt; eauto. *)
+    assert (SN (plug (Iterate N1 K'') (unshift 0 1 (subst_env 0 (shift 0 1 L0 :: nil) N0)))).
+    assert (plug K (unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) N))
+               ~>> plug (Iterate N1 K'') (unshift 0 1 (subst_env 0 (shift 0 1 L0 :: nil) N0))).
+    apply beta_reduct_under_K_rw_rt; sauto.
+    apply Rw_trans_preserves_SN in H6.
+    auto.
+    auto.
+    simpl in H6.
+    simpl.
+
+    replace (unshift 1 1 (subst_env 1 (shift 0 1 (shift 0 1 L0) :: nil) (shift 1 1 N1)))
+      with N1.
+    auto.
+    rewrite subst_unused_noop.
+    symmetry; apply unshift_shift.
+    pose (shift_freevars N1 1).
+    unfold all in a |- *.
+    unfold in_env_domain.
+    intros x H_fv.
+    specialize (a x H_fv).
+    simpl.
+    omega.
 Qed.
 
 Lemma Bind_Reducible_core:
@@ -1592,6 +1676,3 @@ Qed.
 (* Print reducibility. (* Huzzah! *) *)
 
 Print Assumptions normalization.
-
-(* Until I did all this, I didn't realize that substitution was a big
-ask; a complex function with an algorithm in its own right. *)

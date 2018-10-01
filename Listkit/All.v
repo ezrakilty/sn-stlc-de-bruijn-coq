@@ -19,9 +19,9 @@ Proof.
  contradiction.
 Qed.
 
-(* Add LoadPath "../Listkit" as Listkit. *)
+Add LoadPath "../Listkit" as Listkit.
 
-Require Import Sets. (* Consider NOT doing this. *)
+Require Import Listkit.Sets. (* Consider NOT doing this. *)
 
 Lemma all_map:
   forall A eq_dec pred f xs,
@@ -145,8 +145,6 @@ Proof.
  split.
   intros.
   unfold all in *.
-  sufficient (forall x, (set_In x xs \/ set_In x ys) -> pred x).
-  intros.
   auto.
 
  unfold all.

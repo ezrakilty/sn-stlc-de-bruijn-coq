@@ -1,9 +1,11 @@
 Add LoadPath "Listkit" as Listkit.
 
+
 Require Import Norm.
 Require Import Rewrites.
 Require Import Term.
 Require Import Omega.
+Require Import Shift.
 
 Inductive Continuation :=
   Empty : Continuation
@@ -78,6 +80,8 @@ Proof.
  eauto.
 Qed.
 
+Hint Resolve iterate_reduce rw_in_K_body.
+
 Lemma Krw_SNK K K' : SNK K -> Krw K K' -> SNK K'.
 Proof.
  unfold SNK, Krw in *.
@@ -138,94 +142,171 @@ Proof.
  eapply SN_embedding with (f := fun x => TmBind x t) (Q := TmBind M t); sauto.
 Qed.
 
-(* Induction on the reduction sequences of two objects: K and M.
- Unused but might be good practice?
-*)
-Lemma double_induction_K P K M:
-  (forall M0,
-     (M ~>> M0) ->
-     Neutral M0 ->
-     (  (forall K', (Krw K K') -> P K' M0)
-      -> (forall M', (M0 ~> M') -> P K M')
-      -> P K M0))
-  ->
-  forall plug_K_M, (plug K M ~>> plug_K_M) ->
-                   Neutral M ->
-                   SN plug_K_M -> P K M.
+Ltac ezcopy H := let T := type of H in copy T.
+
+Hint Constructors Neutral.
+
+(* Lemma omg_this_is_awful: *)
+(*   forall K L M N Z, *)
+(*     (plug K (TmBind (TmBind L M) N) ~> plug K Z) *)
+(*     -> *)
+(*     (Z = TmBind L (TmBind M (shift 1 1 N))) + *)
+(*     {LM' : Term & Z = TmBind LM' N & TmBind L M ~> LM'} + *)
+(*     {N' : Term & Z = TmBind (TmBind L M) N' & N ~> N'}. *)
+(* Proof. *)
+(*  induction K; simpl; intros. *)
+(*  inversion H; subst. *)
+(*  left; right; eauto. *)
+(*  left; left; eauto. *)
+(*  right; eauto. *)
+(*  apply IHK in H. *)
+(*  destruct H as [[? | ?] | ?]. *)
+(*    inversion e. *)
+(*    absurd (t = TmBind N (shift 1 1 t)); admit. *)
+(*   destruct s. *)
+(*   left; right. *)
+(*   inversion e. *)
+(*   subst. *)
+(* Qed. *)
+
+
+Fixpoint appendK K1 K2 :=
+  match K1 with
+    | Empty => K2
+    | Iterate N K1' => Iterate N (appendK K1' K2)
+  end.
+
+(* K o (x)N o (y)N0 @ M =
+   K @ for x (for y M N0) N ~>
+   K @ for y M (for x N0 N) =
+   K o (y)(for x N0 N) @ M
+ *)
+Lemma assoc_in_K:
+  forall N0 N K,
+  Krw (Iterate N0 (Iterate N K)) (Iterate (TmBind N0 (shift 1 1 N)) K).
 Proof.
-(* Idea: Use SN_embedding's approach instead. *)
-Admitted.
+ unfold Krw.
+ simpl.
+ intros.
+ auto.
+Qed.
+
+Definition NotBind M := forall a b, M <> TmBind a b.
+
+Lemma NotBind_TmBind L M : NotBind (TmBind L M) -> False.
+Proof.
+  unfold NotBind.
+  unfold not.
+  intro H.
+  eapply H.
+  eauto.
+Qed.
+
+Lemma three_ways_to_reduce_at_interface:
+  forall K M Z,
+    (plug K M ~> Z) ->
+    {M' : Term         &              Z = plug K M' & M ~> M'} +
+    {K' : Continuation &              Z = plug K' M & Krw K K'} +
+    (notT (Neutral M) * {K' : Continuation & {M' : Term & Z = plug K' M' &
+      {t : Term & K = Iterate t K' &
+                 NotBind M}}}) +
+    {L : Term & { L' : Term & M = TmBind L L' &
+        { K' : Continuation & {N : Term & K = Iterate N K' &
+               Z = plug K' (TmBind L (TmBind L' (shift 1 1 N))) } } } }.
+Proof.
+  induction K; simpl; intros.
+  - left; left; left.
+    eauto.
+  - ezcopy H.
+    rename H0 into H_rw.
+    apply IHK in H; clear IHK.
+    destruct H as [[[[M' H0 H1] | [K' H0 H1]] | [H' [K' [M' H0 H1]]]] | [L [L' H0 [K' [N H1 H2]]]]].
+    * inversion H1.
+      { subst. left; right. split. introversion.
+        exists K, TmNull; auto. exists t; easy. }
+      { subst. left; right. split; [introversion | ].
+        exists K, (TmAbs t @ x); auto. exists t; easy. }
+      { subst. left; right. split; [introversion | ].
+        exists K, (TmUnion (TmBind xs t) (TmBind ys t)); auto. exists t; easy. }
+      { subst. left; left; left. eauto. }
+      { subst. right. eauto. }
+      { subst. left; left; right. exists (Iterate n' K); auto. }
+    * left; left; right.
+      exists (Iterate t K'); auto.
+    * destruct H1 as [u H1 H2].
+      exfalso. unfold NotBind, not in H2. eauto using H2.
+    * left; left; right.
+      inversion H0.
+      subst.
+      exists (Iterate (TmBind L' (shift 1 1 N)) K').
+      simpl.
+      auto.
+      apply assoc_in_K.
+Qed.
 
 Lemma Neutral_Lists:
   forall K M,
     Neutral M ->
     forall Z, (plug K M ~> Z) ->
-    {M' : Term & ((Z = plug K M') * (M ~> M'))%type} +
-    {K' : Continuation & ((Z = plug K' M) * (Krw K K'))%type}.
+    {M' : Term         & Z = plug K M' & M ~> M'} +
+    {K' : Continuation & Z = plug K' M & Krw K K'}.
 Proof.
- induction K.
- (* Case : empty K *)
-  left.
-  simpl.
-  firstorder.
- (* Case : K starts with an iterator. *)
  intros.
- apply IHK in H0; try apply Neutral_TmBind.
- destruct H0.
- (* Case : redn of K@M' is inside M'. *)
-  destruct s as [x [H0 H1]].
-  apply TmBind_Neutral_reducts in H1; auto.
-  destruct H1 as [[M' [H1a H1b]] | [N' [H1a H1b]]].
-   left.
-   exists M'.
-   subst x.
-   sauto.
-  right.
-  exists (Iterate N' K).
-  subst.
-  simpl.
-  split.
-   auto.
-  apply rw_in_K_body; sauto.
+ let X := type of H0 in copy X.
+ rename H1 into H00.
+ apply three_ways_to_reduce_at_interface in H0.
+ destruct H0 as [[[[M' H0 H1] | [K' H0 H1]] | [H' [K' [L H0 H1]]]] | ?].
+ * left; eauto.
+ * right.
+   exists K'; auto.
+ * destruct H1.
+   inversion e.
+   subst.
+   contradiction.
+ * right.
+   destruct s as [L [L' H_ [K' [N H0 H1]]]].
+   subst M.
+   inversion H.
+Qed.
 
- (* Case : redn of K@M' in inside K. *)
- right.
- destruct s as [x [H0 H1]].
- exists (Iterate t x).
- simpl.
- intuition.
- apply iterate_reduce; sauto.
+Lemma reverse_plug_defn :
+  forall K L M, plug K (TmBind L M) = plug (Iterate M K) L.
+Proof.
+  auto.
 Qed.
 
 Lemma K_TmNull_rw:
   forall K Z,
     (plug K TmNull ~> Z) ->
-    {K' : Continuation & { N : Term & ((Z = plug K' TmNull) * (K = (Iterate N K')))%type} } +
-    {K' : Continuation & ((Krw K K') * (Z = plug K' TmNull))%type}.
+    {K' : Continuation & { N : Term & Z = plug K' TmNull & K = Iterate N K'} } +
+    {K' : Continuation & Krw K K' & Z = plug K' TmNull}.
 Proof.
  destruct K; simpl; intros Z H.
-  inversion H.
- apply Neutral_Lists in H; [| auto].
- destruct H as [[M' [Ha Hb]] | [K' [Ha Hb]]].
-  inversion Hb.
-    subst.
-    left.
-    exists K.
-    exists t.
-    sauto.
-   solve [inversion H2].
-  subst.
-  right.
-  exists (Iterate n' K).
-  split.
-   auto.
-   apply rw_in_K_body; sauto.
-  sauto.
- right.
- subst.
- exists (Iterate t K').
- simpl.
- firstorder.
+ * inversion H.
+ * ezcopy H.
+   rename H0 into H_rw.
+   apply three_ways_to_reduce_at_interface in H.
+   destruct H as [[[[M' Ha Hb] | [K' Ha Hb]] |  [H' [K' [M' H0 [N H1 H2]]]]] | ?].
+   - inversion Hb; subst.
+     ** left.
+        eauto.
+     ** solve [inversion H2].
+     ** right.
+        exists (Iterate n' K); auto.
+   - right.
+     subst.
+     exists (Iterate t K').
+     eauto.
+     auto.
+   - refute.
+     intuition.
+     eapply H2; auto.
+   - destruct s as [L [L' H0 [K' [N H1 H2]]]].
+     inversion H0.
+     subst.
+     rewrite reverse_plug_defn.
+     right.
+     eauto using assoc_in_K.
 Qed.
 
 Lemma Krw_inhabited:
@@ -313,12 +394,6 @@ Proof.
  exists t.
  auto.
 Qed.
-
-Fixpoint appendK K1 K2 :=
-  match K1 with
-    | Empty => K2
-    | Iterate N K1' => Iterate N (appendK K1' K2)
-  end.
 
 Fixpoint deepest_K M :=
 match M with
@@ -494,7 +569,7 @@ Proof.
  intros.
  let T := type of H0 in copy T.
  apply K_TmNull_rw in H0.
- destruct H0 as [[K0 [N [Ha Hb]]] | [K0 [Ha Hb]]].
+ destruct H0 as [[K0 [N Ha Hb]] | [K0 Ha Hb]].
   subst.
   assert (K = K0).
    apply unique_plug_null; auto.
@@ -524,39 +599,53 @@ Lemma Rw_conserves_Ksize:
     (plug K TmNull ~> plug K' TmNull) -> Ksize K >= Ksize K'.
 Proof.
  induction K.
-  simpl.
-  intros.
-  inversion H.
- simpl.
- intros.
- let T := type of H in assert (H' : T) by auto.
- apply Neutral_Lists in H; try auto.
- destruct H as [[M' [Ha Hb]] | [K0 [Ha Hb]]].
-  inversion Hb.
-    subst.
-    assert (K' = K).
-     apply unique_plug_null; sauto.
-    subst.
-    omega.
-   subst.
-   inversion H2.
-  subst.
-  assert (K' = Iterate n' K).
-   apply unique_plug_null.
-   simpl in *; sauto.
-  subst.
-  simpl.
-  omega.
- assert (K' = Iterate t K0).
-  apply unique_plug_null.
-  simpl in *; sauto.
- subst.
- replace (plug K (TmBind TmNull t)) with (plug (Iterate t K) TmNull) in H' by auto.
- simpl.
- assert (plug K TmNull ~> plug K0 TmNull).
-  auto.
- apply IHK in H.
- omega.
+ - simpl.
+   intros.
+   inversion H.
+ - simpl.
+   intros.
+   let T := type of H in assert (H' : T) by auto.
+   apply three_ways_to_reduce_at_interface in H.
+   destruct H as [[[[M' Ha Hb] | [K0 Ha Hb]] | [Hn [K0 [M' H0 [N H1 H2]]]]] | ?].
+   * inversion Hb.
+     -- subst.
+        assert (K' = K).
+        { apply unique_plug_null; auto. }
+        subst.
+        omega.
+     -- subst.
+        solve [inversion H2].
+     -- subst.
+        assert (K' = Iterate n' K).
+        { apply unique_plug_null.
+          simpl in *; sauto. }
+        subst.
+        simpl.
+        omega.
+   * assert (K' = Iterate t K0).
+     { apply unique_plug_null.
+       simpl in *; sauto. }
+     subst.
+     replace (plug K (TmBind TmNull t)) with (plug (Iterate t K) TmNull) in H' by auto.
+     simpl.
+     assert (plug K TmNull ~> plug K0 TmNull) by auto.
+     apply IHK in H.
+     omega.
+
+   * refute.
+     apply (H2 TmNull t); auto.
+
+   * destruct s as [L [L' H0 [K0 [N H1 H2]]]].
+     subst.
+     simpl.
+     inversion H0.
+     subst.
+     assert (K' = Iterate (TmBind L' (shift 1 1 N)) K0).
+     { apply unique_plug_null.
+       simpl in *; sauto. }
+     subst.
+     simpl.
+     omega.
 Qed.
 
 Lemma Krw_rt_conserves_Ksize:
@@ -581,15 +670,9 @@ Proof.
    eauto.
  - destruct H0.
    subst.
-   apply K_TmNull_rw in r.
-   destruct r.
-   destruct s.
-   destruct s.
-   destruct p.
-   exists x1; auto.
-   destruct s.
-   destruct p.
-   exists x1; auto.
+   apply K_TmNull_rw in r as [[K [H0 H1]] | [K H0 H1]].
+   exists K; auto.
+   exists K; auto.
  - firstorder.
 Qed.
 
@@ -694,17 +777,15 @@ Lemma K_TmNull_relK:
     -> relK K K'.
 Proof.
  intros.
- apply K_TmNull_rw in H.
- destruct H as [[K_shorter [N [H1a H1b]]] | [K'' [H1a H1b]]].
-  subst.
-  eapply strip.
-  apply unique_plug_null in H1a.
-  subst.
-  eauto.
-  apply rw.
- apply unique_plug_null in H1b.
- subst.
- auto.
+ apply K_TmNull_rw in H as [[K_shorter [N H1a H1b]] | [K'' H1a H1b]].
+ - subst.
+   eapply strip.
+   apply unique_plug_null in H1a.
+   subst.
+   eauto.
+ - apply unique_plug_null in H1b.
+   subst.
+   auto.
 Qed.
 
 Definition is_K_null M := {K : Continuation & M = plug K TmNull}.
@@ -716,9 +797,9 @@ Lemma K_TmNull_rw_abstract
        (plug K TmNull ~> Z) ->
        {K' : Continuation & Z = plug K' TmNull}.
 Proof.
-intros.
-apply K_TmNull_rw in H.
-destruct H; firstorder.
+ intros.
+ apply K_TmNull_rw in H.
+ destruct H; firstorder.
 Qed.
 
 Lemma K_TmNull_rw_rt:
@@ -745,8 +826,7 @@ Proof.
    subst.
    apply refl.
   apply step.
-  apply K_TmNull_rw in r.
-  destruct r as [[K' [N [H1a H1b]]] | [K' [H1a H1b]]].
+  apply K_TmNull_rw in r as [[K' [N H1a H1b]] | [K' H1a H1b]].
    subst x.
    replace x0 with K'.
     eapply strip; eauto.
