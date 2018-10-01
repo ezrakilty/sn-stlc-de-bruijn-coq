@@ -676,19 +676,6 @@ Proof.
  - firstorder.
 Qed.
 
-(* Lemma goofy: *)
-(*   forall K M K', *)
-(*     SN (plug K M) -> (plug K TmNull ~> plug K' TmNull) -> SN (plug K' M). *)
-(* Proof. *)
-(*  intros. *)
-(*  apply SN_embedding2 with (f := fun m => plug K m) *)
-(*                           (g := fun m => plug K' m) *)
-(*                           (Q := plug K M) *)
-(*                           (Q' := plug K' M); try auto. *)
-(*  intros. *)
-
-(* Qed. *)
-
 Inductive prefix : Continuation -> Continuation -> Set :=
   prefix_refl : forall K, prefix K K
 | prefix_frame :forall K K' N, prefix K' K -> prefix K' (Iterate N K).
@@ -716,18 +703,6 @@ Proof.
  eauto.
 Qed.
 
-(* Lemma dropoff_lemma: *)
-(*   forall K K', *)
-(*     (plug K TmNull ~>> plug K' TmNull) *)
-(*     -> {K'' : Continuation & (Krw_rt K K'' * *)
-(*         {K''' : Continuation & *)
-(*           ((plug K'' TmNull ~> plug K''' TmNull) * *)
-(*            (Ksize K''' < Ksize K'') * *)
-(*            (plug K''' TmNull ~>> plug K' TmNull))%type})%type}. *)
-(* Proof. *)
-
-(* Qed. *)
-
 Inductive relK : Continuation -> Continuation -> Set :=
   rw : forall K K', Krw K K' -> relK K K'
 | strip : forall K K' t, K = Iterate t K' -> relK K K'.
@@ -739,37 +714,37 @@ Inductive relK_rt  : Continuation -> Continuation -> Set :=
 
 Hint Constructors relK relK_rt.
 
-Lemma magic:
-forall K K',
-  relK_rt K K'
-  -> forall M,
-       SN (plug K M)
-  -> {M' : Term & SN (plug K' M')}.
-Proof.
- intros K K' rel.
- induction rel; intros M sn.
-   seauto.
-  destruct r.
-   pose (k M).
-   exists M.
-   inversion sn.
-   seauto.
-  lapply (reexamine K' (Iterate t K')).
-   intros H.
-   subst.
-   specialize (H M).
-   destruct H.
-   exists x.
-   simpl in *.
-   rewrite e.
-   sauto.
-  apply prefix_frame.
-  apply prefix_refl.
- pose (s := IHrel1 M sn).
- destruct s.
- pose (IHrel2 x s).
- sauto.
-Qed.
+(* Lemma magic: *)
+(* forall K K', *)
+(*   relK_rt K K' *)
+(*   -> forall M, *)
+(*        SN (plug K M) *)
+(*   -> {M' : Term & SN (plug K' M')}. *)
+(* Proof. *)
+(*  intros K K' rel. *)
+(*  induction rel; intros M sn. *)
+(*    seauto. *)
+(*   destruct r. *)
+(*    pose (k M). *)
+(*    exists M. *)
+(*    inversion sn. *)
+(*    seauto. *)
+(*   lapply (reexamine K' (Iterate t K')). *)
+(*    intros H. *)
+(*    subst. *)
+(*    specialize (H M). *)
+(*    destruct H. *)
+(*    exists x. *)
+(*    simpl in *. *)
+(*    rewrite e. *)
+(*    sauto. *)
+(*   apply prefix_frame. *)
+(*   apply prefix_refl. *)
+(*  pose (s := IHrel1 M sn). *)
+(*  destruct s. *)
+(*  pose (IHrel2 x s). *)
+(*  sauto. *)
+(* Qed. *)
 
 Lemma K_TmNull_relK:
   forall K K',

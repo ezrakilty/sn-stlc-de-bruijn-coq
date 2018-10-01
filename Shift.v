@@ -11,7 +11,7 @@ Require Import Listkit.Foreach.
 Require Import Term.
 
 Definition shift_var k n :=
-  fun x => if le_gt_dec k x then (x+n) else x.
+  fun x => if le_gt_dec k x then (x + n) else x.
 
 (** Shifting De Bruijn indexes *)
 Fixpoint shift k n tm {struct tm} :=
@@ -35,7 +35,7 @@ Fixpoint shift k n tm {struct tm} :=
  *)
 
 Definition unshift_var k n :=
-  fun x => if le_gt_dec (n+k) x then (x-n) else x.
+  fun x => if le_gt_dec (n + k) x then (x - n) else x.
 
 Fixpoint unshift k n tm {struct tm} :=
   match tm with
@@ -167,7 +167,7 @@ Proof.
  unfold shift_var.
  intros ? x n env2 env1 env' H.
  destruct (le_gt_dec (length env1) n).
-  assert (n < length (env1++env2)) by eauto.
+  assert (n < length (env1 ++ env2)) by eauto.
   rewrite app_length in H0.
   rewrite nth_error_app_eq; repeat (rewrite app_length); try finish.
   rewrite nth_error_app_eq; repeat (rewrite app_length); try finish.
@@ -185,7 +185,7 @@ Lemma shift_preserves_typing:
     env1 ++ env2 = env ->
     k = length env1 ->
     n = length env' ->
-    Typing env M T -> Typing (env1++env'++env2) (shift k n M) T.
+    Typing env M T -> Typing (env1 ++ env' ++ env2) (shift k n M) T.
 Proof.
  induction M; intros k n env1 env2 env env' T env_split k_def n_def M_tp;
    inversion M_tp as [| ? ? T_is_env_x| | | | | | | | |]; simpl.
@@ -267,7 +267,7 @@ Proof.
  simpl.
  intros x k n H.
  unfold unshift_var.
- destruct (le_gt_dec (n+k) x);
+ destruct (le_gt_dec (n + k) x);
    [solve[omega]|solve[auto]].
 Qed.
 
@@ -275,14 +275,14 @@ Qed.
     reduced to a single [shift]. *)
 Lemma shift_shift:
   forall n n' M k,
-    shift k n (shift k n' M) = shift k (n+n') M.
+    shift k n (shift k n' M) = shift k (n + n') M.
 Proof.
  induction M; intros k; simpl; try (solve [f_equal; eauto]).
 (* Case TmVar *)
  f_equal.
  unfold shift_var.
  destruct (le_gt_dec k x).
-  destruct (le_gt_dec k (x+n')); omega.
+  destruct (le_gt_dec k (x + n')); omega.
  destruct (le_gt_dec k x); omega.
 Qed.
 
@@ -313,7 +313,7 @@ Lemma fancy_unshift_shift:
   forall n M k n' j,
     k + n <= j + n' ->
     j <= k ->
-    unshift k n (shift j n' M) = shift j (n'-n) M.
+    unshift k n (shift j n' M) = shift j (n' - n) M.
 Proof.
  induction M; intros k n' j n'_big j_small; simpl; f_equal; try eauto.
  (* Case TmVar *)
@@ -379,11 +379,11 @@ Lemma shift_var_S_pred:
 Proof.
  unfold shift_var.
  intros.
- pose (pred := fun x => x-1).
- replace ((if le_gt_dec (S k) x then x+n else x) - 1)
-    with (pred (if le_gt_dec (S k) x then x+n else x)) by auto.
- replace (pred (if le_gt_dec (S k) x then x+n else x))
-    with (if le_gt_dec (S k) x then pred (x+n) else pred x).
+ pose (pred := fun x => x - 1).
+ replace ((if le_gt_dec (S k) x then x + n else x) - 1)
+    with (pred (if le_gt_dec (S k) x then x + n else x)) by auto.
+ replace (pred (if le_gt_dec (S k) x then x + n else x))
+    with (if le_gt_dec (S k) x then pred (x + n) else pred x).
   unfold pred.
   break; break; omega.
  symmetry; apply if_cc.
@@ -411,7 +411,7 @@ Proof.
 
 (* Case Vs = _ : _ *)
  simpl.
- replace env with (env1++env2) in *.
+ replace env with (env1 ++ env2) in *.
  destruct Ts.
   inversion X.
   simpl in H2.
@@ -419,8 +419,8 @@ Proof.
  apply env_typing_elim in X.
  destruct X.
  apply env_typing_intro.
-  apply shift_preserves_typing with (env := env1++env2); auto.
- apply IHVs with (env:= env1++env2); auto.
+  apply shift_preserves_typing with (env := env1 ++ env2); auto.
+ apply IHVs with (env:= env1 ++ env2); auto.
 Qed.
 
 Require Import Coq.Lists.ListSet.
@@ -672,7 +672,7 @@ Qed.
 (* TODO: Use outside_range? *)
 Lemma shift_freevars:
   forall M k,
-    all _ (fun x => x < k \/ k+1 <= x) (freevars (shift k 1 M)).
+    all _ (fun x => x < k \/ k + 1 <= x) (freevars (shift k 1 M)).
 Proof.
  induction M; simpl; intros k.
  (* Case TmConst *)

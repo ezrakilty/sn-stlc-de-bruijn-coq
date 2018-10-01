@@ -27,7 +27,7 @@ Fixpoint subst_env k vs tm {struct tm} :=
   | TmConst => tm
   | TmVar x =>
     if le_gt_dec k x then
-      match nth_error vs (x-k) with
+      match nth_error vs (x - k) with
       | None => tm
       | Some v => v
       end
@@ -96,7 +96,7 @@ Proof.
    assert (value ty = nth_error env' (x - length env)).
     apply nth_error_app; trivial.
 (* TODO: Alternate version. Is this better? *)
-   (* destruct (nth_error_dichot _ Vs (x-length env)) as [[bounds is_error] | [? ?]]. *)
+   (* destruct (nth_error_dichot _ Vs (x - length env)) as [[bounds is_error] | [? ?]]. *)
    (*  refute. *)
    (*  apply nth_error_to_length in H. *)
    (*  apply nth_error_overflow in is_error. *)
@@ -107,12 +107,12 @@ Proof.
    (* rewrite H3; simpl. *)
    (* cut (Typing nil v ty); [sauto | ]. *)
    (* eapply foreach2_ty_member; eauto. *)
-    case_eq (nth_error Vs (x-length env));
+    case_eq (nth_error Vs (x - length env));
       [intros v H_v | intros H_v; refute]; auto.
-    (* Obtained value v for x-length env in Vs. *)
+    (* Obtained value v for x - length env in Vs. *)
     apply Weakening_closed.
     eapply foreach2_ty_member; eauto.
-   (* Bogus case of no value for x-length env. *)
+   (* Bogus case of no value for x - length env. *)
    apply <- nth_error_overflow in H_v.
    apply nth_error_ok_rev in H.
    omega.
@@ -236,7 +236,7 @@ Lemma shift_subst_commute_lo:
   forall M env k q n,
     k <= q ->
     shift k n (subst_env q env M) =
-      subst_env (q+n) (map (shift k n) env) (shift k n M).
+      subst_env (q + n) (map (shift k n) env) (shift k n M).
 Proof.
  induction M; simpl; intros env k q n k_low.
  (* TmConst *)
@@ -247,10 +247,10 @@ Proof.
         (* Take cases on where x is in relation to k, q: *)
         case_eq (le_gt_dec q x); intros;
           case_eq (le_gt_dec k x); intros; try (solve[exfalso;omega]);
-          destruct (le_gt_dec (q+n) (x+n)); try (solve[exfalso;omega]).
+          destruct (le_gt_dec (q + n) (x + n)); try (solve[exfalso;omega]).
         (* Case k <= q <= x. *)
-          replace (x+n-(q+n)) with (x-q) by omega.
-          (* Take cases on whether x-q is defined in env: *)
+          replace (x + n - (q + n)) with (x - q) by omega.
+          (* Take cases on whether x - q is defined in env: *)
           nth_error_dichotomize index_hi result_none V V_def;
             rewrite nth_error_map ; (rewrite result_none || rewrite V_def);
           simpl; unfold shift_var.
@@ -309,18 +309,17 @@ Qed.
 Lemma subst_env_concat_TmVar:
   forall
     (x : nat)
-    (Vs : list Term)
-    (Ws : list Term)
+    (Vs Ws : list Term)
     (env : list Ty)
-    (k : nat)
-    (env_closed : env_typing (Vs ++ Ws) env)
-    (VsWs_env_equilong : length (Vs ++ Ws) = length env)
-    (env_closed' : foreach2_ty Term Ty (Vs ++ Ws) env
-                    (fun (x0 : Term) (y : Ty) => Typing nil x0 y)),
+    (k : nat),
+    env_typing (Vs ++ Ws) env ->
+    length (Vs ++ Ws) = length env ->
+    foreach2_ty Term Ty (Vs ++ Ws) env
+                (fun (x0 : Term) (y : Ty) => Typing nil x0 y) ->
       (subst_env k Vs (subst_env (k + length Vs) Ws (TmVar x)) =
        subst_env k (Vs ++ Ws) (TmVar x)).
 Proof.
- intros.
+ intros ? ? ? ? ? env_closed VsWs_env_equilong env_closed'.
  unfold subst_env at 3.
  unfold subst_env at 2.
 
@@ -328,25 +327,25 @@ Proof.
  (* Case k <= x *)
   replace (x - (k + length Vs)) with (x - k - length Vs) by omega.
 
-  destruct (equilong_nth_error Term Ty (Vs++Ws) env (x - k))
+  destruct (equilong_nth_error Term Ty (Vs ++ Ws) env (x - k))
         as [[x_small [VW' [T' HH]]] | [x_large HH]]; trivial;
     destruct HH as [lookup_VWs lookup_env].
-  (* Case x < k + length (Vs++Ws) *)
+  (* Case x < k + length (Vs ++ Ws) *)
 
-   destruct (le_gt_dec (k+length Vs) x).
-   (* Case k+length Vs <= x *)
+   destruct (le_gt_dec (k + length Vs) x).
+   (* Case k + length Vs <= x *)
     rewrite <- rewrite_nth_error_app; [|omega].
     rewrite lookup_VWs; simpl.
     (* subst_env k Vs VW' = VW': *)
     apply subst_env_closed_noop with T'.
     (* Typing nil VW' T': *)
     eapply foreach2_ty_member; eauto; trivial.
-   (* Case k+length Vs > x *)
+   (* Case k + length Vs > x *)
    simpl; rewrite H.
    (rewrite <- nth_error_ext_length in lookup_VWs by omega);
    (rewrite <- nth_error_ext_length by omega; reflexivity).
 
-  (* Case x >= k + length (Vs++Ws) *)
+  (* Case x >= k + length (Vs ++ Ws) *)
   rewrite app_length in x_large.
   rewrite <- rewrite_nth_error_app; [|omega].
   rewrite lookup_VWs; simpl.
@@ -363,9 +362,9 @@ Qed.
    them into one. *)
 Lemma subst_env_concat:
   forall N Vs Ws env k,
-    env_typing (Vs++Ws) env->
+    env_typing (Vs ++ Ws) env->
     let k' := k + length Vs in
-    let VWs := Vs++Ws in
+    let VWs := Vs ++ Ws in
       subst_env k Vs (subst_env k' Ws N) = subst_env k (VWs) N.
 Proof.
  let triage := solve[simpl; f_equal; eauto] in
@@ -380,8 +379,8 @@ Proof.
   simpl; f_equal.
   rewrite map_app.
   replace (length Vs) with (length (map (shift 0 1) Vs)); [|apply map_length].
-  replace (S(k+length (map (shift 0 1) Vs))) with
-     (S k+length (map (shift 0 1) Vs)); [|easy].
+  replace (S (k + length (map (shift 0 1) Vs))) with
+     (S k + length (map (shift 0 1) Vs)); [|easy].
   apply IHN with env; auto.
   rewrite <- map_app.
   erewrite env_typing_shift_noop; eauto.
@@ -389,8 +388,8 @@ Proof.
  simpl; f_equal; eauto.
  rewrite map_app.
  replace (length Vs) with (length (map (shift 0 1) Vs)); [|apply map_length].
- replace (S(k+length (map (shift 0 1) Vs))) with
-    (S k+length (map (shift 0 1) Vs)); [|easy].
+ replace (S(k + length (map (shift 0 1) Vs))) with
+    (S k + length (map (shift 0 1) Vs)); [|easy].
  apply IHN2 with env; auto.
  rewrite <- map_app.
  erewrite env_typing_shift_noop; eauto.
@@ -408,9 +407,9 @@ Proof.
  unfold shift, shift_var.
  destruct (le_gt_dec k x).
   unfold subst_env.
-  replace (x+1-k) with (S (x - k)) by omega.
-  replace (nth_error (h::t) (S (x-k))) with (nth_error t (x-k)) by auto.
-  replace (x+1-(S k)) with (x - k) by omega.
+  replace (x + 1 - k) with (S (x - k)) by omega.
+  replace (nth_error (h::t) (S (x - k))) with (nth_error t (x - k)) by auto.
+  replace (x + 1 - (S k)) with (x - k) by omega.
   break; break; finish.
  unfold subst_env.
  break; break; finish.
@@ -437,7 +436,7 @@ Qed.
 Lemma subst_var_inside_range:
   forall q env x,
     outside_range q (length env + q) x = false ->
-      exists X, value X = nth_error env (x-q) /\
+      exists X, value X = nth_error env (x - q) /\
                 (subst_env q env (TmVar x)) = X.
 Proof.
  unfold outside_range.
@@ -467,16 +466,16 @@ Definition set_remove := Listkit.Sets.set_remove.
 Lemma subst_unshift :
   forall M env q k n,
     q <= n ->
-    all_Type _ eq_nat_dec (fun x => Outside_Range q (k+q) x) (freevars M) ->
+    all_Type _ eq_nat_dec (fun x => Outside_Range q (k + q) x) (freevars M) ->
       subst_env n env (unshift q k M) =
-      unshift q k (subst_env (n+k) (map (shift q k) env) M).
+      unshift q k (subst_env (n + k) (map (shift q k) env) M).
 Proof.
  induction M; simpl; intros env q k n q_le_n fvs_dichot.
  (* Case TmConst *)
       sauto.
 
  (* Case TmVar *)
-     assert (H : {x < q} + {x >= k+q}).
+     assert (H : {x < q} + {x >= k + q}).
       unfold all_Type in fvs_dichot.
       apply fvs_dichot.
       simpl.
@@ -484,19 +483,19 @@ Proof.
      unfold unshift, shift, unshift_var, shift_var.
      simpl.
      rewrite nth_error_map.
-     replace (x-(n+k)) with (x-k-n) by omega.
+     replace (x - (n + k)) with (x - k - n) by omega.
 
      destruct H.
      (* x < q *)
       break; break; break; try break; finish.
      (* x >= k + q *)
-     destruct (le_gt_dec (k+q) x); [ | finish].
-     destruct (le_gt_dec n (x-k)).
-      destruct (le_gt_dec (n+k) x); [ | finish].
+     destruct (le_gt_dec (k + q) x); [ | finish].
+     destruct (le_gt_dec n (x - k)).
+      destruct (le_gt_dec (n + k) x); [ | finish].
       nth_error_dichotomize bounds is_error v v_def.
        break; finish.
       rewrite unshift_shift; auto.
-     destruct (le_gt_dec (n+k) x); [ finish | ].
+     destruct (le_gt_dec (n + k) x); [ finish | ].
      break; finish.
 
  (* Case TmPair *)
@@ -515,8 +514,8 @@ Proof.
     rewrite -> map_map; solve [trivial].
    solve [omega].
 
-  (* Obligation: that if {x-1 | x \in (S \\ {0})} is all outside [q, k+q),
-     then {x | x \in S} is all outside [Sq, k+Sq). *)
+  (* Obligation: that if {x - 1 | x \in (S \\ {0})} is all outside [q, k + q),
+     then {x | x \in S} is all outside [Sq, k + Sq). *)
   clear IHM.
   unfold all_Type in *.
   intros x H.
@@ -634,17 +633,17 @@ Proof.
 
  (* Case TmVar *)
         case_eq (outside_range q (length env + q) x); intro H.
-        (* Case x is outside [q, k+q). *)
+        (* Case x is outside [q, k + q). *)
          rewrite subst_var_outside_range by trivial.
          simpl.
          rewrite H.
          apply incl_sets_union2.
 
-        (* Case x is inside [q, k+q). *)
+        (* Case x is inside [q, k + q). *)
         destruct (subst_var_inside_range q env x H) as [M [H0 H1]].
         rewrite H1.
         apply incl_union_left.
-        apply nth_error_set_unions with (n := x-q).
+        apply nth_error_set_unions with (n := x - q).
         rewrite nth_error_map.
         rewrite <- H0.
         sauto...
@@ -879,7 +878,7 @@ Lemma subst_factor :
                 all _ (fun x => not (in_env_domain m env' x)) (freevars z)) env ->
     (* 2. and the domain (m,env') does not contain n, and (n,env) does not contain m,
        i.e. they are nonoverlapping: *)
-    (m+length env' <= n \/ n+length env <= m) ->
+    (m + length env' <= n \/ n + length env <= m) ->
     (* Then *)
     (* We can "commute" the two substitutions, with a modification to one: *)
       subst_env m (map (subst_env n env) env') (subst_env n env N) =
@@ -892,8 +891,8 @@ Proof.
  (* Case TmVar *)
       (* Either we are in the range of [n x env] or we are in the range of
          [m x env'] or neither--since they don't overlap. *)
-      set (P:= m <= x < m+length env').
-      set (Q:= n <= x < n+length env).
+      set (P:= m <= x < m + length env').
+      set (Q:= n <= x < n + length env).
 
       assert (H : not P /\ Q \/ P /\ not Q \/ not P /\ not Q).
        subst P Q.
@@ -908,8 +907,8 @@ Proof.
       destruct H. (* ... as ... *)
        destruct H.
        subst P Q.
-       assert (H3:x-n < length env) by omega.
-       destruct (nth_error_exists _ env (x-n) H3)
+       assert (H3:x - n < length env) by omega.
+       destruct (nth_error_exists _ env (x - n) H3)
          as [v v_def].
        set (v_fvs := freevars v).
        pose (v_fvs_notin_m_env' := nth_error_all _ _ _ _ _ v_def H0).
@@ -934,8 +933,8 @@ Proof.
       destruct H; subst P Q.
        destruct H.
 
-       assert (H3:x-m < length env') by omega.
-       destruct (nth_error_exists _ env' (x-m) H3)
+       assert (H3: x - m < length env') by omega.
+       destruct (nth_error_exists _ env' (x - m) H3)
          as [v v_def].
        rewrite v_def; simpl.
 
@@ -997,9 +996,9 @@ Proof.
      replace (S m) with (m + 1) by omega.
      replace (S n) with (n + 1) by omega.
      rewrite map_map.
-     rewrite map_ext with (g:=(fun x => subst_env (n+1) (map (shift 0 1) env) (shift 0 1 x))).
-      replace (map (fun x : Term => subst_env (n+1) (map (shift 0 1) env) (shift 0 1 x)) env')
-         with (map (subst_env (n+1) (map (shift 0 1) env)) (map (shift 0 1) env')).
+     rewrite map_ext with (g:=(fun x => subst_env (n + 1) (map (shift 0 1) env) (shift 0 1 x))).
+      replace (map (fun x : Term => subst_env (n + 1) (map (shift 0 1) env) (shift 0 1 x)) env')
+         with (map (subst_env (n + 1) (map (shift 0 1) env)) (map (shift 0 1) env')).
        apply IHN.
 
         (* Preservation of the free-variable relationship. *)
@@ -1053,9 +1052,9 @@ Proof.
  replace (S m) with (m + 1) by omega.
  replace (S n) with (n + 1) by omega.
  rewrite map_map.
- rewrite map_ext with (g := fun x => subst_env (n+1) (map (shift 0 1) env) (shift 0 1 x)).
-  replace (map (fun x : Term => subst_env (n+1) (map (shift 0 1) env) (shift 0 1 x)) env')
-     with (map (subst_env (n+1) (map (shift 0 1) env)) (map (shift 0 1) env')).
+ rewrite map_ext with (g := fun x => subst_env (n + 1) (map (shift 0 1) env) (shift 0 1 x)).
+  replace (map (fun x : Term => subst_env (n + 1) (map (shift 0 1) env) (shift 0 1 x)) env')
+     with (map (subst_env (n + 1) (map (shift 0 1) env)) (map (shift 0 1) env')).
    apply IHN2.
 
     (* Preservation of the free-variable relationship. *)
