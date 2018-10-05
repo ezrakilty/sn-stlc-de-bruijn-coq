@@ -339,7 +339,7 @@ Proof.
                   |
                   |
                   | N
-                  | M N M'
+                  | M N
                   | M N
                   | M N
                   | L M N
@@ -867,4 +867,201 @@ Lemma Rw_rt_Bind_right:
 Proof.
  intros.
  induction H; subst; eauto.
+Qed.
+
+Lemma beta_with_unshift:
+  forall N M n n' k,
+    n >= n' ->
+    unshift n k (unshift n' 1 (subst_env n' (shift 0 1 M :: nil) N)) =
+    unshift n' 1
+            (subst_env n' (shift 0 1 (unshift n k M) :: nil) (unshift (S n) k N)).
+Proof.
+ induction N; intros; simpl.
+          auto.
+         destruct (nth_error_dichot _ (shift 0 1 M :: nil) (x - n')) as [[H1 H2] | [H1 H2]].
+          simpl in H1.
+          rewrite H2.
+          destruct (nth_error_dichot _
+                        (shift 0 1 (unshift n k M) :: nil)
+                        (unshift_var (S n) k x - n'))
+                as [[H3 H4]|[H3 H4]].
+          rewrite H4.
+           simpl.
+           break; break.
+              rewrite unshift_unshift_commute; solve [auto | omega].
+             rewrite unshift_unshift_commute; solve [auto | omega].
+            rewrite unshift_unshift_commute; solve [auto | omega].
+           rewrite unshift_unshift_commute; solve [auto | omega].
+          destruct H4 as [V H4].
+          rewrite H4.
+          simpl in *.
+          exfalso.
+          assert (H0 : unshift_var (S n) k x - n' = 0) by omega.
+          unfold unshift_var in H0.
+          destruct (le_gt_dec (k + S n) x) in H0; solve [omega].
+         destruct H2 as [V H2].
+         rewrite H2.
+         simpl.
+         destruct (nth_error_dichot _
+                       (shift 0 1 (unshift n k M) :: nil)
+                       (unshift_var (S n) k x - n'))
+               as [[H3 H4]|[H3 H4]].
+          rewrite H4.
+          simpl in *.
+          exfalso.
+          unfold unshift_var in H3.
+          destruct (le_gt_dec (k + S n) x); solve [omega].
+         destruct H4 as [W H4].
+         rewrite H4.
+         simpl in *.
+         break; break.
+            assert (x < S n) by omega.
+            assert (unshift_var (S n) k x = x).
+             unfold unshift_var.
+             destruct (le_gt_dec (k + S n) x); solve [omega].
+            replace (unshift_var (S n) k x) with x in * by auto.
+            replace (x - n') with 0 in * by omega.
+            simpl in *.
+            inversion H2. inversion H4.
+            rewrite unshift_unshift_commute.
+             rewrite unshift_shift_commute.
+              auto.
+             omega.
+            omega.
+           exfalso.
+           unfold unshift_var in g.
+           destruct (le_gt_dec (k + S n) x); solve [omega].
+          exfalso.
+          unfold unshift_var in l.
+          destruct (le_gt_dec (k + S n) x); solve [omega].
+         unfold unshift, unshift_var.
+         break; break; break; break; solve [omega | auto].
+        rewrite IHN1, IHN2; sauto.
+       rewrite IHN; sauto.
+      rewrite IHN.
+       rewrite unshift_shift_commute; solve [omega | auto].
+      solve [omega].
+     rewrite IHN1, IHN2; sauto.
+    trivial.
+   rewrite IHN; sauto.
+  rewrite IHN1, IHN2; sauto.
+ rewrite IHN1, IHN2.
+   rewrite unshift_shift_commute; solve [omega | auto].
+  solve [omega].
+ sauto.
+Qed.
+
+Lemma unshift_preserves_rw:
+  forall M M' n k,
+    (M ~> M') ->
+    unshift n k M ~>
+    unshift n k M'.
+Proof.
+ induction M; intros; inversion H; subst; simpl; eauto.
+
+ - apply Rw_beta.
+   apply beta_with_unshift.
+   omega.
+ - rewrite unshift_shift_commute.
+   auto.
+   omega.
+Qed.
+
+Lemma shift_preserves_rw:
+  forall L L' n,
+    (L ~> L') ->
+    shift n 1 L ~> shift n 1 L'.
+Proof.
+ induction L; intros; inversion H; subst; simpl; eauto.
+ - apply Rw_beta.
+   rewrite <- shift_shift_commute by omega.
+   replace (shift (S n) 1 (shift 0 1 L2) :: nil)
+     with (map (shift (S n) 1) ((shift 0 1 L2) :: nil)) by auto.
+   rewrite <- shift_subst_commute_hi by (simpl; omega).
+   rewrite <- Shift.shift_unshift_commute; try omega.
+   * trivial.
+   * intro.
+     pose (subst_Freevars N (shift 0 1 L2 :: nil) 0).
+     apply set_union_elim with (a:=0) in i.
+     -- simpl in i.
+        destruct i.
+        ** pose (shift_freevars L2 0 0).
+           intuition.
+        ** apply set_filter_elim in H1.
+           intuition.
+     -- auto.
+ - rewrite shift_shift_commute.
+   auto.
+   omega.
+Qed.
+
+Lemma unshift_preserves_rw_rt
+     : forall (M M' : Term) (n k : nat),
+       (M ~>> M') -> unshift n k M ~>> unshift n k M'.
+Proof.
+ intros.
+ induction H; subst; eauto.
+ auto using Rw_rt_step, unshift_preserves_rw.
+Qed.
+
+(* TODO: Need a better place for the below stuff, which is interactions btwn
+shift/subst and rewriting. *)
+Lemma Rw_rt_shift:
+  forall L L', (L ~>> L') -> shift 0 1 L ~>> shift 0 1 L'.
+Proof.
+ intros.
+ induction H; subst; eauto.
+ auto using Rw_rt_step, shift_preserves_rw.
+Qed.
+
+Lemma subst_env_compat_rw_rt_A
+: forall M L L' : Term,
+    (L ~>> L') ->
+    forall n : nat, subst_env n (L :: nil) M ~>> subst_env n (L' :: nil) M.
+Proof.
+ induction M; subst; simpl; eauto; intros.
+        break; auto.
+        destruct (x - n).
+         destruct (le_gt_dec (x - n) 0); simpl; auto.
+        unfold nth_error; destruct n0; simpl; auto.
+       apply Rw_rt_trans with (TmPair (subst_env n (L'::nil) M1) (subst_env n (L::nil) M2)).
+        apply Rw_rt_Pair_left; auto.
+       apply Rw_rt_Pair_right; auto.
+      apply Rw_rt_Proj; auto.
+     apply Rw_rt_Abs; auto.
+     apply IHM.
+     apply Rw_rt_shift; auto.
+    apply Rw_rt_trans with (TmApp (subst_env n (L'::nil) M1) (subst_env n (L::nil) M2)).
+     apply Rw_rt_App_left; auto.
+    apply Rw_rt_App_right; auto.
+   apply Rw_rt_Single; auto.
+  apply Rw_rt_trans with (TmUnion (subst_env n (L'::nil) M1) (subst_env n (L::nil) M2)).
+   apply Rw_rt_Union_left; auto.
+  apply Rw_rt_Union_right; auto.
+ apply Rw_rt_trans with (TmBind (subst_env n (L'::nil) M1) (subst_env (S n) (shift 0 1 L::nil) M2)).
+  apply Rw_rt_Bind_left; auto.
+ apply Rw_rt_Bind_right; auto.
+ apply IHM2.
+ apply Rw_rt_shift; auto.
+Qed.
+
+Lemma subst_env_compat_rw_rt_B
+: forall L M M' : Term,
+    (M ~>> M') ->
+    forall n : nat, subst_env n (L :: nil) M ~>> subst_env n (L :: nil) M'.
+Proof.
+ intros.
+ induction H; subst; eauto using subst_env_compat_rw.
+Qed.
+
+Lemma subst_env_compat_rw_2_rt
+: forall L L' M M' : Term,
+    (L ~>> L') ->
+    (M ~>> M') ->
+    forall n : nat, subst_env n (L :: nil) M ~>> subst_env n (L' :: nil) M'.
+Proof.
+ intros.
+  apply Rw_rt_trans with (subst_env n (L :: nil) M').
+  apply subst_env_compat_rw_rt_B; auto.
+  apply subst_env_compat_rw_rt_A; auto.
 Qed.

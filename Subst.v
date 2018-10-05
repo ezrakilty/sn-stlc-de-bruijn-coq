@@ -1089,7 +1089,6 @@ Proof.
  solve [omega]...
 Qed.
 
-
 (* Some notations might be nice, but I'm not sure I've got the right ones yet.
 
 (*
@@ -1100,3 +1099,13 @@ Notation "{ x :/ M } N" := (subst_env x (M :: nil) N) (at level 100).
 Notation "^^ M" := (shift 0 1 M) (at level 98).
 Notation ",, M" := (unshift 0 1 M) (at level 98).
 *)
+
+Lemma closing_subst_closes:
+  forall vs ts m t,
+    env_typing vs ts ->
+    Typing ts m t ->
+    Typing nil (subst_env 0 vs m) t.
+Proof.
+ intros.
+ apply subst_env_preserves_typing with (env' := ts); simpl; auto.
+Qed.

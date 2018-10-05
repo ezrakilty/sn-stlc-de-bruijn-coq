@@ -2,6 +2,8 @@ Load "eztactics.v".
 
 Add LoadPath "Listkit" as Listkit.
 
+Require Import Coq.Sets.Image.
+
 Require Import Term.
 Require Import Rewrites.
 
@@ -274,4 +276,77 @@ Lemma SN_context_App_left:
 Proof.
  intros L M H.
  apply (SN_embedding (fun x => (x @ M))) with (L @ M); auto.
+Qed.
+
+Lemma SN_TmSingle:
+  forall M,
+    SN M -> SN (TmSingle M).
+Proof.
+  intros.
+  redseq_induction M.
+ apply reducts_SN.
+ intros.
+ inversion H1.
+ subst.
+ apply IHM; eauto.
+Qed.
+
+(** When [P] is reflexive, and transitive, and [P x y] follows from [f x ~> f y],
+    and [f] is injective, and any [f x] has all descendants of the form [f x'],
+    Then two descendents [M] and [N] with [f x ~>> M ~>> N] are of the form
+    [M = f y], [N = f z] with [P y z]. That seems pretty dumb.
+ *)
+Lemma rw_rt_f_induction:
+  forall A f x P M N,
+    (forall x, P x x) ->
+    (injective _ _ f) ->
+    (forall x M, (f x ~>> M) -> {x' : A & M = f x'}) ->
+    (forall x y, (f x ~> f y) -> P x y) ->
+    (forall x y z, P x y -> P y z -> P x z) ->
+    (f x ~>> M) ->
+    (M ~>> N) ->
+    {y : A & M = f y & {z : A & N = f z & P y z}}.
+Proof.
+ intros A f x P M N X inj_f X0 X1 trans_P H H0.
+ induction H0.
+ - subst.
+   apply X0 in H.
+   destruct H.
+   exists x0; auto.
+   exists x0; auto.
+ - assert (f x ~>> n).
+   apply Rw_rt_trans with m; auto.
+   apply X0 in H.
+   apply X0 in H0.
+   destruct H.
+   destruct H0.
+   subst.
+   exists x0; auto.
+   exists x1; auto.
+ - assert (f x ~>> m) by (eapply Rw_rt_trans; eauto).
+   assert (f x ~>> n) by (eapply Rw_rt_trans; eauto).
+   Ltac clone H :=
+     let T := type of H in
+     copy T.
+   clone H; clone H0; clone H1.
+   apply X0 in H.
+   apply X0 in H0.
+   apply X0 in H1.
+   destruct H.
+   destruct H0.
+   destruct H1.
+   subst.
+   exists x0; auto.
+   exists x2; auto.
+   apply IHRewritesTo_rt1 in H2.
+   apply IHRewritesTo_rt2 in H3.
+   destruct H2 as [y Ha [z Hb Hc]].
+   destruct H3 as [y' Ha' [z' Hb' Hc']].
+   apply inj_f in Ha.
+   apply inj_f in Hb.
+   apply inj_f in Ha'.
+   apply inj_f in Hb'.
+   subst.
+   subst.
+   eapply trans_P; eauto.
 Qed.

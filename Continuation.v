@@ -1,5 +1,6 @@
 Add LoadPath "Listkit" as Listkit.
 
+Require Import Coq.Sets.Image.
 
 Require Import Norm.
 Require Import Rewrites.
@@ -207,9 +208,9 @@ Lemma three_ways_to_reduce_at_interface:
     (plug K M ~> Z) ->
     {M' : Term         &              Z = plug K M' & M ~> M'} +
     {K' : Continuation &              Z = plug K' M & Krw K K'} +
-    (notT (Neutral M) * {K' : Continuation & {M' : Term & Z = plug K' M' &
-      {t : Term & K = Iterate t K' &
-                 NotBind M}}}) +
+    (notT (Neutral M) *
+     {K' : Continuation & {M' : Term & Z = plug K' M' &
+        { t : Term & K = Iterate t K' & NotBind M}}}) +
     {L : Term & { L' : Term & M = TmBind L L' &
         { K' : Continuation & {N : Term & K = Iterate N K' &
                Z = plug K' (TmBind L (TmBind L' (shift 1 1 N))) } } } }.
@@ -714,37 +715,37 @@ Inductive relK_rt  : Continuation -> Continuation -> Set :=
 
 Hint Constructors relK relK_rt.
 
-(* Lemma magic: *)
-(* forall K K', *)
-(*   relK_rt K K' *)
-(*   -> forall M, *)
-(*        SN (plug K M) *)
-(*   -> {M' : Term & SN (plug K' M')}. *)
-(* Proof. *)
-(*  intros K K' rel. *)
-(*  induction rel; intros M sn. *)
-(*    seauto. *)
-(*   destruct r. *)
-(*    pose (k M). *)
-(*    exists M. *)
-(*    inversion sn. *)
-(*    seauto. *)
-(*   lapply (reexamine K' (Iterate t K')). *)
-(*    intros H. *)
-(*    subst. *)
-(*    specialize (H M). *)
-(*    destruct H. *)
-(*    exists x. *)
-(*    simpl in *. *)
-(*    rewrite e. *)
-(*    sauto. *)
-(*   apply prefix_frame. *)
-(*   apply prefix_refl. *)
-(*  pose (s := IHrel1 M sn). *)
-(*  destruct s. *)
-(*  pose (IHrel2 x s). *)
-(*  sauto. *)
-(* Qed. *)
+Lemma magic:
+forall K K',
+  relK_rt K K'
+  -> forall M,
+       SN (plug K M)
+  -> {M' : Term & SN (plug K' M')}.
+Proof.
+ intros K K' rel.
+ induction rel; intros M sn.
+   seauto.
+  destruct r.
+   pose (k M).
+   exists M.
+   inversion sn.
+   seauto.
+  lapply (reexamine K' (Iterate t K')).
+   intros H.
+   subst.
+   specialize (H M).
+   destruct H.
+   exists x.
+   simpl in *.
+   rewrite e.
+   sauto.
+  apply prefix_frame.
+  apply prefix_refl.
+ pose (s := IHrel1 M sn).
+ destruct s.
+ pose (IHrel2 x s).
+ sauto.
+Qed.
 
 Lemma K_TmNull_relK:
   forall K K',
@@ -883,3 +884,41 @@ SN (plug K M) ->
 (forall K0, Krw_rt K K0 -> (forall K', Krw K0 K' -> (P K' -> P K0))) ->
 P K.
  *)
+
+Lemma Rw_rt_conserves_Ksize:
+  forall K K',
+    (plug K TmNull ~>> plug K' TmNull) -> Ksize K >= Ksize K'.
+Proof.
+ intros.
+ apply rw_rt_f_induction
+ with (A := Continuation)
+        (f := fun k => plug k TmNull)
+        (x:=K)
+        (P:=fun k k'=>Ksize k >= Ksize k') in H.
+ - destruct H.
+   destruct s.
+   apply unique_plug_null in e.
+   apply unique_plug_null in e0.
+   subst.
+   auto...
+ - eauto...
+ - unfold injective.
+   apply unique_plug_null...
+ - intros.
+   apply (rw_rt_preserves_plug_TmNull K (plug x TmNull)); auto.
+   exists x; auto.
+ - apply Rw_conserves_Ksize; auto.
+ - intros; omega.
+ - auto.
+Qed.
+
+Lemma plug_rw_rt:
+  forall K K' M M', Krw_rt K K' -> (M ~>> M') -> (plug K M ~>> plug K' M').
+Proof.
+  intros.
+ assert (plug K M ~>> plug K' M).
+ apply Krw_rt_Rw_rt; auto.
+ assert (plug K' M ~>> plug K' M').
+  apply Rw_rt_under_K; auto.
+ eauto.
+Qed.

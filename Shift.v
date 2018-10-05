@@ -820,3 +820,18 @@ Proof.
   rewrite IHM1, IHM2; sauto.
  rewrite IHM1, IHM2; solve [auto|omega].
 Qed.
+
+Lemma shift_closed_noop_map:
+  forall n k vs ts,
+    env_typing vs ts
+    -> map (shift n k) vs = vs.
+Proof.
+ induction vs as [|a vs]; simpl; intros.
+  auto.
+ destruct ts; simpl in *; try (destruct H; discriminate).
+ apply env_typing_elim in H.
+ destruct H.
+ f_equal.
+ - erewrite shift_closed_noop; eauto.
+ - eauto.
+Qed.
