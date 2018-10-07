@@ -62,7 +62,7 @@ Qed.
 
 Lemma In_add_intro:
   forall A eq_dec (x y:A) xs,
-  ({x = y}+{In x xs}) -> In x (set_add eq_dec y xs).
+  ({x = y} + {In x xs}) -> In x (set_add eq_dec y xs).
 Proof.
  intros.
  induction xs.

@@ -10,9 +10,7 @@ Require Import Shift.
 Require Import Subst.
 Require Import Omega.
 
-Definition swap01 M :=
-  subst_env 0 (TmVar 1 :: TmVar 0 :: nil) M.
-
+(** The rewrite system. The object of our study. *)
 Inductive RewritesTo : Term -> Term -> Type :=
 | Rw_beta : forall N M V,
     V = unshift 0 1 (subst_env 0 (shift 0 1 M :: nil) N) ->

@@ -100,6 +100,7 @@ Fixpoint Reducible (tm:Term) (ty:Ty)  {struct ty} : Type :=
   | TyBase => SN tm (** ... at unit type, strongly normalizes *)
   | TyPair s t =>
     Reducible (TmProj false tm) s * Reducible (TmProj true tm) t
+      (** ... at pair type, the results of both projections are reducible. *)
   | TyArr s t =>
     (forall l (s_tp:Typing nil l s),
        Reducible l s ->
@@ -113,6 +114,7 @@ Fixpoint Reducible (tm:Term) (ty:Ty)  {struct ty} : Type :=
             SN (plug K (TmSingle M))
       in
       forall K, ReducibleK K s -> SN (plug K tm)
+      (** ... at list type, is SN when placed in any reducible continuation. *)
   end)%type
 .
 
@@ -719,7 +721,9 @@ Proof.
  eauto using SN_K_Union.
 Qed.
 
-Notation "M */ L" := (unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) M)) (at level 99).
+(** Let's make [N */ L] a notation for the result of a beta-reduction
+    (including all the de Bruijn monkeying). Makes the lemmas a lot easier to read. *)
+Notation "N */ L" := (unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) N)) (at level 99).
 
 (** * Rewrites Inside Structures That Look Like A Beta-Reduct. *)
 
@@ -740,8 +744,7 @@ Lemma SN_beta_withdraw:
     SN N.
 Proof.
  intros.
- apply SN_embedding with (f := fun x => unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) x))
-                           (Q := unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) N)).
+ apply SN_embedding with (f := fun x => x */ L) (Q := N */ L).
  intros.
    apply unshift_substitution_preserves_rw; sauto.
   sauto.
@@ -751,7 +754,7 @@ Qed.
 Lemma unshift_substitution_preserves_rw_rt:
   forall M M' L : Term,
   (M ~>> M') ->
-  M */ L  ~>>  M' */ L.
+  M */ L ~>>  M' */ L.
 Proof.
   intros.
   induction H.
@@ -783,8 +786,7 @@ Lemma beta_reduct_under_K_rw_rt:
     plug K0 (N0 */ L0).
 Proof.
  intros.
- assert (unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) N) ~>>
-         unshift 0 1 (subst_env 0 (shift 0 1 L0 :: nil) N0)).
+ assert ((N */ L) ~>> (N0 */ L0)).
  apply unshift_substitution_doubly_preserves_rw_rt; auto.
  apply plug_rw_rt; auto.
 Qed.
@@ -924,8 +926,7 @@ Proof.
   intuition; eauto.
  intros.
  simpl in X0.
- assert (forall L, Reducible L S ->
-                   SN (plug K (unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) N)))).
+ assert (forall L, Reducible L S -> SN (plug K (N */ L))).
  intros.
   apply X0; auto.
  assert (SN M).
@@ -1077,4 +1078,6 @@ Proof.
  seauto.
 Qed.
 
+(** Prints out "Closed under the global context" if we have no
+remaining assumptions. *)
 Print Assumptions normalization.
