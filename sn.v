@@ -959,108 +959,109 @@ Proof.
  induction M; simpl; intros T tyEnv Vs tp Vs_tp Vs_red;
    inversion tp; inversion Vs_tp.
  (* Case TmConst *)
-           simpl.
-           intuition.
+ * simpl.
+   intuition.
 
  (* Case TmVar *)
-          replace (x - 0) with x by omega.
-          case_eq (nth_error Vs x); [intros V V_H | intro H_bogus].
-               eapply Reducible_env_value; eauto.
-          absurd (length Vs <= x).
-           cut (length tyEnv > x); [omega|]. (* todo: sufficient ... by omega. *)
-           seauto.
-          apply <- nth_error_overflow; sauto.
+ * replace (x - 0) with x by omega.
+   case_eq (nth_error Vs x); [intros V V_H | intro H_bogus].
+    eapply Reducible_env_value; eauto.
+   absurd (length Vs <= x).
+    cut (length tyEnv > x); [omega|]. (* todo: sufficient ... by omega. *)
+    seauto.
+   apply <- nth_error_overflow; sauto.
 
  (* Case TmPair *)
-         assert (Reducible (subst_env 0 Vs M2) t) by eauto.
-         assert (Reducible (subst_env 0 Vs M1) s) by eauto.
-         simpl.
-         assert (Reducible (TmPair (subst_env 0 Vs M1) (subst_env 0 Vs M2)) (TyPair s t)).
-          apply pair_reducible; sauto.
-         simpl in X1.
-         trivial.
+ * assert (Reducible (subst_env 0 Vs M2) t) by eauto.
+   assert (Reducible (subst_env 0 Vs M1) s) by eauto.
+   simpl.
+   assert (Reducible (TmPair (subst_env 0 Vs M1) (subst_env 0 Vs M2)) (TyPair s t)).
+    apply pair_reducible; sauto.
+   simpl in X1.
+   trivial.
 
- (* Case TmpRoj false *)
-        subst.
-        rename M into M, T into S, t into T.
-        assert (x0 : Reducible (subst_env 0 Vs M) (TyPair S T)).
-         seauto.
-        simpl in x0.
-        tauto.
+ (* Case TmProj false *)
+ * subst.
+   rename M into M, T into S, t into T.
+   assert (x0 : Reducible (subst_env 0 Vs M) (TyPair S T)).
+    seauto.
+   simpl in x0.
+   tauto.
 
  (* Case TmProj true *)
-       subst.
-       rename M into M, s into S.
-       assert (X0 : Reducible (subst_env 0 Vs M) (TyPair S T)).
-        seauto.
-       simpl in X0.
-       tauto.
+ * subst.
+   rename M into M, s into S.
+   assert (X0 : Reducible (subst_env 0 Vs M) (TyPair S T)).
+    seauto.
+   simpl in X0.
+   tauto.
 
  (* Case TmAbs *)
-      replace (map (shift 0 1) Vs) with Vs by (symmetry; eauto).
-      replace (TmAbs (subst_env 1 Vs M)) with (subst_env 0 Vs (TmAbs M)).
-      (* proof of reducibility of the lambda. *)
-       apply lambda_reducibility with tyEnv; auto.
-       intros V V_red.
-       eapply IHM; eauto.
-       simpl.
-       intuition.
+ * replace (map (shift 0 1) Vs) with Vs by (symmetry; eauto).
+   replace (TmAbs (subst_env 1 Vs M)) with (subst_env 0 Vs (TmAbs M)).
+   (* proof of reducibility of the lambda. *)
+   - apply lambda_reducibility with tyEnv; auto.
+     intros V V_red.
+     eapply IHM; eauto.
+     simpl.
+     intuition.
 
-      (* Obligation: TmAbs (subst_env 1 Vs m)) = (subst_env 0 Vs (TmAbs m)). *)
-      simpl.
-      erewrite env_typing_shift_noop; eauto.
+   (* Obligation: TmAbs (subst_env 1 Vs m)) = (subst_env 0 Vs (TmAbs m)). *)
+   - simpl.
+     erewrite env_typing_shift_noop; eauto.
 
  (* Case TmApp *)
-     subst.
-     assert (Reducible (subst_env 0 Vs M1) (TyArr a T)) by eauto.
-     assert (Reducible (subst_env 0 Vs M2) a) by eauto.
-     firstorder.
+ * subst.
+   assert (Reducible (subst_env 0 Vs M1) (TyArr a T)) by eauto.
+   assert (Reducible (subst_env 0 Vs M2) a) by eauto.
+   firstorder.
 
  (* Case TmNull *)
-    simpl.
-    split.
-     auto.
-    intro K.
-    apply ReducibleK_Null.
+ * simpl.
+   split.
+   { auto. }
+   intro K.
+   apply ReducibleK_Null.
 
  (* Case TmSingle *)
-   simpl.
+ * simpl.
    split.
-    eauto.
+   { eauto. }
    intros.
    eauto.
 
  (* Case TmUnion *)
-  subst.
-  assert (Reducible (subst_env 0 Vs M2) (TyList t)) by eauto.
-  assert (Reducible (subst_env 0 Vs M1) (TyList t)) by eauto.
-  apply ReducibleK_Union; sauto.
+ * subst.
+   assert (Reducible (subst_env 0 Vs M2) (TyList t)) by eauto.
+   assert (Reducible (subst_env 0 Vs M1) (TyList t)) by eauto.
+   apply ReducibleK_Union; sauto.
 
  (* Case TmBind *)
- subst.
- apply Bind_Reducible with s.
-   eapply subst_env_preserves_typing with (env' := tyEnv); auto.
-   rewrite env_typing_shift_noop with (env := tyEnv); auto.
- (* Precondition: that M1 is Reducible. *)
-   eapply IHM1; eauto.
+ * subst.
+   apply Bind_Reducible with s.
+   (* Typing *)
+   - eapply subst_env_preserves_typing with (env' := tyEnv); auto.
+     rewrite env_typing_shift_noop with (env := tyEnv); auto.
+   (* Precondition: that M1 is Reducible. *)
+   - eapply IHM1; eauto.
 
- (* Precondition: that M2 is Reducible, for any substitution with Reducible L. *)
- clear H1 IHM1 M1 tp.
+   (* Precondition: that M2 is Reducible, for any substitution with Reducible L. *)
+   - clear H1 IHM1 M1 tp.
 
- intros.
- pose (Reducible_welltyped_closed _ _ X).
- assert (Typing nil (subst_env 0 (L :: Vs) M2) (TyList t)).
-  eapply closing_subst_closes; seauto.
+     intros.
+     pose (Reducible_welltyped_closed _ _ X).
+     assert (Typing nil (subst_env 0 (L :: Vs) M2) (TyList t)).
+     { eapply closing_subst_closes; seauto. }
 
- erewrite shift_closed_noop; eauto.
- erewrite shift_closed_noop_map; eauto.
- rewrite subst_env_concat with (env := s :: tyEnv).
-  unfold app.
-  erewrite unshift_closed_noop (* with (T:=TyList t) *); eauto.
-  eapply IHM2; eauto.
-  simpl.
-  sauto.
- apply env_typing_cons; sauto.
+     erewrite shift_closed_noop; eauto.
+     erewrite shift_closed_noop_map; eauto.
+     rewrite subst_env_concat with (env := s :: tyEnv).
+     ** unfold app.
+        erewrite unshift_closed_noop (* with (T:=TyList t) *); eauto.
+        eapply IHM2; eauto.
+        simpl.
+        sauto.
+     ** apply env_typing_cons; sauto.
 Qed.
 
 (** Every well-typed term is strongly normalizing. *)
