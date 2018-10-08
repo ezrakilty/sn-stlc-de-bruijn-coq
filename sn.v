@@ -445,7 +445,7 @@ Proof.
  constructor.
  intros m' H3.
  let T := type of H3 in copy T.
- apply Neutral_Lists in H3 as [[M' s1 s2] | [K1 s1 s2]]; [ | | auto].
+ apply Neutral_Lists in H3 as [[M' s1 s2] | [K1 s1 s2]]; [ | | auto ].
   subst.
   apply X; auto.
 
@@ -677,7 +677,7 @@ Qed.
 
 Hint Resolve ReducibleK_Empty.
 
-Lemma ReducibleK_Null:
+Lemma Reducible_Null:
   forall K T,
     ReducibleK Reducible K T
     -> SN (plug K TmNull).
@@ -704,7 +704,7 @@ Proof.
  apply Krw_rt_Rw_rt; auto.
 Qed.
 
-Lemma ReducibleK_Union:
+Lemma Reducible_Union:
   forall T M N,
     Reducible M (TyList T) -> Reducible N (TyList T) -> Reducible (TmUnion M N) (TyList T).
 Proof.
@@ -722,7 +722,8 @@ Proof.
 Qed.
 
 (** Let's make [N */ L] a notation for the result of a beta-reduction
-    (including all the de Bruijn monkeying). Makes the lemmas a lot easier to read. *)
+    (including all the de Bruijn monkeying). Makes the lemmas a lot easier to read.
+    Precedence is not correct. *)
 Notation "N */ L" := (unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) N)) (at level 99).
 
 (** * Rewrites Inside Structures That Look Like A Beta-Reduct. *)
@@ -738,7 +739,9 @@ Proof.
  auto.
 Qed.
 
-Lemma SN_beta_withdraw:
+(** When the result of a substitution is SN, the original
+    unsubstituted term is, too. *)
+Lemma SN_less_substituent:
   forall L N,
     SN (N */ L) ->
     SN N.
@@ -801,7 +804,7 @@ Proof.
  intros.
  assert (SN N).
   apply SN_push_under_k in H0.
-  eauto using SN_beta_withdraw.
+  eauto using SN_less_substituent.
  assert (Krw_norm K).
   eauto using SN_context_Krw_norm.
  apply triple_induction_scoped with (K0:=K) (M0:=N) (N0:=L); auto.
@@ -833,7 +836,7 @@ Proof.
   intros L N H H0.
   assert (SN N).
   apply SN_push_under_k in H0.
-  eauto using SN_beta_withdraw.
+  eauto using SN_less_substituent.
   apply triple_induction_scoped with (K0:=K) (M0:=N) (N0:=L);
     eauto using SN_context_Krw_norm.  (* XXX rename to triple_induction_SN *)
   intros K0 N0 L0 ? ? ? IHK0 IHM0 IHL0.
@@ -896,10 +899,8 @@ Lemma Bind_Reducible_core:
     SN N ->
     forall K : Continuation,
       ReducibleK Reducible K T ->
-      Krw_norm K ->
-      (forall L : Term,
-         Reducible L S ->
-         SN (plug K (N */ L))) ->
+      (forall L : Term, Reducible L S ->
+                        SN (plug K (N */ L))) ->
       SN (plug K (TmBind M N)).
 Proof.
  intros.
@@ -909,7 +910,7 @@ Proof.
  simpl.
  intros.
  apply bind_sn_withdraw.
-  eauto using Reducible_SN.
+ { eauto using Reducible_SN. }
  auto.
 Qed.
 
@@ -931,9 +932,6 @@ Proof.
   apply X0; auto.
  assert (SN M).
  eapply Reducible_SN; eauto.
- assert (Krw_norm K).
- apply ReducibleK_Krw_norm with T.
-  auto.
  assert (SN N).
   destruct (Reducible_inhabited S) as [L L_red].
   specialize (X0 L L_red).
@@ -941,7 +939,7 @@ Proof.
   specialize (s Empty).
   lapply s.
    simpl.
-   apply SN_beta_withdraw.
+   apply SN_less_substituent.
   apply ReducibleK_Empty.
  clear X0.
  eapply Bind_Reducible_core; eauto.
@@ -1021,7 +1019,7 @@ Proof.
    split.
    { auto. }
    intro K.
-   apply ReducibleK_Null.
+   apply Reducible_Null.
 
  (* Case TmSingle *)
  * simpl.
@@ -1034,7 +1032,7 @@ Proof.
  * subst.
    assert (Reducible (subst_env 0 Vs M2) (TyList t)) by eauto.
    assert (Reducible (subst_env 0 Vs M1) (TyList t)) by eauto.
-   apply ReducibleK_Union; sauto.
+   apply Reducible_Union; sauto.
 
  (* Case TmBind *)
  * subst.
@@ -1056,6 +1054,7 @@ Proof.
      erewrite shift_closed_noop; eauto.
      erewrite shift_closed_noop_map; eauto.
      rewrite subst_env_concat with (env := s :: tyEnv).
+     (* TO DO: The env_typing oblig. of subst_env_concat seems unnecessary. *)
      ** unfold app.
         erewrite unshift_closed_noop (* with (T:=TyList t) *); eauto.
         eapply IHM2; eauto.
