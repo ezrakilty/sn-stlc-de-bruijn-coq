@@ -1,8 +1,8 @@
-Enclosed is a proof of strong normalization (SN) for simply-typed
-lambda-calculus (STLC) in Coq using de Bruijn indices. It uses the Tait-Girard
-technique of a "Reducibility" predicate which is recursive on the type. I
-believe it to be the smallest direct proof of that fact using those methods
-(i.e. de Bruijn indices in Coq), although the one by Adam Koprowski, part of
-the CoLoR library, is elegant and more general.
+This is a Coq proof of strong normalization for a rewrite system that
+corresponds to a Nested Relational Calculus, ultimately in service of showing
+that all NRC expressions with flat output type can be compiled to SQL.
 
-See sn.pdf for more description, or start reading the Coq code at sn3.v.
+The formalization uses de Bruijn indices, widely known as a poor
+representation, but it was the only binder-encoding that I fully understood
+when I first started this project. I'd like to see if anything is made
+significantly simpler by switching to a locally-nameless representation.
