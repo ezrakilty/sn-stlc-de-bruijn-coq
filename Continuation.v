@@ -226,7 +226,7 @@ Proof.
       { subst. left; right. split. introversion.
         exists K, TmNull; auto. exists t; easy. }
       { subst. left; right. split; [introversion | ].
-        exists K, (TmAbs t @ x); auto. exists t; easy. }
+        exists K, (t */ x); auto. exists t; easy. }
       { subst. left; right. split; [introversion | ].
         exists K, (TmUnion (TmBind xs t) (TmBind ys t)); auto. exists t; easy. }
       { subst. left; left; left. eauto. }

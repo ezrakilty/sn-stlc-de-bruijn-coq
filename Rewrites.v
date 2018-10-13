@@ -18,7 +18,7 @@ Notation "N */ L" := (unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) N)) (at leve
 (** The rewrite system. The object of our study. *)
 Inductive RewritesTo : Term -> Term -> Type :=
 | Rw_beta : forall N M V,
-    V = unshift 0 1 (subst_env 0 (shift 0 1 M :: nil) N) ->
+    V = (N */ M) ->
     RewritesTo (TmApp (TmAbs N) M) V
 | Rw_App_left : forall m1 m2 n,
     RewritesTo m1 m2 ->
@@ -50,8 +50,8 @@ Inductive RewritesTo : Term -> Term -> Type :=
     RewritesTo (TmUnion M N) (TmUnion M N')
 | Rw_Bind_null : forall n,
     RewritesTo (TmBind (TmNull) n) TmNull
-| Rw_Bind_beta : forall n x,
-    RewritesTo (TmBind (TmSingle x) n) (TmApp (TmAbs n) x)
+| Rw_Bind_beta : forall n x V,
+    V = (n */ x) -> RewritesTo (TmBind (TmSingle x) n) V
 | Rw_Bind_union : forall n xs ys,
     RewritesTo (TmBind (TmUnion xs ys) n) (TmUnion (TmBind xs n) (TmBind ys n))
 | Rw_Bind_subject : forall m n m',
@@ -147,7 +147,7 @@ Proof.
  auto.
 Qed.
 
-Lemma Rw_beta_preserves_types_general_var:
+Lemma beta_reduct_typing_general_var:
   forall S env' x T M env k,
    k = length env ->
    Typing env' M S ->
@@ -216,7 +216,7 @@ Qed.
       [E, x:S |- N : T] and
       [E      |- M : S]
 *)
-Lemma Rw_beta_preserves_types_general:
+Lemma beta_reduct_typing_general:
   forall S env' N T M env k,
    k = length env ->
    Typing env' M S ->
@@ -228,7 +228,7 @@ Proof.
  induction N; intros T M env k k_def M_tp N_tp; simpl; inversion N_tp; eauto.
 (* TmConst--handled by eauto *)
 (* TmVar *)
-   eapply Rw_beta_preserves_types_general_var; seauto.
+   eapply beta_reduct_typing_general_var; seauto.
 
 (* TmPair *)
  (* handled by eauto *)
@@ -257,15 +257,15 @@ Qed.
 
 (** Beta reduction preserves types, specialized to reduce at the head
     of the environment. *)
-Lemma Rw_beta_preserves_types:
+Lemma beta_reduct_typing:
   forall S env' N T M,
    Typing env' M S ->
    Typing (S::env') N T ->
-      Typing env' (unshift 0 1 (subst_env 0 (shift 0 1 M :: nil) N)) T.
+      Typing env' (N */ M) T.
 Proof.
  intros.
  replace env' with (nil++env'); auto.
- eapply Rw_beta_preserves_types_general; eauto.
+ eapply beta_reduct_typing_general; eauto.
 Qed.
 
 (** The rewrite relation preserves the [Typing] judgment. *)
@@ -283,7 +283,7 @@ Proof.
  (* Case Beta_reduction -> *)
      inversion TmAbs_N_tp.
      subst.
-     eapply Rw_beta_preserves_types; eauto.
+     eapply beta_reduct_typing; eauto.
  (* Case Beta reduction TPair (1) *)
      subst T.
      inversion H; sauto.
@@ -294,7 +294,7 @@ Proof.
    subst T n0 m.
    inversion H.
    subst.
-   eauto.
+   eauto using beta_reduct_typing.
  (* Case TmUnion/TmBind *)
   inversion H.
   subst.
@@ -323,6 +323,111 @@ Require Import Listkit.All.
 Require Import Listkit.AllType.
 Require Import Listkit.Sets.
 Require Import OutsideRange.
+
+Lemma commute_subst_with_beta_reduct:
+  forall N M n env,
+    subst_env n env (N */ M) = (subst_env (S n) (map (shift 0 1) env) N */ subst_env n env M).
+Proof.
+ intros.
+ (* Now we only have to show that certain complex substitutions are equal.
+
+    The situation at this point can be summarized as:
+
+      (1) -----------> (2) -----------> (4)
+         subst 0 {M''}      unshift 0 1
+       ^                                 ^
+       |                                 |
+       | subst n+1 env'                  | subst n env
+       |                                 |
+
+       N ----------->  (3) ----------->  N */ M
+         subst 0 {M'}      unshift 0 1
+
+       where
+           env' = map shift01 env
+           M'   = shift01 M
+           M''  = shift01 (subst n env M)
+ *)
+
+ (* Push subst_env inside unshift. *)
+ rewrite subst_unshift (*if this used outside_range, how would it be different? *);
+   [ | omega | ].
+  f_equal.
+
+  (* From here on we're just working with the left-hand square of the above diagram,
+
+      (1) -----------> (2)
+         subst 0 {M''}
+       ^                ^
+       |                |
+       | subst n+1 env' | subst n+1 env'
+       |                |
+
+       N ------------> (3)
+         subst 0 {M'}
+
+   *)
+
+  replace (n+1) with (S n) by omega.
+
+  remember (shift 0 1 M) as M'.
+  remember (shift 0 1 (subst_env n env M)) as M''.
+  remember (map (shift 0 1) env) as env'.
+
+  (* Push shift inside subst_env in M''. *)
+  rewrite shift_subst_commute_lo in HeqM'' by omega.
+  replace (n+1) with (S n) in HeqM'' by omega.
+
+  (* We have reduced the problem to subst_factor and some obligations. *)
+  rewrite <- subst_factor. (* with m:= 0, n:= S n *)
+    subst; sauto.
+
+  (* Obligations of subst_factor: *)
+  (* Obl 1: All freevars of every term in [map (shift 0 1) env] are not in
+     the env_domain of _::nil, i.e. the interval [0,1). *)
+   unfold in_env_domain.
+   simpl.
+   subst env'.
+   apply all_map_image.
+   intros X.
+   pose (shift_freevars X 0).
+   firstorder.
+  (* Obl 2: Substitutions do not overlap:
+       (0, [_]) does not overlap (S n, _). *)
+  simpl.
+  solve [omega].
+
+ (* Obligations of subst_unshift: *)
+ (* Obl 1: That fvs of N{[shift 0 1 M]/0} are all outside [0,1). *)
+    (* TODO some redundancy with the above obl 1 *)
+ pose (fvs_M := freevars (shift 0 1 M)).
+ pose (fvs_N := freevars N).
+ remember (freevars (subst_env 0 (shift 0 1 M :: nil) N)) as fvs.
+ (* Assert: fvs ⊆ (fvs_N ∖ {0}) ∪ fvs_M *)
+ assert (H : incl_sets _
+                 fvs
+                 (set_union eq_nat_dec
+                   fvs_M
+                   (set_filter _
+                        (fun x => outside_range 0 (1+0) x) fvs_N))).
+  subst fvs fvs_M fvs_N.
+  replace (freevars (shift 0 1 M))
+     with (set_unions _ eq_nat_dec (map freevars (shift 0 1 M :: nil)))
+       by auto.
+  apply subst_Freevars; sauto.
+
+ (* Now we have H : fvs ⊆ (fvs_N ∖ {0}) ∪ fvs_M *)
+ (* TODO: From here out, basically just set math, plus shift_freevars *)
+ eapply all_Type_incl.
+  apply H.
+ apply all_Type_union_fwd.
+ split.
+  subst fvs_M.
+  pose (shift_freevars M 0). (* only need another step because all /= all_Type. *)
+  firstorder.
+ apply all_Type_filter.
+ apply outside_range_elim.
+Qed.
 
 Lemma subst_env_compat_rw:
   forall M M',
@@ -354,106 +459,8 @@ Proof.
          (* Write out the beta reduction: *)
          simpl.
          apply Rw_beta.
-         (* Now we only have to show that certain complex substitutions are equal.
-
-            The situation at this point can be summarized as:
-
-              (1) -----------> (2) -----------> (4)
-                 subst 0 {M''}      unshift 0 1
-               ^                                 ^
-               |                                 |
-               | subst n+1 env'                  | subst n env
-               |                                 |
-
-               N ----------->  (3) ----------->  V
-                 subst 0 {M'}      unshift 0 1
-
-               where
-                   env' = map shift01 env
-                   M'   = shift01 M
-                   M''  = shift01 (subst n env M)
-         *)
-
          subst V.
-
-         (* Push subst_env inside unshift. *)
-         rewrite subst_unshift (*if this used outside_range, how would it be different? *);
-           [ | omega | ].
-          f_equal.
-
-          (* From here on we're just working with the left-hand square of the above diagram,
-
-              (1) -----------> (2)
-                 subst 0 {M''}
-               ^                ^
-               |                |
-               | subst n+1 env' | subst n+1 env'
-               |                |
-
-               N ------------> (3)
-                 subst 0 {M'}
-
-           *)
-
-          replace (n+1) with (S n) by omega.
-
-          remember (shift 0 1 M) as M'.
-          remember (shift 0 1 (subst_env n env M)) as M''.
-          remember (map (shift 0 1) env) as env'.
-
-          (* Push shift inside subst_env in M''. *)
-          rewrite shift_subst_commute_lo in HeqM'' by omega.
-          replace (n+1) with (S n) in HeqM'' by omega.
-
-          (* We have reduced the problem to subst_factor and some obligations. *)
-          rewrite <- subst_factor. (* with m:= 0, n:= S n *)
-            subst; sauto.
-
-          (* Obligations of subst_factor: *)
-          (* Obl 1: All freevars of every term in [map (shift 0 1) env] are not in
-             the env_domain of _::nil, i.e. the interval [0,1). *)
-           unfold in_env_domain.
-           simpl.
-           subst env'.
-           apply all_map_image.
-           intros X.
-           pose (shift_freevars X 0).
-           firstorder.
-          (* Obl 2: Substitutions do not overlap:
-               (0, [_]) does not overlap (S n, _). *)
-          simpl.
-          solve [omega].
-
-         (* Obligations of subst_unshift: *)
-         (* Obl 1: That fvs of N{[shift 0 1 M]/0} are all outside [0,1). *)
-            (* TODO some redundancy with the above obl 1 *)
-         pose (fvs_M := freevars (shift 0 1 M)).
-         pose (fvs_N := freevars N).
-         remember (freevars (subst_env 0 (shift 0 1 M :: nil) N)) as fvs.
-         (* Assert: fvs ⊆ (fvs_N ∖ {0}) ∪ fvs_M *)
-         assert (H : incl_sets _
-                         fvs
-                         (set_union eq_nat_dec
-                           fvs_M
-                           (set_filter _
-                                (fun x => outside_range 0 (1+0) x) fvs_N))).
-          subst fvs fvs_M fvs_N.
-          replace (freevars (shift 0 1 M))
-             with (set_unions _ eq_nat_dec (map freevars (shift 0 1 M :: nil)))
-               by auto.
-          apply subst_Freevars; sauto.
-
-         (* Now we have H : fvs ⊆ (fvs_N ∖ {0}) ∪ fvs_M *)
-         (* TODO: From here out, basically just set math, plus shift_freevars *)
-         eapply all_Type_incl.
-          apply H.
-         apply all_Type_union_fwd.
-         split.
-          subst fvs_M.
-          pose (shift_freevars M 0). (* only need another step because all /= all_Type. *)
-          firstorder.
-         apply all_Type_filter.
-         apply outside_range_elim.
+         apply commute_subst_with_beta_reduct.
 
  (* Case Reduction in lhs of apply *)
         simpl.
@@ -505,11 +512,12 @@ Proof.
 
  (* Case: Bind with subject null *)
  simpl.
- apply Rw_Bind_null.
+ solve [apply Rw_Bind_null].
 
  (* Case: Beta reduction of TmBind *)
  simpl.
- apply Rw_Bind_beta.
+ apply Rw_Bind_beta; subst.
+ apply commute_subst_with_beta_reduct.
 
  (* Case: Union/Bind commuting-conversion *)
  simpl.
@@ -582,6 +590,24 @@ Qed.
 
 Import Setoid.
 Require Import Listkit.Foreach.
+
+Lemma commute_shift_beta_reduct :
+  forall k N1 N2,
+    (shift (S k) 1 N1 */ shift k 1 N2) = shift k 1 (N1 */ N2).
+Proof.
+ intros.
+ rewrite shift_unshift_commute; [ | | solve[omega]].
+ { rewrite shift_subst_commute_hi by (simpl; omega).
+   simpl.
+   rewrite shift_shift_commute by omega.
+   easy. }
+ rewrite subst_Freevars by auto.
+ intro H0.
+ apply set_union_elim in H0.
+ destruct H0.
+ - apply shift_freevars in H; intuition.
+ - apply set_filter_elim in H; intuition.
+Qed.
 
 (** If [shift k 1 N] reduces, then that reduct is equal to the
     [shift k 1] of some term which is a reduct of [N]. *)
@@ -658,26 +684,7 @@ Proof.
    subst M.
    subst V.
    split; [ | auto].
-   rewrite shift_unshift_commute; [ | | solve[omega]].
-    rewrite shift_subst_commute_hi ; [ | simpl; omega].
-    simpl.
-    rewrite shift_shift_commute; [ | omega].
-    solve [trivial]...
-
-   (* Obligation of shift_unshift_commute: that 0 \not\in subst_env 0 [shift 0 1 N2] N1. *)
-   clear red H H1 M0 k IHN2 IHN1.
-   rewrite subst_Freevars by auto.
-   simpl.
-   intro H0.
-   apply set_union_elim in H0.
-   destruct H0.
-    apply shift_freevars in H.
-    omega.
-   apply set_filter_elim in H.
-   destruct H.
-   unfold outside_range in *.
-   revert H0.
-   break; try break; intros; (try omega; try discriminate).
+   apply commute_shift_beta_reduct.
 
  (* Case: reduction in left part of application. *)
   destruct (IHN1 m2 k) as [m2' [m2'_def m2'_red]]; [auto | ].
@@ -734,14 +741,15 @@ Proof.
  solve [intuition].
 
  (* Case: Beta for Bind *)
- subst M n.
- destruct (TmSingle_shift_inversion x _ _ H0).
- exists (TmAbs N2 @ x0).
- simpl.
+ subst.
+ destruct (TmSingle_shift_inversion x _ _ H).
  subst N1.
- simpl in H0.
- inversion H0.
- intuition.
+ exists (N2 */ x0).
+ simpl in H.
+ inversion H.
+ subst.
+ split; auto.
+ apply commute_shift_beta_reduct.
 
  (* Case: Bind/Union *)
  assert (A : {xs' : Term & {ys' : Term & ((N1 = TmUnion xs' ys') * (xs = shift k 1 xs') * (ys = shift k 1 ys'))%type}}).
@@ -793,7 +801,6 @@ Proof.
  inversion H0; subst; try solve [inversion H | firstorder].
  (* Stuck: The supposedly neutral term actually reacts with its context. :( *)
 Qed.
-
 
 Lemma Rw_rt_Pair_left:
   forall m1 m2 n : Term, (m1 ~>> m2) -> (〈 m1, n 〉) ~>> (〈 m2, n 〉).
@@ -965,9 +972,11 @@ Proof.
  - apply Rw_beta.
    apply beta_with_unshift.
    omega.
- - rewrite unshift_shift_commute.
-   auto.
+ - apply Rw_Bind_beta.
+   apply beta_with_unshift.
    omega.
+ - rewrite unshift_shift_commute by omega.
+   apply Rw_Bind_assoc.
 Qed.
 
 Lemma shift_preserves_rw:
@@ -977,25 +986,11 @@ Lemma shift_preserves_rw:
 Proof.
  induction L; intros; inversion H; subst; simpl; eauto.
  - apply Rw_beta.
-   rewrite <- shift_shift_commute by omega.
-   replace (shift (S n) 1 (shift 0 1 L2) :: nil)
-     with (map (shift (S n) 1) ((shift 0 1 L2) :: nil)) by auto.
-   rewrite <- shift_subst_commute_hi by (simpl; omega).
-   rewrite <- Shift.shift_unshift_commute; try omega.
-   * trivial.
-   * intro.
-     pose (subst_Freevars N (shift 0 1 L2 :: nil) 0).
-     apply set_union_elim with (a:=0) in i.
-     -- simpl in i.
-        destruct i.
-        ** pose (shift_freevars L2 0 0).
-           intuition.
-        ** apply set_filter_elim in H1.
-           intuition.
-     -- auto.
- - rewrite shift_shift_commute.
+   rewrite commute_shift_beta_reduct; auto.
+ - apply Rw_Bind_beta.
+   rewrite commute_shift_beta_reduct; auto.
+ - rewrite shift_shift_commute by omega.
    auto.
-   omega.
 Qed.
 
 Lemma unshift_preserves_rw_rt

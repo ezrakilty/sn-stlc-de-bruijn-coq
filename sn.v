@@ -806,10 +806,7 @@ Proof.
   apply three_ways_to_reduce_at_interface in redn
     as [[[[M' redn_a redn_b] | [K'' redn_a redn_b]] | ?] | ?].
   * inversion redn_b; subst.
-    -- apply SN_beta_withdraw_under_k; auto.
-       { apply Rw_trans_preserves_SN with L; auto. }
-       (* assert (Krw_rt (Iterate t K) (Iterate t K0)) by admit. *)
-       eauto using beta_reduct_under_K_rw_rt, Rw_trans_preserves_SN.
+    -- eauto using beta_reduct_under_K_rw_rt, Rw_trans_preserves_SN.
     -- inversion H9.
        subst.
        apply IHL0; sauto.
