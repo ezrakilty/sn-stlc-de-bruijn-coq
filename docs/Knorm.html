@@ -31,7 +31,7 @@
 </div>
 
 <div class="doc">
-<a name="lab9"></a><h1 class="section">More Induction Principles on Reduction Sequences</h1>
+<a name="lab10"></a><h1 class="section">More Induction Principles on Reduction Sequences</h1>
  These require knowledge of Continuation.v, so can't be placed in Norm.v  Continuations have their own "strong normalization" on their own reduction
     rule. 
 </div>
@@ -116,12 +116,24 @@ A continuation that is part of, and downstream of, a SN term, is normalizing.
 &nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">Q</span>, <a class="idref" href="Norm.html#SN"><span class="id" title="inductive">SN</span></a> <a class="idref" href="Knorm.html#Q"><span class="id" title="variable">Q</span></a> <a class="idref" href="http://coq.inria.fr/distrib/8.8.1/stdlib//Coq.Init.Logic.html#d43e996736952df71ebeeae74d10a287"><span class="id" title="notation">→</span></a> <span class="id" title="keyword">∀</span> <span class="id" title="var">K</span> <span class="id" title="var">M</span>, <a class="idref" href="http://coq.inria.fr/distrib/8.8.1/stdlib//Coq.Init.Logic.html#d43e996736952df71ebeeae74d10a287"><span class="id" title="notation">(</span></a><a class="idref" href="Knorm.html#Q"><span class="id" title="variable">Q</span></a> <a class="idref" href="Rewrites.html#e4007bde044ebdb31bcc0fdaf8d69f1e"><span class="id" title="notation">~&gt;&gt;</span></a> <a class="idref" href="Continuation.html#plug"><span class="id" title="definition">plug</span></a> <a class="idref" href="Knorm.html#K"><span class="id" title="variable">K</span></a> <a class="idref" href="Knorm.html#M"><span class="id" title="variable">M</span></a><a class="idref" href="http://coq.inria.fr/distrib/8.8.1/stdlib//Coq.Init.Logic.html#d43e996736952df71ebeeae74d10a287"><span class="id" title="notation">)</span></a> <a class="idref" href="http://coq.inria.fr/distrib/8.8.1/stdlib//Coq.Init.Logic.html#d43e996736952df71ebeeae74d10a287"><span class="id" title="notation">→</span></a> <a class="idref" href="Knorm.html#Krw_norm"><span class="id" title="inductive">Krw_norm</span></a> <a class="idref" href="Knorm.html#K"><span class="id" title="variable">K</span></a>.<br/>
 
 <br/>
+</div>
+
+<div class="doc">
+(Lemma 26) 
+</div>
+<div class="code">
 <span class="id" title="keyword">Lemma</span> <a name="SN_K_M_SN_K_Null"><span class="id" title="lemma">SN_K_M_SN_K_Null</span></a>:<br/>
 &nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">K</span> <span class="id" title="var">M</span>,<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Norm.html#SN"><span class="id" title="inductive">SN</span></a> (<a class="idref" href="Continuation.html#plug"><span class="id" title="definition">plug</span></a> <a class="idref" href="Knorm.html#K"><span class="id" title="variable">K</span></a> <a class="idref" href="Knorm.html#M"><span class="id" title="variable">M</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/8.8.1/stdlib//Coq.Init.Logic.html#d43e996736952df71ebeeae74d10a287"><span class="id" title="notation">→</span></a><br/>
 &nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Norm.html#SN"><span class="id" title="inductive">SN</span></a> (<a class="idref" href="Continuation.html#plug"><span class="id" title="definition">plug</span></a> <a class="idref" href="Knorm.html#K"><span class="id" title="variable">K</span></a> <a class="idref" href="Term.html#TmNull"><span class="id" title="constructor">TmNull</span></a>).<br/>
 
 <br/>
+</div>
+
+<div class="doc">
+(Lemma 30) 
+</div>
+<div class="code">
 <span class="id" title="keyword">Lemma</span> <a name="SN_K_Union"><span class="id" title="lemma">SN_K_Union</span></a>:<br/>
 &nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">K</span>,<br/>
 &nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">M</span> <span class="id" title="var">N</span>, <a class="idref" href="Norm.html#SN"><span class="id" title="inductive">SN</span></a> (<a class="idref" href="Continuation.html#plug"><span class="id" title="definition">plug</span></a> <a class="idref" href="Knorm.html#K"><span class="id" title="variable">K</span></a> <a class="idref" href="Knorm.html#M"><span class="id" title="variable">M</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/8.8.1/stdlib//Coq.Init.Logic.html#d43e996736952df71ebeeae74d10a287"><span class="id" title="notation">→</span></a> <a class="idref" href="Norm.html#SN"><span class="id" title="inductive">SN</span></a> (<a class="idref" href="Continuation.html#plug"><span class="id" title="definition">plug</span></a> <a class="idref" href="Knorm.html#K"><span class="id" title="variable">K</span></a> <a class="idref" href="Knorm.html#N"><span class="id" title="variable">N</span></a>) <a class="idref" href="http://coq.inria.fr/distrib/8.8.1/stdlib//Coq.Init.Logic.html#d43e996736952df71ebeeae74d10a287"><span class="id" title="notation">→</span></a> <a class="idref" href="Norm.html#SN"><span class="id" title="inductive">SN</span></a> (<a class="idref" href="Continuation.html#plug"><span class="id" title="definition">plug</span></a> <a class="idref" href="Knorm.html#K"><span class="id" title="variable">K</span></a> (<a class="idref" href="Term.html#TmUnion"><span class="id" title="constructor">TmUnion</span></a> <a class="idref" href="Knorm.html#M"><span class="id" title="variable">M</span></a> <a class="idref" href="Knorm.html#N"><span class="id" title="variable">N</span></a>)).<br/>

@@ -140,6 +140,7 @@ Proof.
  eauto.
 Qed.
 
+(** (Lemma 26) *)
 Lemma SN_K_M_SN_K_Null:
   forall K M,
     SN (plug K M) ->
@@ -184,6 +185,7 @@ Proof.
  firstorder.
 Qed.
 
+(** (Lemma 30) *)
 Lemma SN_K_Union:
   forall K,
   forall M N, SN (plug K M) -> SN (plug K N) -> SN (plug K (TmUnion M N)).

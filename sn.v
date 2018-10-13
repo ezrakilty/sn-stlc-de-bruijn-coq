@@ -137,7 +137,7 @@ Qed.
 
 Hint Immediate Reducible_welltyped_closed.
 
-(** The Rewrites relation preserves reducibility. *)
+(** The Rewrites relation preserves reducibility. (Lemma 22) *)
 Lemma Rw_preserves_Reducible :
  forall T M, Reducible M T -> forall M', (M ~> M') -> Reducible M' T.
 Proof.
@@ -426,9 +426,7 @@ Proof.
   simpl.
   intros tm X.
   destruct X as [X0 X1].
-  set (X2 := X1 Empty).
-  simpl in X2.
-  apply X2.
+  apply (X1 Empty).
   simpl.
   intros M H.
   apply SN_TmSingle; sauto.
@@ -456,7 +454,7 @@ Qed.
 
 (** Now we extract the three lemmas in their separate, useful form. *)
 
-(** Every reducible term is strongly normalizing. *)
+(** Every reducible term is strongly normalizing. (Lemma 21) *)
 Lemma Reducible_SN:
  forall ty, forall tm, Reducible tm ty -> SN tm.
 Proof.
@@ -465,8 +463,8 @@ Qed.
 
 Hint Resolve Reducible_SN.
 
-(** Every neutral term whose reducts are all [Reducible] is itself
-    [Reducible]. *)
+(** Every neutral term whose reducts are all [Reducible] is itself [Reducible].
+    (Lemma 25) *)
 Lemma Neutral_Reducible_withdraw :
   forall T M,
     Neutral M ->
@@ -477,7 +475,7 @@ Proof.
  firstorder using Reducible_properties.
 Qed.
 
-(** Every type has a [Reducible] term. *)
+(** Every type has a [Reducible] term. (Lemma 20) *)
 Lemma Reducible_inhabited:
   forall T,
   {tm : Term & Reducible tm T}.
@@ -524,6 +522,7 @@ Qed.
 
 (** * Reducibility of specific term types. *)
 
+(** (Lemma 28) *)
 Lemma lambda_reducibility:
   forall N T S,
   forall (Ts : list Ty) Vs,
@@ -646,6 +645,7 @@ Proof.
    * eauto.
 Qed.
 
+(** (Lemma 29, for pairs rather than records) *)
 Lemma pair_reducible:
   forall M N S T,
     Reducible M S -> Reducible N T -> Reducible (TmPair M N) (TyPair S T).
@@ -663,7 +663,7 @@ Proof.
  - apply (pair_proj_reducible M N S T true X X0 H1 H2).
 Qed.
 
-(** * Reducible Continuations *)
+(** * Reducible things at list type *)
 
 Lemma ReducibleK_Empty :
   forall T, ReducibleK Reducible Empty T.
@@ -675,8 +675,9 @@ Proof.
  eauto using Reducible_SN.
 Qed.
 
-Hint Resolve ReducibleK_Empty.
+(* Hint Resolve ReducibleK_Empty. *)
 
+(** (compare Lemma 26, but not the same) *)
 Lemma Reducible_Null:
   forall K T,
     ReducibleK Reducible K T
@@ -704,6 +705,7 @@ Proof.
  apply Krw_rt_Rw_rt; auto.
 Qed.
 
+(** (Lemma 32; compare Lemmas 30, 31. It seemed a lot harder) *)
 Lemma Reducible_Union:
   forall T M N,
     Reducible M (TyList T) -> Reducible N (TyList T) -> Reducible (TmUnion M N) (TyList T).
@@ -721,26 +723,10 @@ Proof.
  eauto using SN_K_Union.
 Qed.
 
-(** Let's make [N */ L] a notation for the result of a beta-reduction
-    (including all the de Bruijn monkeying). Makes the lemmas a lot easier to read.
-    Precedence is not correct. *)
-Notation "N */ L" := (unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) N)) (at level 99).
-
 (** * Rewrites Inside Structures That Look Like A Beta-Reduct. *)
 
-Lemma unshift_substitution_preserves_rw:
-  forall M M' L,
-    (M ~> M') ->
-    M */ L ~> M' */ L.
-Proof.
- intros.
- apply unshift_preserves_rw.
- apply subst_env_compat_rw.
- auto.
-Qed.
-
 (** When the result of a substitution is SN, the original
-    unsubstituted term is, too. *)
+    unsubstituted term is, too. (Compare Lemma 44) *)
 Lemma SN_less_substituent:
   forall L N,
     SN (N */ L) ->
@@ -752,33 +738,6 @@ Proof.
    apply unshift_substitution_preserves_rw; sauto.
   sauto.
  sauto.
-Qed.
-
-Lemma unshift_substitution_preserves_rw_rt:
-  forall M M' L : Term,
-  (M ~>> M') ->
-  M */ L ~>>  M' */ L.
-Proof.
-  intros.
-  induction H.
-  * constructor 1.
-    subst; auto.
-  * constructor 2.
-    apply unshift_substitution_preserves_rw; auto.
-  * econstructor 3; eauto.
-Qed.
-
-Lemma unshift_substitution_doubly_preserves_rw_rt:
-  forall M M' L L' : Term,
-  (L ~>> L') ->
-  (M ~>> M') ->
-  M */ L ~>>
-    M' */ L'.
-Proof.
- intros.
- apply unshift_preserves_rw_rt. (* Should be rw_compat_unshift *)
- apply subst_env_compat_rw_2_rt; auto.
- apply Rw_rt_shift; auto.
 Qed.
 
 Lemma beta_reduct_under_K_rw_rt:
@@ -804,11 +763,12 @@ Proof.
  intros.
  assert (SN N).
   apply SN_push_under_k in H0.
-  eauto using SN_less_substituent.
+  eauto using SN_less_substituent. (* Was not needed here in thesis. *)
  assert (Krw_norm K).
   eauto using SN_context_Krw_norm.
  apply triple_induction_scoped with (K0:=K) (M0:=N) (N0:=L); auto.
  intros.
+ rename M into N0, N0 into L0.
  apply reducts_SN.
  intros.
  apply Neutral_Lists in H9 as [[M' H7a H7b] | [K' H7a H7b]]; [| | auto]; subst.
@@ -820,7 +780,7 @@ Proof.
  - auto using H6.
 Qed.
 
-(** * Bind reducibility *)
+(** * Bind reducibility. (Lemma 33) *)
 
 (* TODO: Seems like this is overly long.
    I wonder if the induction on K is needed?
@@ -877,9 +837,10 @@ Proof.
     simpl in H6.
     simpl.
 
-    replace (unshift 1 1 (subst_env 1 (shift 0 1 (shift 0 1 L0) :: nil) (shift 1 1 N1)))
+    replace (unshift 1 1 (subst_env 1 (shift 0 1 (shift 0 1 L0) :: nil)
+                                    (shift 1 1 N1)))
       with N1.
-    auto.
+    { auto. }
     rewrite subst_unused_noop.
     symmetry; apply unshift_shift.
     pose (shift_freevars N1 1).
@@ -914,6 +875,7 @@ Proof.
  auto.
 Qed.
 
+(** (Lemma 34) *)
 Lemma Bind_Reducible :
   forall M S N T,
     Typing (S :: nil) N (TyList T)
@@ -1004,7 +966,7 @@ Proof.
      simpl.
      intuition.
 
-   (* Obligation: TmAbs (subst_env 1 Vs m)) = (subst_env 0 Vs (TmAbs m)). *)
+   (* Obligation: TmAbs (subst_env 1 Vs m) = subst_env 0 Vs (TmAbs m). *)
    - simpl.
      erewrite env_typing_shift_noop; eauto.
 

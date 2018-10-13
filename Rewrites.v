@@ -10,6 +10,11 @@ Require Import Shift.
 Require Import Subst.
 Require Import Omega.
 
+(** Let's make [N */ L] a notation for the result of a beta-reduction
+    (including all the de Bruijn monkeying). Makes the lemmas a lot easier to read.
+    Precedence is not correct. *)
+Notation "N */ L" := (unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) N)) (at level 99).
+
 (** The rewrite system. The object of our study. *)
 Inductive RewritesTo : Term -> Term -> Type :=
 | Rw_beta : forall N M V,
@@ -1062,4 +1067,45 @@ Proof.
   apply Rw_rt_trans with (subst_env n (L :: nil) M').
   apply subst_env_compat_rw_rt_B; auto.
   apply subst_env_compat_rw_rt_A; auto.
+Qed.
+
+
+(** * Rewrites Inside Structures That Look Like A Beta-Reduct. *)
+
+Lemma unshift_substitution_preserves_rw:
+  forall M M' L,
+    (M ~> M') ->
+    M */ L ~> M' */ L.
+Proof.
+ intros.
+ apply unshift_preserves_rw.
+ apply subst_env_compat_rw.
+ auto.
+Qed.
+
+Lemma unshift_substitution_preserves_rw_rt:
+  forall M M' L : Term,
+  (M ~>> M') ->
+  M */ L ~>>  M' */ L.
+Proof.
+  intros.
+  induction H.
+  * constructor 1.
+    subst; auto.
+  * constructor 2.
+    apply unshift_substitution_preserves_rw; auto.
+  * econstructor 3; eauto.
+Qed.
+
+Lemma unshift_substitution_doubly_preserves_rw_rt:
+  forall M M' L L' : Term,
+  (L ~>> L') ->
+  (M ~>> M') ->
+  M */ L ~>>
+    M' */ L'.
+Proof.
+ intros.
+ apply unshift_preserves_rw_rt. (* Should be rw_compat_unshift *)
+ apply subst_env_compat_rw_2_rt; auto.
+ apply Rw_rt_shift; auto.
 Qed.

@@ -278,6 +278,7 @@ Proof.
  apply (SN_embedding (fun x => (x @ M))) with (L @ M); auto.
 Qed.
 
+(** (Compare Lemma 27) *)
 Lemma SN_TmSingle:
   forall M,
     SN M -> SN (TmSingle M).

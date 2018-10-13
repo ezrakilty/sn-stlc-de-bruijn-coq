@@ -891,22 +891,20 @@ Lemma Rw_rt_conserves_Ksize:
 Proof.
  intros.
  apply rw_rt_f_induction
- with (A := Continuation)
+   with (A := Continuation)
         (f := fun k => plug k TmNull)
-        (x:=K)
-        (P:=fun k k'=>Ksize k >= Ksize k') in H.
- - destruct H.
-   destruct s.
+        (x := K)
+        (P := fun k k' => Ksize k >= Ksize k') in H.
+ - destruct H as [x e [x0 e0 g]].
    apply unique_plug_null in e.
    apply unique_plug_null in e0.
    subst.
-   auto...
- - eauto...
+   auto.
+ - eauto.
  - unfold injective.
-   apply unique_plug_null...
+   apply unique_plug_null.
  - intros.
-   apply (rw_rt_preserves_plug_TmNull K (plug x TmNull)); auto.
-   exists x; auto.
+   eauto using rw_rt_preserves_plug_TmNull.
  - apply Rw_conserves_Ksize; auto.
  - intros; omega.
  - auto.
@@ -915,10 +913,10 @@ Qed.
 Lemma plug_rw_rt:
   forall K K' M M', Krw_rt K K' -> (M ~>> M') -> (plug K M ~>> plug K' M').
 Proof.
-  intros.
+ intros.
  assert (plug K M ~>> plug K' M).
  apply Krw_rt_Rw_rt; auto.
  assert (plug K' M ~>> plug K' M').
-  apply Rw_rt_under_K; auto.
+ { apply Rw_rt_under_K; auto. }
  eauto.
 Qed.
