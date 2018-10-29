@@ -95,18 +95,6 @@ Proof.
    (* x is beyond length env *)
    assert (value ty = nth_error env' (x - length env)).
     apply nth_error_app; trivial.
-(* TODO: Alternate version. Is this better? *)
-   (* destruct (nth_error_dichot _ Vs (x - length env)) as [[bounds is_error] | [? ?]]. *)
-   (*  refute. *)
-   (*  apply nth_error_to_length in H. *)
-   (*  apply nth_error_overflow in is_error. *)
-   (*  omega. *)
-   (* assert ({v : Term | nth_error Vs (x - length env) = value v}). *)
-   (*  admit. *)
-   (* destruct H3 as [v H3]. *)
-   (* rewrite H3; simpl. *)
-   (* cut (Typing nil v ty); [sauto | ]. *)
-   (* eapply foreach2_ty_member; eauto. *)
     case_eq (nth_error Vs (x - length env));
       [intros v H_v | intros H_v; refute]; auto.
     (* Obtained value v for x - length env in Vs. *)
@@ -586,32 +574,12 @@ Proof.
  intuition.
 Qed.
 
-
 Import Setoid.
-
-Lemma shift_var_0: forall n x, shift_var 0 n x = x + n.
-Proof.
- unfold shift_var. intros. break; finish.
-Qed.
 
 Lemma union_distrib: forall A B C, eq_sets _ (A ∪ (B ∪ C)) ((A ∪ B) ∪ (A ∪ C)).
 Proof.
  intros.
  split; solve_set_union_inclusion.
-Qed.
-
-Lemma set_remove_absent:
-  forall A eq_dec (x:A) (X:set A), ~In x X -> set_remove A eq_dec x X = X.
-Proof.
- intros.
- induction X; simpl.
-  auto.
- destruct (eq_dec x a).
-  subst a.
-  lapply H; intuition.
- rewrite IHX; auto.
- unfold In in H.
- auto.
 Qed.
 
 (** After making a substitution, the freevars of the result is:
@@ -778,19 +746,6 @@ Proof.
 Qed.
 
 Require Import Listkit.listkit.
-
-Lemma In_nth_error: forall A (x:A) xs, In x xs -> exists n, value x = nth_error xs n.
-Proof.
- induction xs; simpl.
-  intuition.
- intuition.
-  exists 0.
-  subst.
-  auto.
- destruct H.
- exists (S x0).
- auto.
-Qed.
 
 Lemma subst_unused_noop:
   forall M env n,

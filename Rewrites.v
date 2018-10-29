@@ -10,10 +10,131 @@ Require Import Shift.
 Require Import Subst.
 Require Import Omega.
 
+Lemma beta_reduct_typing_general_var:
+  forall S env' x T M env k,
+   k = length env ->
+   Typing env' M S ->
+   Typing (env++(S::env')) (TmVar x) T ->
+      Typing (env++env')
+             (unshift k 1 (subst_env k (shift 0 (k+1) M :: nil) (TmVar x)))
+	     T.
+Proof.
+ intros S env' x.
+ intros T M env k k_def M_tp N_tp; simpl; inversion N_tp; eauto.
+ subst.
+ assert (H: x < length (env++(S::env'))).
+  eapply nth_error_to_length; eauto.
+ rewrite app_length in H.
+ simpl in H.
+ destruct (le_gt_dec (length env) x).
+  destruct (eq_nat_dec x (length env)).
+  (* 'x' points to the type 'S' *)
+  subst x.
+   replace (length env - length env) with 0 by omega.
+   replace (nth_error (shift 0 1 M :: nil) 0)
+     with (value (shift 0 1 M)); auto.
+   simpl.
+   rewrite fancy_unshift_shift; auto; [|omega].
+   replace (length env+1-1) with (length env); auto; [|omega].
+   replace (env++env') with (nil++env++env'); auto.
+   eapply shift_preserves_typing with env'; auto.
+   apply nth_error_app in H0; auto.
+   replace (length env - length env) with 0 in H0 by omega.
+   simpl in H0.
+   inversion H0.
+   auto.
+  (* 'x' is in the second environment. *)
+  assert (length env < x) by omega.
+  assert (0 < x-length env) by omega.
+  replace (nth_error (shift 0 (length env + 1) M::nil) (x-length env))
+    with (error : option Term).
+   simpl.
+   apply TVar.
+   unfold unshift_var.
+   destruct (le_gt_dec (1 + length env) x); [ | omega].
+   apply nth_error_app in H0; auto.
+   replace (S::env') with ((S::nil)++env') in H0; auto.
+   apply nth_error_app in H0; auto.
+   simpl in H0.
+   rewrite rewrite_nth_error_app.
+    replace (x - 1 - length env) with (x - length env - 1) by omega.
+    auto.
+   omega.
+
+  (* Prove that nth_error (_::nil) z = error when z > 0. *)
+  symmetry; apply nth_error_overflow.
+  simpl.
+  omega.
+
+ (* x is in the first environment *)
+ apply TVar.
+ replace (unshift_var (length env) 1 x) with x.
+  rewrite <- nth_error_ext_length; auto.
+  rewrite <- nth_error_ext_length in H0; auto.
+ rewrite unshift_var_lo; auto.
+Qed.
+
+(** Beta reduction preserves types:
+      [E      |- N{M/k} : T] when
+      [E, x:S |- N : T] and
+      [E      |- M : S]
+*)
+Lemma beta_reduct_typing_general:
+  forall S env' N T M env k,
+   k = length env ->
+   Typing env' M S ->
+   Typing (env++(S::env')) N T ->
+      Typing (env++env')
+             (unshift k 1 (subst_env k (shift 0 (k+1) M :: nil) N))
+	     T.
+Proof.
+ induction N; intros T M env k k_def M_tp N_tp; simpl; inversion N_tp; eauto.
+(* TmConst--handled by eauto *)
+(* TmVar *)
+   eapply beta_reduct_typing_general_var; seauto.
+
+(* TmPair *)
+ (* handled by eauto *)
+
+(* TmProj *)
+ (* handled by eauto *)
+
+(* TmAbs *)
+ apply TAbs.
+ replace (s::env++env') with ((s::env)++env') by auto.
+ replace (shift 0 1 (shift 0 (k+1) M)) with (shift 0 (Datatypes.S k+1) M)
+   by (rewrite shift_shift; auto).
+ apply IHN; simpl; auto.
+
+(* TmApp *)
+  (* handled by [eauto] at the top. *)
+(* TmBind *)
+ apply TBind with s.
+  apply IHN1; sauto.
+ (* copy and paste of TmAbs case :-( *)
+ replace (s::env++env') with ((s::env)++env') by auto.
+ replace (shift 0 1 (shift 0 (k+1) M)) with (shift 0 (Datatypes.S k+1) M)
+   by (rewrite shift_shift; auto).
+ apply IHN2; simpl; auto.
+Qed.
+
 (** Let's make [N */ L] a notation for the result of a beta-reduction
     (including all the de Bruijn monkeying). Makes the lemmas a lot easier to read.
     Precedence is not correct. *)
 Notation "N */ L" := (unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) N)) (at level 99).
+
+(** Beta reduction preserves types, specialized to reduce at the head
+    of the environment. *)
+Lemma beta_reduct_typing:
+  forall S env' N T M,
+   Typing env' M S ->
+   Typing (S::env') N T ->
+      Typing env' (N */ M) T.
+Proof.
+ intros.
+ replace env' with (nil++env'); auto.
+ eapply beta_reduct_typing_general; eauto.
+Qed.
 
 (** The rewrite system. The object of our study. *)
 Inductive RewritesTo : Term -> Term -> Type :=
@@ -147,127 +268,6 @@ Proof.
  auto.
 Qed.
 
-Lemma beta_reduct_typing_general_var:
-  forall S env' x T M env k,
-   k = length env ->
-   Typing env' M S ->
-   Typing (env++(S::env')) (TmVar x) T ->
-      Typing (env++env')
-             (unshift k 1 (subst_env k (shift 0 (k+1) M :: nil) (TmVar x)))
-	     T.
-Proof.
- intros S env' x.
- intros T M env k k_def M_tp N_tp; simpl; inversion N_tp; eauto.
- subst.
- assert (H: x < length (env++(S::env'))).
-  eapply nth_error_to_length; eauto.
- rewrite app_length in H.
- simpl in H.
- destruct (le_gt_dec (length env) x).
-  destruct (eq_nat_dec x (length env)).
-  (* 'x' points to the type 'S' *)
-  subst x.
-   replace (length env - length env) with 0 by omega.
-   replace (nth_error (shift 0 1 M :: nil) 0)
-     with (value (shift 0 1 M)); auto.
-   simpl.
-   rewrite fancy_unshift_shift; auto; [|omega].
-   replace (length env+1-1) with (length env); auto; [|omega].
-   replace (env++env') with (nil++env++env'); auto.
-   eapply shift_preserves_typing with env'; auto.
-   apply nth_error_app in H0; auto.
-   replace (length env - length env) with 0 in H0 by omega.
-   simpl in H0.
-   inversion H0.
-   auto.
-  (* 'x' is in the second environment. *)
-  assert (length env < x) by omega.
-  assert (0 < x-length env) by omega.
-  replace (nth_error (shift 0 (length env + 1) M::nil) (x-length env))
-    with (error : option Term).
-   simpl.
-   apply TVar.
-   unfold unshift_var.
-   destruct (le_gt_dec (1 + length env) x); [ | omega].
-   apply nth_error_app in H0; auto.
-   replace (S::env') with ((S::nil)++env') in H0; auto.
-   apply nth_error_app in H0; auto.
-   simpl in H0.
-   rewrite rewrite_nth_error_app.
-    replace (x - 1 - length env) with (x - length env - 1) by omega.
-    auto.
-   omega.
-
-  (* Prove that nth_error (_::nil) z = error when z > 0. *)
-  symmetry; apply nth_error_overflow.
-  simpl.
-  omega.
-
- (* x is in the first environment *)
- apply TVar.
- replace (unshift_var (length env) 1 x) with x.
-  rewrite <- nth_error_ext_length; auto.
-  rewrite <- nth_error_ext_length in H0; auto.
- rewrite unshift_var_lo; auto.
-Qed.
-
-(** Beta reduction preserves types:
-      [E      |- N{M/k} : T] when
-      [E, x:S |- N : T] and
-      [E      |- M : S]
-*)
-Lemma beta_reduct_typing_general:
-  forall S env' N T M env k,
-   k = length env ->
-   Typing env' M S ->
-   Typing (env++(S::env')) N T ->
-      Typing (env++env')
-             (unshift k 1 (subst_env k (shift 0 (k+1) M :: nil) N))
-	     T.
-Proof.
- induction N; intros T M env k k_def M_tp N_tp; simpl; inversion N_tp; eauto.
-(* TmConst--handled by eauto *)
-(* TmVar *)
-   eapply beta_reduct_typing_general_var; seauto.
-
-(* TmPair *)
- (* handled by eauto *)
-
-(* TmProj *)
- (* handled by eauto *)
-
-(* TmAbs *)
- apply TAbs.
- replace (s::env++env') with ((s::env)++env') by auto.
- replace (shift 0 1 (shift 0 (k+1) M)) with (shift 0 (Datatypes.S k+1) M)
-   by (rewrite shift_shift; auto).
- apply IHN; simpl; auto.
-
-(* TmApp *)
-  (* handled by [eauto] at the top. *)
-(* TmBind *)
- apply TBind with s.
-  apply IHN1; sauto.
- (* copy and paste of TmAbs case :-( *)
- replace (s::env++env') with ((s::env)++env') by auto.
- replace (shift 0 1 (shift 0 (k+1) M)) with (shift 0 (Datatypes.S k+1) M)
-   by (rewrite shift_shift; auto).
- apply IHN2; simpl; auto.
-Qed.
-
-(** Beta reduction preserves types, specialized to reduce at the head
-    of the environment. *)
-Lemma beta_reduct_typing:
-  forall S env' N T M,
-   Typing env' M S ->
-   Typing (S::env') N T ->
-      Typing env' (N */ M) T.
-Proof.
- intros.
- replace env' with (nil++env'); auto.
- eapply beta_reduct_typing_general; eauto.
-Qed.
-
 (** The rewrite relation preserves the [Typing] judgment. *)
 Lemma Rw_preserves_types:
   forall M M',
@@ -326,7 +326,8 @@ Require Import OutsideRange.
 
 Lemma commute_subst_with_beta_reduct:
   forall N M n env,
-    subst_env n env (N */ M) = (subst_env (S n) (map (shift 0 1) env) N */ subst_env n env M).
+    subst_env n env (N */ M) =
+    (subst_env (S n) (map (shift 0 1) env) N */ subst_env n env M).
 Proof.
  intros.
  (* Now we only have to show that certain complex substitutions are equal.
@@ -790,17 +791,7 @@ Proof.
  eauto.
 Qed.
 
-Lemma TmBind_Neutral_reducts:
-  forall M N Z,
-    Neutral M ->
-    (TmBind M N ~> Z) ->
-    {M' : Term & ((Z = TmBind M' N) * (M ~> M'))%type}
-  + {N' : Term & ((Z = TmBind M N') * (N ~> N'))%type}.
-Proof.
- intros.
- inversion H0; subst; try solve [inversion H | firstorder].
- (* Stuck: The supposedly neutral term actually reacts with its context. :( *)
-Qed.
+(** * Compatibility of rewriting with each of the term forms. *)
 
 Lemma Rw_rt_Pair_left:
   forall m1 m2 n : Term, (m1 ~>> m2) -> (〈 m1, n 〉) ~>> (〈 m2, n 〉).
@@ -879,6 +870,77 @@ Proof.
  induction H; subst; eauto.
 Qed.
 
+(** * [( */ )] and unshift. *)
+
+Lemma beta_with_unshift_var:
+  forall x M n n' k,
+    n >= n' ->
+    unshift n k (unshift n' 1 (subst_env n' (shift 0 1 M :: nil) (TmVar x))) =
+    unshift n' 1
+            (subst_env n' (shift 0 1 (unshift n k M) :: nil) (unshift (S n) k (TmVar x))).
+Proof.
+ simpl.
+ intros.
+ destruct (nth_error_dichot _ (shift 0 1 M :: nil) (x - n')) as [[H1 H2] | [H1 H2]].
+  simpl in H1.
+  rewrite H2.
+  destruct (nth_error_dichot _
+                (shift 0 1 (unshift n k M) :: nil)
+                (unshift_var (S n) k x - n'))
+        as [[H3 H4]|[H3 H4]].
+  rewrite H4.
+   simpl.
+   break; break.
+      rewrite unshift_unshift_commute; solve [auto | omega].
+     rewrite unshift_unshift_commute; solve [auto | omega].
+    rewrite unshift_unshift_commute; solve [auto | omega].
+   rewrite unshift_unshift_commute; solve [auto | omega].
+  destruct H4 as [V H4].
+  rewrite H4.
+  simpl in *.
+  exfalso.
+  assert (H0 : unshift_var (S n) k x - n' = 0) by omega.
+  unfold unshift_var in H0.
+  destruct (le_gt_dec (k + S n) x) in H0; solve [omega].
+ destruct H2 as [V H2].
+ rewrite H2.
+ simpl.
+ destruct (nth_error_dichot _
+               (shift 0 1 (unshift n k M) :: nil)
+               (unshift_var (S n) k x - n'))
+       as [[H3 H4]|[H3 H4]].
+  rewrite H4.
+  simpl in *.
+  exfalso.
+  unfold unshift_var in H3.
+  destruct (le_gt_dec (k + S n) x); solve [omega].
+ destruct H4 as [W H4].
+ rewrite H4.
+ simpl in *.
+ break; break.
+    assert (x < S n) by omega.
+    assert (unshift_var (S n) k x = x).
+     unfold unshift_var.
+     destruct (le_gt_dec (k + S n) x); solve [omega].
+    replace (unshift_var (S n) k x) with x in * by auto.
+    replace (x - n') with 0 in * by omega.
+    simpl in *.
+    inversion H2. inversion H4.
+    rewrite unshift_unshift_commute.
+     rewrite unshift_shift_commute.
+      auto.
+     omega.
+    omega.
+   exfalso.
+   unfold unshift_var in g.
+   destruct (le_gt_dec (k + S n) x); solve [omega].
+  exfalso.
+  unfold unshift_var in l.
+  destruct (le_gt_dec (k + S n) x); solve [omega].
+ unfold unshift, unshift_var.
+ break; break; break; break; solve [omega | auto].
+Qed.
+
 Lemma beta_with_unshift:
   forall N M n n' k,
     n >= n' ->
@@ -887,74 +949,27 @@ Lemma beta_with_unshift:
             (subst_env n' (shift 0 1 (unshift n k M) :: nil) (unshift (S n) k N)).
 Proof.
  induction N; intros; simpl.
+ (* TmConst *)
           auto.
-         destruct (nth_error_dichot _ (shift 0 1 M :: nil) (x - n')) as [[H1 H2] | [H1 H2]].
-          simpl in H1.
-          rewrite H2.
-          destruct (nth_error_dichot _
-                        (shift 0 1 (unshift n k M) :: nil)
-                        (unshift_var (S n) k x - n'))
-                as [[H3 H4]|[H3 H4]].
-          rewrite H4.
-           simpl.
-           break; break.
-              rewrite unshift_unshift_commute; solve [auto | omega].
-             rewrite unshift_unshift_commute; solve [auto | omega].
-            rewrite unshift_unshift_commute; solve [auto | omega].
-           rewrite unshift_unshift_commute; solve [auto | omega].
-          destruct H4 as [V H4].
-          rewrite H4.
-          simpl in *.
-          exfalso.
-          assert (H0 : unshift_var (S n) k x - n' = 0) by omega.
-          unfold unshift_var in H0.
-          destruct (le_gt_dec (k + S n) x) in H0; solve [omega].
-         destruct H2 as [V H2].
-         rewrite H2.
-         simpl.
-         destruct (nth_error_dichot _
-                       (shift 0 1 (unshift n k M) :: nil)
-                       (unshift_var (S n) k x - n'))
-               as [[H3 H4]|[H3 H4]].
-          rewrite H4.
-          simpl in *.
-          exfalso.
-          unfold unshift_var in H3.
-          destruct (le_gt_dec (k + S n) x); solve [omega].
-         destruct H4 as [W H4].
-         rewrite H4.
-         simpl in *.
-         break; break.
-            assert (x < S n) by omega.
-            assert (unshift_var (S n) k x = x).
-             unfold unshift_var.
-             destruct (le_gt_dec (k + S n) x); solve [omega].
-            replace (unshift_var (S n) k x) with x in * by auto.
-            replace (x - n') with 0 in * by omega.
-            simpl in *.
-            inversion H2. inversion H4.
-            rewrite unshift_unshift_commute.
-             rewrite unshift_shift_commute.
-              auto.
-             omega.
-            omega.
-           exfalso.
-           unfold unshift_var in g.
-           destruct (le_gt_dec (k + S n) x); solve [omega].
-          exfalso.
-          unfold unshift_var in l.
-          destruct (le_gt_dec (k + S n) x); solve [omega].
-         unfold unshift, unshift_var.
-         break; break; break; break; solve [omega | auto].
+ (* TmVar *)
+         apply beta_with_unshift_var; auto.
+ (* TmPair *)
         rewrite IHN1, IHN2; sauto.
+ (* TmProj *)
        rewrite IHN; sauto.
+ (* TmAbs *)
       rewrite IHN.
        rewrite unshift_shift_commute; solve [omega | auto].
       solve [omega].
+ (* TmApp *)
      rewrite IHN1, IHN2; sauto.
+ (* TmNull *)
     trivial.
+ (* TmSingle *)
    rewrite IHN; sauto.
+ (* TmUnion *)
   rewrite IHN1, IHN2; sauto.
+ (* TmBind *)
  rewrite IHN1, IHN2.
    rewrite unshift_shift_commute; solve [omega | auto].
   solve [omega].
@@ -1052,7 +1067,7 @@ Proof.
  induction H; subst; eauto using subst_env_compat_rw.
 Qed.
 
-Lemma subst_env_compat_rw_2_rt
+Lemma subst_env_bicompat_rw_rt
 : forall L L' M M' : Term,
     (L ~>> L') ->
     (M ~>> M') ->
@@ -1101,6 +1116,6 @@ Lemma unshift_substitution_doubly_preserves_rw_rt:
 Proof.
  intros.
  apply unshift_preserves_rw_rt. (* Should be rw_compat_unshift *)
- apply subst_env_compat_rw_2_rt; auto.
+ apply subst_env_bicompat_rw_rt; auto.
  apply Rw_rt_shift; auto.
 Qed.

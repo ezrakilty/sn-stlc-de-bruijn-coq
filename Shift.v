@@ -149,15 +149,6 @@ Hint Rewrite shift_closed_noop : terms.
 Hint Resolve shift_nonfree_noop.
 Hint Rewrite shift_nonfree_noop : terms.
 
-Lemma shift_nonfree_preserves_typing :
-  forall M T k n env,
-    length env <= k ->
-    Typing env M T -> Typing env (shift k n M) T.
-Proof.
-  intros.
-  rewrite (shift_nonfree_noop n M k env T); auto.
-Qed.
-
 Lemma shift_var_nth_error:
   forall A (x:A) n env2 env1 env',
        value x = nth_error (env1 ++ env2) n
@@ -387,40 +378,6 @@ Proof.
   unfold pred.
   break; break; omega.
  symmetry; apply if_cc.
-Qed.
-
-(** Good lemma; unused. Mis-spelled. *)
-Lemma shift_preservs_env_typing:
-  forall (Vs : list Term) (k n : nat)
-    (env1 env2 env env' : list Ty)
-    (Ts : list Ty),
-  env1 ++ env2 = env ->
-  k = length env1 ->
-  n = length env' ->
-  env_typing_env env Vs Ts
-   -> env_typing_env (env1 ++ env' ++ env2) (map (shift k n) Vs) Ts.
-Proof.
- induction Vs; intros k n env1 env2 env env' Ts H H0 H1 X.
-(* Case Vs = nil *)
-  simpl.
-  unfold env_typing_env.
-  unfold foreach2_ty.
-  inversion X.
-  simpl in *.
-  auto.
-
-(* Case Vs = _ : _ *)
- simpl.
- replace env with (env1 ++ env2) in *.
- destruct Ts.
-  inversion X.
-  simpl in H2.
-  omega.
- apply env_typing_elim in X.
- destruct X.
- apply env_typing_intro.
-  apply shift_preserves_typing with (env := env1 ++ env2); auto.
- apply IHVs with (env:= env1 ++ env2); auto.
 Qed.
 
 Require Import Coq.Lists.ListSet.

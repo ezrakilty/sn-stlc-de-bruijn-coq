@@ -115,8 +115,7 @@ Fixpoint Reducible (tm:Term) (ty:Ty)  {struct ty} : Type :=
       in
       forall K, ReducibleK K s -> SN (plug K tm)
       (** ... at list type, is SN when placed in any reducible continuation. *)
-  end)%type
-.
+  end)%type.
 
 (** We say that an environment is reducible when it is a list of closed terms, together
 with types, and each one is reducible at the corresponding type. *)
