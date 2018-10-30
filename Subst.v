@@ -970,7 +970,7 @@ Proof.
          unfold unshift_var.
          break; omega.
         assert (x_free_in_Z': set_In x (set_map eq_nat_dec (shift_var 0 1) (freevars X'))).
-         pose (H2 := freevars_shift_1 X' 0 1).
+         pose (H2 := freevars_shift X' 0 1).
          unfold eq_sets, incl_sets in H2.
          solve [intuition].
    (*
@@ -1026,7 +1026,7 @@ Proof.
      unfold unshift_var.
      break; omega.
     assert (x_free_in_Z': set_In x (set_map eq_nat_dec (shift_var 0 1) (freevars X'))).
-     pose (H2 := freevars_shift_1 X' 0 1).
+     pose (H2 := freevars_shift X' 0 1).
      unfold eq_sets, incl_sets in H2.
      solve [intuition].
 

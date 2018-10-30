@@ -391,7 +391,7 @@ Proof.
    subst env'.
    apply all_map_image.
    intros X.
-   pose (shift_freevars X 0).
+   pose (shift_freevars_range X 0).
    firstorder.
   (* Obl 2: Substitutions do not overlap:
        (0, [_]) does not overlap (S n, _). *)
@@ -418,13 +418,13 @@ Proof.
   apply subst_Freevars; sauto.
 
  (* Now we have H : fvs ⊆ (fvs_N ∖ {0}) ∪ fvs_M *)
- (* TODO: From here out, basically just set math, plus shift_freevars *)
+ (* TODO: From here out, basically just set math, plus shift_freevars_range *)
  eapply all_Type_incl.
   apply H.
  apply all_Type_union_fwd.
  split.
   subst fvs_M.
-  pose (shift_freevars M 0). (* only need another step because all /= all_Type. *)
+  pose (shift_freevars_range M 0). (* only need another step because all /= all_Type. *)
   firstorder.
  apply all_Type_filter.
  apply outside_range_elim.
@@ -606,7 +606,7 @@ Proof.
  intro H0.
  apply set_union_elim in H0.
  destruct H0.
- - apply shift_freevars in H; intuition.
+ - apply shift_freevars_range in H; intuition.
  - apply set_filter_elim in H; intuition.
 Qed.
 

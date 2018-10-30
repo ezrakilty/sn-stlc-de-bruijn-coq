@@ -153,23 +153,6 @@ Proof.
  intuition.
 Qed.
 
-(* Lemma all_all_Type: *)
-(*   forall A eq_dec (pred1:A->Prop) (pred2:A->Type) xs, *)
-(*     (forall x, pred1 x -> pred2 x) -> *)
-(*     all A pred1 xs -> all_Type A eq_dec pred2 xs. *)
-(* Proof. *)
-(*  induction xs; unfold all; simpl. *)
-(*   unfold all_Type; intros; discriminate. *)
-(*  intros. *)
-(*  apply all_Type_elim. *)
-(*   intuition. *)
-(*  apply IHxs. *)
-(*   auto. *)
-(*  unfold all. *)
-(*  intuition. *)
-(* Qed. *)
-
-
 Lemma all_map_image:
   forall A (p:A -> Prop) f xs, (forall x:A, p (f x)) -> all _ p (map f xs).
 Proof.
@@ -196,4 +179,9 @@ Add Parametric Morphism A P : (all _ P) with
 Proof.
  unfold eq_sets, Basics.impl, incl_sets, all.
  firstorder.
+Qed.
+
+Lemma all_cut A:
+  forall (P Q : A -> Prop) xs, (forall x, P x -> Q x) -> all _ P xs -> all _ Q xs.
+firstorder.
 Qed.

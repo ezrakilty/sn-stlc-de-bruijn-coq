@@ -28,12 +28,6 @@ Fixpoint shift k n tm {struct tm} :=
 | TmBind M N => TmBind (shift k n M) (shift (S k) n N)
   end.
 
-(*
-| TmNull => 0
-| TmSingle x => 0
-| TmUnion l r => 0
- *)
-
 Definition unshift_var k n :=
   fun x => if le_gt_dec (n + k) x then (x - n) else x.
 
@@ -476,7 +470,7 @@ Proof.
  omega.
 Qed.
 
-Lemma freevars_shift_1 :
+Lemma freevars_shift :
   forall M k n,
     eq_sets _
       (freevars (shift k n M))
@@ -571,7 +565,7 @@ Lemma pred_freevars_shift :
       (freevars M).
 Proof.
  intros.
- rewrite freevars_shift_1.
+ rewrite freevars_shift.
  rewrite set_map_map.
  apply set_map_idy_ext.
  intros.
@@ -598,11 +592,11 @@ Proof.
 Qed.
 
 (* TODO: Use outside_range? *)
-Lemma shift_freevars:
+Lemma shift_freevars_range:
   forall M k,
     all _ (fun x => x < k \/ k + 1 <= x) (freevars (shift k 1 M)).
 Proof.
- intros. rewrite freevars_shift_1.
+ intros. rewrite freevars_shift.
  unfold all.
  intros.
  apply set_map_elim in H as [a [H1 H2]].
@@ -621,7 +615,7 @@ Proof.
   tauto.
  apply set_remove_intro.
  intuition.
- apply shift_freevars in H.
+ apply shift_freevars_range in H.
  omega.
 Qed.
 

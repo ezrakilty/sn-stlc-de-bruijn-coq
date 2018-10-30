@@ -839,13 +839,11 @@ Proof.
     { auto. }
     rewrite subst_unused_noop.
     symmetry; apply unshift_shift.
-    pose (shift_freevars N1 1).
-    unfold all in a |- *.
+    pose (shift_freevars_range N1 1).
     unfold in_env_domain.
-    intros x H_fv.
-    specialize (a x H_fv).
-    simpl.
-    omega.
+    simpl in a |- *.
+    eapply all_cut; [| apply a]; simpl.
+    intros; omega.
 Qed.
 
 Lemma Bind_Reducible_core:
