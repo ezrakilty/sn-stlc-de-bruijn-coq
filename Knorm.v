@@ -233,8 +233,8 @@ Proof.
      -- (* Case: rw is within TmUnion _ _ *)
        inversion H14; subst; seauto.
 
-   (* Case: rw is within t of TmBind (TmUnion M N) t *)
-     -- change (SN (plug (Iterate n' K0) (TmUnion M0 N0))).
+     -- (* Case: rw is within t of TmBind (TmUnion M N) t *)
+        change (SN (plug (Iterate n' K0) (TmUnion M0 N0))).
         assert (Krw (Iterate t K0) (Iterate n' K0)).
         ** unfold Krw.
            simpl.
@@ -258,17 +258,15 @@ Proof.
      subst.
      rewrite reverse_plug_defn.
      apply H.
-     simpl.
-     apply Krw_rt_conserves_Ksize in H5.
-     simpl in *.
-     omega.
+     -- simpl.
+        apply Krw_rt_conserves_Ksize in H5.
+        simpl in *.
+        omega.
      -- apply SN_via_Krw with (Iterate L' (Iterate N' K')).
         { apply assoc_in_K. }
-        apply SN_via_Krw_rt with K.
-        auto.
-        apply Rw_trans_preserves_SN with (plug K M).
-        { auto. }
-        { apply Rw_rt_under_K; auto. }
+        apply SN_via_Krw_rt with K; auto.
+        apply Rw_trans_preserves_SN with (plug K M); auto.
+        apply Rw_rt_under_K; auto.
      -- apply SN_via_Krw with (Iterate L' (Iterate N' K')).
         { apply assoc_in_K. }
         apply SN_via_Krw_rt with K.
