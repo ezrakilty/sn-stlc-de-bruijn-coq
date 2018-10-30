@@ -589,60 +589,25 @@ Proof.
  firstorder.
 Qed.
 
+Lemma shift_var_range:
+  forall x k,
+    (fun x => x < k \/ k + 1 <= x) (shift_var k 1 x).
+Proof.
+ unfold shift_var.
+ intros; break; omega.
+Qed.
+
 (* TODO: Use outside_range? *)
 Lemma shift_freevars:
   forall M k,
     all _ (fun x => x < k \/ k + 1 <= x) (freevars (shift k 1 M)).
 Proof.
- induction M; simpl; intros k.
- (* Case TmConst *)
-          unfold empty_set; unfold all; simpl; intros; easy.
- (* Case TmVar *)
-         unfold all.
-         simpl.
-         intros.
-         unfold shift_var in *.
-         destruct (le_gt_dec k x); omega.
- (* Case TmPair *)
-        apply all_union.
-        split; [apply IHM1 | apply IHM2].
- (* Case TmProj *)
-       auto.
- (* Case TmAbs *)
-      rewrite all_map.
-      apply all_remove.
-      specialize (IHM (S k)).
-      unfold all in IHM |- *.
-      intros x H0.
-      specialize (IHM x H0).
-      omega.
-
- (* Case TmApp *)
-     rewrite all_union.
-     split.
-      apply IHM1; auto.
-     apply IHM2; auto...
-
- (* Case TmNull *)
-    unfold all. intros. easy.
-
- (* Case TmSingle *)
-   auto.
-
- (* Case TmUnion *)
-  rewrite all_union.
-  auto.
-
- (* Case TmBind *)
- rewrite all_union.
- split.
-  apply IHM1.
- rewrite all_map.
- apply all_remove.
- specialize (IHM2 (S k)).
- unfold all in IHM2 |- *.
- intros x H0; specialize (IHM2 x H0).
- omega.
+ intros. rewrite freevars_shift_1.
+ unfold all.
+ intros.
+ apply set_map_elim in H as [a [H1 H2]].
+ subst x.
+ auto using shift_var_range.
 Qed.
 
 Lemma remove_0_shift_0_1:

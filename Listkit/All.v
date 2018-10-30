@@ -181,3 +181,19 @@ Proof.
  subst x.
  auto.
 Qed.
+
+Require Import Setoid.
+
+Add Parametric Morphism A P : (all _ P) with
+  signature (incl_sets A) --> (@Coq.Program.Basics.impl) as all_mor.
+Proof.
+ unfold Basics.impl, incl_sets, all.
+ firstorder.
+Qed.
+
+Add Parametric Morphism A P : (all _ P) with
+  signature (eq_sets A) --> (@Coq.Program.Basics.impl) as all_eq_mor.
+Proof.
+ unfold eq_sets, Basics.impl, incl_sets, all.
+ firstorder.
+Qed.
