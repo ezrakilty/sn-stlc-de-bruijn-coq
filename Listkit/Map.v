@@ -2,7 +2,7 @@ Load "eztactics.v".
 
 Require Import List.
 
-(* Add LoadPath "../Listkit" as Listkit. *)
+Add LoadPath "../Listkit" as Listkit.
 
 Require Import Listkit.logickit.
 
@@ -73,7 +73,7 @@ Qed.
 Lemma set_map_idy_ext :
   forall A eq_dec (f:A->A) xs,
     (* TODO: Consider using set_In here? *)
-    (forall x, true = set_mem eq_dec x xs -> f x = x)
+    (forall x, set_In x xs -> f x = x)
     -> eq_sets _ (set_map eq_dec f xs) xs.
 Proof.
  induction xs.
@@ -90,8 +90,6 @@ Proof.
  rewrite IHxs.
   sauto.
  intuition.
- apply H.
- case (eq_dec x a); intuition.
 Qed.
 
 Lemma set_map_idy :

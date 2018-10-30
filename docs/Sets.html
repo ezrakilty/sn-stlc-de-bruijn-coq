@@ -309,16 +309,6 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">set_union</span> <span class="id" title="var">eq_dec_B</span> (<span class="id" title="var">set_map</span> <span class="id" title="var">eq_dec_B</span> <span class="id" title="var">f</span> <span class="id" title="var">X</span>) (<span class="id" title="var">set_map</span> <span class="id" title="var">eq_dec_B</span> <span class="id" title="var">f</span> <span class="id" title="var">Y</span>)).<br/>
 
 <br/>
-<span class="id" title="keyword">Lemma</span> <span class="id" title="var">in_set_remove_not_removed</span>:<br/>
-<span class="id" title="keyword">∀</span> <span class="id" title="var">A</span> <span class="id" title="var">eq_dec</span> (<span class="id" title="var">x</span>:<span class="id" title="var">A</span>) <span class="id" title="var">y</span> <span class="id" title="var">xs</span>,<br/>
-&nbsp;&nbsp;<span class="id" title="var">set_In</span> <span class="id" title="var">x</span> (<span class="id" title="var">set_remove</span> <span class="id" title="var">_</span> <span class="id" title="var">eq_dec</span> <span class="id" title="var">y</span> <span class="id" title="var">xs</span>) → <span class="id" title="var">x</span> ≠ <span class="id" title="var">y</span>.<br/>
-
-<br/>
-<span class="id" title="keyword">Lemma</span> <span class="id" title="var">in_set_remove_in_original</span>:<br/>
-&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">A</span> <span class="id" title="var">eq_dec</span> (<span class="id" title="var">x</span> <span class="id" title="var">y</span>:<span class="id" title="var">A</span>) <span class="id" title="var">xs</span>,<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">set_In</span> <span class="id" title="var">x</span> (<span class="id" title="var">set_remove</span> <span class="id" title="var">_</span> <span class="id" title="var">eq_dec</span> <span class="id" title="var">y</span> <span class="id" title="var">xs</span>) → <span class="id" title="var">set_In</span> <span class="id" title="var">x</span> <span class="id" title="var">xs</span>.<br/>
-
-<br/>
 <span class="id" title="keyword">Lemma</span> <span class="id" title="var">set_In_map_out_of_range</span> :<br/>
 &nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">A</span> <span class="id" title="var">B</span> <span class="id" title="var">eq_dec</span> (<span class="id" title="var">y</span>:<span class="id" title="var">A</span>) <span class="id" title="var">f</span> <span class="id" title="var">X</span>,<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="keyword">∀</span> <span class="id" title="var">x</span>:<span class="id" title="var">B</span>, <span class="id" title="var">f</span> <span class="id" title="var">x</span> ≠ <span class="id" title="var">y</span>) →<br/>

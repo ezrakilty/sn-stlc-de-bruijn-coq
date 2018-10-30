@@ -628,24 +628,6 @@ Proof.
   intuition; [apply map_union_2 | apply map_union_1].
 Qed.
 
-Lemma in_set_remove_not_removed:
-forall A eq_dec (x:A) y xs,
-  set_In x (set_remove _ eq_dec y xs) -> x <> y.
-Proof.
- intros A eq_dec x y xs H.
- apply set_remove_elim in H.
- intuition.
-Qed.
-
-Lemma in_set_remove_in_original:
-  forall A eq_dec (x y:A) xs,
-    set_In x (set_remove _ eq_dec y xs) -> set_In x xs.
-Proof.
- intros ? ? ? ? ? H.
- apply set_remove_elim in H.
- intuition.
-Qed.
-
 Lemma set_In_map_out_of_range :
   forall A B eq_dec (y:A) f X,
     (forall x:B, f x <> y) ->

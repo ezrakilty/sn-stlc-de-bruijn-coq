@@ -166,10 +166,8 @@ Tactic Notation "solve" "by" "inversion" :=
 Ltac break :=
   match goal with
   | |- context C [le_gt_dec ?x ?y] =>
-(*    let X := fresh in let Y := fresh in case_eq (le_gt_dec x y); intros X Y*)
     destruct (le_gt_dec x y)
   | |- context C [eq_nat_dec ?x ?y] =>
-(*    let X := fresh in let Y := fresh in case_eq (eq_nat_dec x y); intros X Y*)
     destruct (eq_nat_dec x y)
   end.
 
@@ -177,10 +175,8 @@ Ltac break :=
 Ltac break_in H :=
   match goal with
   | H : context C [le_gt_dec ?x ?y] |- _ =>
-(*    let X := fresh in let Y := fresh in case_eq (le_gt_dec x y); intros X Y*)
     destruct (le_gt_dec x y)
   | H : context C [eq_nat_dec ?x ?y] |- _ =>
-(*    let X := fresh in let Y := fresh in case_eq (eq_nat_dec x y); intros X Y*)
     destruct (eq_nat_dec x y)
   end.
 
