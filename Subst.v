@@ -91,8 +91,8 @@ Proof.
     inversion tp; subst; eauto.
 (* Case TmVar *)
   destruct Vs_tp as [Vs_env'_equilong Vs_tp].
-  destruct (le_gt_dec (length env) x); auto.
-   (* x is beyond length env *)
+  destruct (le_gt_dec (length env) x).
+  (* Case x is beyond [length env] *)
    assert (value ty = nth_error env' (x - length env)).
     apply nth_error_app; trivial.
     case_eq (nth_error Vs (x - length env));
@@ -731,7 +731,7 @@ Proof.
   unfold f, g.
   unfold outside_range.
   break; break; try (break; try break); auto; finish.
- (* (shift 0 1 ; pred) = idy *)
+ (* Obligation (shift 0 1 ; pred) = idy *)
  rewrite unions_remove.
  rewrite <- set_unions_map.
  apply unions2_mor.
@@ -759,8 +759,7 @@ Proof.
    assert (~in_env_domain n env x).
     unfold all in H.
     apply H.
-    unfold set_In.
-    unfold In.
+    unfold set_In, In.
     auto.
    unfold in_env_domain in H0.
    break; auto.

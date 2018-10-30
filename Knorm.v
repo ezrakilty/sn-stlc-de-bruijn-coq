@@ -1,3 +1,5 @@
+Add LoadPath "Listkit" as Listkit.
+
 Require Import Omega.
 
 Require Import Continuation.
@@ -222,14 +224,12 @@ Proof.
          { apply Krw_rt_conserves_Ksize with (K := K); auto. }
          simpl in *; omega. }
        apply H; auto.
-       eapply plug_SN_rw_rt with (TmBind M t); auto.
-       { auto using Rw_rt_Bind_left. }
-       change (SN (plug (Iterate t K0) M)).
-       { eauto using SN_via_Krw_rt. }
-       eapply plug_SN_rw_rt with (TmBind N t); auto.
-       { auto using Rw_rt_Bind_left. }
-       change (SN (plug (Iterate t K0) N)).
-       { eauto using SN_via_Krw_rt. }
+       ** eapply plug_SN_rw_rt with (TmBind M t); auto.
+          change (SN (plug (Iterate t K0) M)).
+          eauto using SN_via_Krw_rt.
+       ** eapply plug_SN_rw_rt with (TmBind N t); auto.
+          change (SN (plug (Iterate t K0) N)).
+          eauto using SN_via_Krw_rt.
      -- (* Case: rw is within TmUnion _ _ *)
        inversion H14; subst; seauto.
 

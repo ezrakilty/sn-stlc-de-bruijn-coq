@@ -248,7 +248,6 @@ Proof.
  right; intuition.
 Qed.
 
-(* TBD: Move to listkit. *)
 Ltac nth_error_dichotomize bounds is_error v v_def :=
   match goal with
     | |- context C [nth_error ?xs ?n] =>

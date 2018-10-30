@@ -870,6 +870,10 @@ Proof.
  induction H; subst; eauto.
 Qed.
 
+Hint Resolve Rw_rt_Pair_left Rw_rt_Pair_right Rw_rt_App_left Rw_rt_App_right
+     Rw_rt_Proj Rw_rt_Abs Rw_rt_Single Rw_rt_Union_left Rw_rt_Union_right
+     Rw_rt_Bind_left Rw_rt_Bind_right.
+
 (** * [( */ )] and unshift. *)
 
 Lemma beta_with_unshift_var:
@@ -950,30 +954,27 @@ Lemma beta_with_unshift:
 Proof.
  induction N; intros; simpl.
  (* TmConst *)
-          auto.
+ - auto.
  (* TmVar *)
-         apply beta_with_unshift_var; auto.
+ - apply beta_with_unshift_var; auto.
  (* TmPair *)
-        rewrite IHN1, IHN2; sauto.
+ - rewrite IHN1, IHN2; auto.
  (* TmProj *)
-       rewrite IHN; sauto.
+ - rewrite IHN; auto.
  (* TmAbs *)
-      rewrite IHN.
-       rewrite unshift_shift_commute; solve [omega | auto].
-      solve [omega].
- (* TmApp *)
-     rewrite IHN1, IHN2; sauto.
- (* TmNull *)
-    trivial.
- (* TmSingle *)
-   rewrite IHN; sauto.
- (* TmUnion *)
-  rewrite IHN1, IHN2; sauto.
- (* TmBind *)
- rewrite IHN1, IHN2.
+ - rewrite IHN by omega.
    rewrite unshift_shift_commute; solve [omega | auto].
-  solve [omega].
- sauto.
+ (* TmApp *)
+ - rewrite IHN1, IHN2; auto.
+ (* TmNull *)
+ - trivial.
+ (* TmSingle *)
+ - rewrite IHN; auto.
+ (* TmUnion *)
+ - rewrite IHN1, IHN2; auto.
+ (* TmBind *)
+ - rewrite IHN1, IHN2 by omega.
+   rewrite unshift_shift_commute; solve [omega | auto].
 Qed.
 
 Lemma unshift_preserves_rw:
@@ -1027,35 +1028,31 @@ Proof.
  auto using Rw_rt_step, shift_preserves_rw.
 Qed.
 
+Lemma subst_env_compat_rw_rt_var:
+  forall x, forall L L' : Term,
+    (L ~>> L') ->
+    forall n : nat, subst_env n (L :: nil) (TmVar x) ~>> subst_env n (L' :: nil) (TmVar x).
+Proof.
+ simpl; intros.
+ break; auto.
+ destruct (x - n).
+ - auto.
+ - unfold nth_error; auto.
+Qed.
+
 Lemma subst_env_compat_rw_rt_A
 : forall M L L' : Term,
     (L ~>> L') ->
     forall n : nat, subst_env n (L :: nil) M ~>> subst_env n (L' :: nil) M.
 Proof.
- induction M; subst; simpl; eauto; intros.
-        break; auto.
-        destruct (x - n).
-         destruct (le_gt_dec (x - n) 0); simpl; auto.
-        unfold nth_error; destruct n0; simpl; auto.
-       apply Rw_rt_trans with (TmPair (subst_env n (L'::nil) M1) (subst_env n (L::nil) M2)).
-        apply Rw_rt_Pair_left; auto.
-       apply Rw_rt_Pair_right; auto.
-      apply Rw_rt_Proj; auto.
-     apply Rw_rt_Abs; auto.
-     apply IHM.
-     apply Rw_rt_shift; auto.
-    apply Rw_rt_trans with (TmApp (subst_env n (L'::nil) M1) (subst_env n (L::nil) M2)).
-     apply Rw_rt_App_left; auto.
-    apply Rw_rt_App_right; auto.
-   apply Rw_rt_Single; auto.
-  apply Rw_rt_trans with (TmUnion (subst_env n (L'::nil) M1) (subst_env n (L::nil) M2)).
-   apply Rw_rt_Union_left; auto.
-  apply Rw_rt_Union_right; auto.
- apply Rw_rt_trans with (TmBind (subst_env n (L'::nil) M1) (subst_env (S n) (shift 0 1 L::nil) M2)).
-  apply Rw_rt_Bind_left; auto.
- apply Rw_rt_Bind_right; auto.
- apply IHM2.
- apply Rw_rt_shift; auto.
+ induction M; subst;
+   try (apply subst_env_compat_rw_rt_var);
+   simpl; eauto; intros.
+ - eapply Rw_rt_trans; eauto.
+ - eauto using Rw_rt_Abs, IHM, Rw_rt_shift.
+ - eapply Rw_rt_trans; eauto.
+ - eapply Rw_rt_trans; eauto.
+ - eapply Rw_rt_trans; eauto using IHM2, Rw_rt_shift.
 Qed.
 
 Lemma subst_env_compat_rw_rt_B
@@ -1078,7 +1075,6 @@ Proof.
   apply subst_env_compat_rw_rt_B; auto.
   apply subst_env_compat_rw_rt_A; auto.
 Qed.
-
 
 (** * Rewrites Inside Structures That Look Like A Beta-Reduct. *)
 
