@@ -40,7 +40,7 @@ Definition set_remove := Listkit.Sets.set_remove.
    Hint Transparent nat_set_map.
    Hint Unfold nat_set_map. *)
 
-Hint Resolve subst_env_compat_Rw_trans.
+Hint Resolve subst_env_compat_rw_rt.
 
 (* TODO: Could get this from Coq.Sets.Image. *)
 Definition injective A B (f : A -> B) := forall x y, f x = f y -> x = y.

@@ -14,9 +14,9 @@ Lemma beta_reduct_typing_general_var:
   forall S env' x T M env k,
    k = length env ->
    Typing env' M S ->
-   Typing (env++(S::env')) (TmVar x) T ->
-      Typing (env++env')
-             (unshift k 1 (subst_env k (shift 0 (k+1) M :: nil) (TmVar x)))
+   Typing (env ++ (S :: env')) (TmVar x) T ->
+      Typing (env ++ env')
+             (unshift k 1 (subst_env k (shift 0 (k + 1) M :: nil) (TmVar x)))
 	     T.
 Proof.
  intros S env' x.
@@ -83,9 +83,9 @@ Lemma beta_reduct_typing_general:
   forall S env' N T M env k,
    k = length env ->
    Typing env' M S ->
-   Typing (env++(S::env')) N T ->
-      Typing (env++env')
-             (unshift k 1 (subst_env k (shift 0 (k+1) M :: nil) N))
+   Typing (env ++ (S :: env')) N T ->
+      Typing (env ++ env')
+             (unshift k 1 (subst_env k (shift 0 (k + 1) M :: nil) N))
 	     T.
 Proof.
  induction N; intros T M env k k_def M_tp N_tp; simpl; inversion N_tp; eauto.
@@ -128,7 +128,7 @@ Notation "N */ L" := (unshift 0 1 (subst_env 0 (shift 0 1 L :: nil) N)) (at leve
 Lemma beta_reduct_typing:
   forall S env' N T M,
    Typing env' M S ->
-   Typing (S::env') N T ->
+   Typing (S :: env') N T ->
       Typing env' (N */ M) T.
 Proof.
  intros.
@@ -229,27 +229,26 @@ Qed.
 Lemma Rw_rt_destruct:
   forall a z,
     forall redn: a ~>> z,
-      sum (Is_empty_Rw_rt a z redn) ({x : Term & ((a ~> x) * (x ~>> z))%type}).
+       sum (Is_empty_Rw_rt a z redn) ({x : Term & ((a ~> x) * (x ~>> z))%type}).
 (* TODO: A bit ugly! *)
 Proof.
  intros.
  induction redn.
-   left.
+ - left.
    simpl.
    auto.
-  right.
-  exists n; auto.
- destruct (IHredn1);
-   destruct (IHredn2).
-    left; simpl; auto.
-   assert (l = m) by (eapply empty_Rw_rt_elim; eauto).
-   subst. right; auto.
-  assert (m = n) by (eapply empty_Rw_rt_elim; eauto).
-  subst. right; auto.
- destruct s as [x [l_x x__m]].
- right; exists x.
- destruct s0 as [y [m_y y__n]].
- split; eauto.
+ - right.
+   eauto.
+ - destruct IHredn1;
+   destruct IHredn2.
+   * left; simpl; auto.
+   * apply empty_Rw_rt_elim in i.
+     subst. right; auto.
+   * apply empty_Rw_rt_elim in i.
+     subst. right; auto.
+   * destruct s as [x [l_x x__m]].
+     destruct s0 as [y [m_y y__n]].
+     right; eauto.
 Qed.
 
 (** Any reduction sequence with a last step also has a first step,
@@ -271,14 +270,15 @@ Qed.
 (** The rewrite relation preserves the [Typing] judgment. *)
 Lemma Rw_preserves_types:
   forall M M',
-    (M ~> M') -> forall env T,
-    Typing env M T -> Typing env M' T.
+    (M ~> M') ->
+    forall env T,
+      Typing env M T -> Typing env M' T.
 Proof.
  intros M M' red.
  induction red;
     intros env T T_tp;
     inversion T_tp as
-        [| | | ? ? S T' TmAbs_N_tp | | ? ? ? H | ? ? ? H | ? ? H | | |? ? ? ? H H0];
+        [| | | ? ? S T' TmAbs_N_tp | | ? ? ? H | ? ? ? H | ? ? H | | | ? ? ? ? H H0];
     eauto.
  (* Case Beta_reduction -> *)
      inversion TmAbs_N_tp.
@@ -303,7 +303,7 @@ Proof.
  inversion H.
  subst.
  eapply TBind; eauto.
- eapply TBind with (s := s); eauto. 
+ eapply TBind with (s := s); eauto.
  replace (s :: s0 :: env) with ((s::nil) ++ (s0::nil) ++ env) by auto.
  eapply shift_preserves_typing; eauto.
 Qed.
@@ -456,113 +456,104 @@ Proof.
                   | M];
    intros n env.
 
- (* Case BetaRed *)
-         (* Write out the beta reduction: *)
-         simpl.
-         apply Rw_beta.
-         subst V.
-         apply commute_subst_with_beta_reduct.
+ - (* Case BetaRed *)
+   (* Write out the beta reduction: *)
+   simpl.
+   apply Rw_beta.
+   subst V.
+   apply commute_subst_with_beta_reduct.
 
- (* Case Reduction in lhs of apply *)
-        simpl.
-        apply Rw_App_left.
-        apply IHRewritesTo.
+ - (* Case Reduction in lhs of apply *)
+   simpl.
+   apply Rw_App_left.
+   apply IHRewritesTo.
 
- (* Case Reduction in rhs of apply *)
-       simpl.
-       apply Rw_App_right.
-       apply IHRewritesTo.
+ - (* Case Reduction in rhs of apply *)
+   simpl.
+   apply Rw_App_right.
+   apply IHRewritesTo.
 
- (* Case Reduction in Abs body. *)
-      simpl.
-      apply Rw_Abs_body.  (* TODO: Can we somehow set up a congruence to obviate this step? *)
-      apply IHRewritesTo.
+ - (* Case Reduction in Abs body. *)
+   simpl.
+   apply Rw_Abs_body.  (* TODO: Can we somehow set up a congruence to obviate this step? *)
+   apply IHRewritesTo.
 
- (* Case: Reduction in left side of pair *)
-     simpl.
-     apply Rw_Pair_left.
-     eauto.
+ - (* Case: Reduction in left side of pair *)
+   simpl.
+   apply Rw_Pair_left.
+   eauto.
 
- (* Case: Reduction in right side of pair *)
-    simpl.
-    apply Rw_Pair_right.
-    eauto.
+ - (* Case: Reduction in right side of pair *)
+   simpl.
+   apply Rw_Pair_right.
+   eauto.
 
- (* Case: Reduction under a TmProj *)
+ - (* Case: Reduction under a TmProj *)
    simpl.
    apply Rw_Proj.    (* eauto works fine! *)
    eauto.
 
- (* Case: Beta reduction of TmProj false *)
-  simpl.
-  apply Rw_Proj_beta1.
+ - (* Case: Beta reduction of TmProj false *)
+   simpl.
+   apply Rw_Proj_beta1.
 
- (* Case: Beta reduction of TmProj false *)
- simpl.
- apply Rw_Proj_beta2.
+ - (* Case: Beta reduction of TmProj false *)
+   simpl.
+   apply Rw_Proj_beta2.
 
- (* Case: Union left *)
- simpl.
- apply Rw_Union_left.
- apply IHRewritesTo.
+ - (* Case: Union left *)
+   simpl.
+   apply Rw_Union_left.
+   apply IHRewritesTo.
 
- (* Case: Union right *)
- simpl.
- apply Rw_Union_right.
- apply IHRewritesTo.
+ - (* Case: Union right *)
+   simpl.
+   apply Rw_Union_right.
+   apply IHRewritesTo.
 
- (* Case: Bind with subject null *)
- simpl.
- solve [apply Rw_Bind_null].
+ - (* Case: Bind with subject null *)
+   simpl.
+   solve [apply Rw_Bind_null].
 
- (* Case: Beta reduction of TmBind *)
- simpl.
- apply Rw_Bind_beta; subst.
- apply commute_subst_with_beta_reduct.
+ - (* Case: Beta reduction of TmBind *)
+   simpl.
+   apply Rw_Bind_beta; subst.
+   apply commute_subst_with_beta_reduct.
 
- (* Case: Union/Bind commuting-conversion *)
- simpl.
- apply Rw_Bind_union.
+ - (* Case: Union/Bind commuting-conversion *)
+   simpl.
+   apply Rw_Bind_union.
 
- (* Case: Subject reduction of TmBind *)
- simpl.
- apply Rw_Bind_subject.
- eauto.
+ - (* Case: Subject reduction of TmBind *)
+   simpl.
+   apply Rw_Bind_subject.
+   eauto.
 
- (* Case: TmBind Associativity *)
- simpl.
- replace (TmBind (subst_env n env L)
-                 (TmBind (subst_env (S n) (map (shift 0 1) env) M)
-                         (subst_env (S (S n)) (map (shift 0 1) (map (shift 0 1) env)) (shift 1 1 N))))
-   with
-     (TmBind (subst_env n env L)
-             (TmBind (subst_env (S n) (map (shift 0 1) env) M)
-                     (shift 1 1 (subst_env (S n) (map (shift 0 1) env) N)))).
- { auto. }
- rewrite shift_subst_commute_lo by omega.
- simpl.
- replace (n + 1) with (S n) by omega.
- rewrite map_map.
- rewrite map_map.
- f_equal.
- f_equal.
- f_equal.
- apply map_ext.
- intros.
- rewrite shift_shift' by omega.
- rewrite shift_shift' by omega.
- simpl.
- auto.
+ - (* Case: TmBind Associativity *)
+   simpl.
+   replace (subst_env (S (S n)) (map (shift 0 1) (map (shift 0 1) env)) (shift 1 1 N))
+      with (shift 1 1 (subst_env (S n) (map (shift 0 1) env) N)).
+   { auto. }
+   rewrite shift_subst_commute_lo by omega.
+   replace (S n + 1) with (S (S n)) by omega.
+   rewrite 2 map_map.
+   f_equal.
+   apply map_ext.
+   intros.
+   rewrite shift_shift' by omega.
+   rewrite shift_shift' by omega.
+   simpl.
+   auto.
 
-(* Case: Body reduction of TmBind *)
- simpl.
- apply Rw_Bind_body.
- eauto.
+ - (* Case: Body reduction of TmBind *)
+   simpl.
+   apply Rw_Bind_body.
+   eauto.
 
- (* Case: Singleton list contents *)
- simpl.
- apply Rw_Single.
- eauto.
+ - (* Case: Singleton list contents *)
+   simpl.
+   apply Rw_Single.
+   eauto.
 Qed.
 
 Lemma TmSingle_shift_inversion:
@@ -572,21 +563,6 @@ Proof.
  intros.
  destruct M; simpl in *; try discriminate.
  exists M; auto.
-Qed.
-
-Lemma subst_env_compat_Rw_trans:
-  forall M M' n env,
-    (M ~>> M') -> (subst_env n env M ~>> subst_env n env M').
-Proof.
- intros M M' n env H.
- induction H.
-  apply Rw_rt_refl.
-   subst m.
-   auto.
-  apply Rw_rt_step.
-  apply subst_env_compat_rw.
-  auto.
- apply Rw_rt_trans with (subst_env n env m); auto.
 Qed.
 
 Import Setoid.
@@ -1040,10 +1016,11 @@ Proof.
  - unfold nth_error; auto.
 Qed.
 
-Lemma subst_env_compat_rw_rt_A
+Lemma rw_rt_in_substituend
 : forall M L L' : Term,
     (L ~>> L') ->
-    forall n : nat, subst_env n (L :: nil) M ~>> subst_env n (L' :: nil) M.
+    forall n : nat,
+      subst_env n (L :: nil) M ~>> subst_env n (L' :: nil) M.
 Proof.
  induction M; subst;
    try (apply subst_env_compat_rw_rt_var);
@@ -1055,10 +1032,11 @@ Proof.
  - eapply Rw_rt_trans; eauto using IHM2, Rw_rt_shift.
 Qed.
 
-Lemma subst_env_compat_rw_rt_B
+Lemma subst_env_compat_rw_rt
 : forall L M M' : Term,
     (M ~>> M') ->
-    forall n : nat, subst_env n (L :: nil) M ~>> subst_env n (L :: nil) M'.
+    forall n : nat,
+      subst_env n (L :: nil) M ~>> subst_env n (L :: nil) M'.
 Proof.
  intros.
  induction H; subst; eauto using subst_env_compat_rw.
@@ -1068,12 +1046,13 @@ Lemma subst_env_bicompat_rw_rt
 : forall L L' M M' : Term,
     (L ~>> L') ->
     (M ~>> M') ->
-    forall n : nat, subst_env n (L :: nil) M ~>> subst_env n (L' :: nil) M'.
+    forall n : nat,
+      subst_env n (L :: nil) M ~>> subst_env n (L' :: nil) M'.
 Proof.
  intros.
-  apply Rw_rt_trans with (subst_env n (L :: nil) M').
-  apply subst_env_compat_rw_rt_B; auto.
-  apply subst_env_compat_rw_rt_A; auto.
+ apply Rw_rt_trans with (subst_env n (L :: nil) M').
+ apply subst_env_compat_rw_rt; auto.
+ apply rw_rt_in_substituend; auto.
 Qed.
 
 (** * Rewrites Inside Structures That Look Like A Beta-Reduct. *)
@@ -1087,20 +1066,6 @@ Proof.
  apply unshift_preserves_rw.
  apply subst_env_compat_rw.
  auto.
-Qed.
-
-Lemma unshift_substitution_preserves_rw_rt:
-  forall M M' L : Term,
-  (M ~>> M') ->
-  M */ L ~>>  M' */ L.
-Proof.
-  intros.
-  induction H.
-  * constructor 1.
-    subst; auto.
-  * constructor 2.
-    apply unshift_substitution_preserves_rw; auto.
-  * econstructor 3; eauto.
 Qed.
 
 Lemma unshift_substitution_doubly_preserves_rw_rt:
