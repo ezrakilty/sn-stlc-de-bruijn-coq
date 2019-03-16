@@ -2,6 +2,8 @@ Require Import Arith.
 Require Import Omega.
 Require Import List.
 
+Add LoadPath "Listkit" as Listkit.
+
 Require Import Listkit.Foreach.
 
 (** Definitions *)
@@ -79,7 +81,7 @@ Lemma env_typing_elim:
     (env_typing_env env Vs Ts
     * Typing env V T).
 Proof.
- intros.
+ intros ? ? ? ? ? X.
  unfold env_typing_env in X.
  unfold foreach2_ty in X.
  unfold env_typing_env.
@@ -106,7 +108,7 @@ Proof.
   auto.
  simpl.
  intros Ws Ts H.
- inversion H.
+ inversion H as [H0 X].
  simpl in H0.
  destruct Ts.
  simpl in H0.

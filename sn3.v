@@ -72,6 +72,8 @@ Hint Resolve subst_env_compat_Rw_trans.
 
 (******************************** REDUCIBILITY ********************************)
 
+Set Universe Polymorphism.
+
 (** * Reducibility *)
 Fixpoint Reducible (tm:Term) (ty:Ty)  {struct ty} : Type :=
   (** To be reducible, a term ... *)
@@ -81,7 +83,8 @@ Fixpoint Reducible (tm:Term) (ty:Ty)  {struct ty} : Type :=
   | TyPair s t =>
     Reducible (TmProj false tm) s * Reducible (TmProj true tm) t
   | TyArr s t =>
-      (forall l (s_tp:Typing nil l s), Reducible l s ->
+    (forall l (s_tp:Typing nil l s),
+       Reducible l s ->
         Reducible (TmApp tm l) t)
       (** ... at arrow type, must give a reducible term when applied
            to any reducible term. *)
@@ -122,6 +125,59 @@ Ltac splitN n :=
     | 2 => split
     | 3 => split; [splitN 2 | ]
   end.
+
+Lemma mamma_mia:
+  forall
+  (T1 : Ty)
+  (T2 : Ty)
+  (M : Term)
+  (M_red : Reducible M T1)
+  (N : Term)
+  (N_red : Reducible N T2)
+  (Reducible_SN_Tn : forall b:bool, forall tm : Term,
+                       Reducible tm (if b then T2 else T1) -> SN tm)
+  (Neutral_Reducible_Tn : forall b: bool,
+                          forall M0 : Term,
+                          Neutral M0 ->
+                          Typing nil M0 (if b then T2 else T1) ->
+                          (forall M' : Term, (M0 ~> M') -> Reducible M' (if b then T2 else T1)) ->
+                          Reducible M0 (if b then T2 else T1))
+   (b:bool),
+   Reducible (TmProj b (〈M, N 〉)) (if b then T2 else T1).
+Proof.
+ intros.
+ (* double_induction_SN M N. (* FIXME: doesn't work! *) *)
+ cut (M ~>> M); [|auto]; cut (N ~>> N); [|sauto]; pattern N at 2 3, M at 2 3;
+ refine (SN_double_induction _ _ N M _ _).
+   intros N' M' IHM' IHN' N_rw_N' M_rw_M'.
+
+   (* Because (TmProj _ _) is Neutral, it's sufficient to show that all its
+      reducts are reducible. *)
+   assert (M_ty : Typing nil M T1) by auto.
+   assert (N_ty : Typing nil N T2) by auto.
+   apply Neutral_Reducible_Tn; [seauto |  | ].
+    destruct b; seauto.
+
+   intros Z H.
+   inversion H.
+   (* Case: <M', N'> itself reduces *)
+     subst.
+     inversion H3.
+     (* Case: reduction in lhs *)
+      subst m1 n m2.
+      apply IHN'; seauto.
+     (* Case: reduction in rhs *)
+     subst m n1 m2.
+     apply IHM'; seauto.
+   (* Case: The reduct is at the head; we project. *)
+    subst m n Z.
+    seauto.
+   (* Case: The reduct is at the head; we project. *)
+   subst m n Z.
+   seauto.
+  apply Reducible_SN_Tn with (b:=true); sauto.
+ apply Reducible_SN_Tn with (b:=false); sauto.
+Qed.
 
 (** The [Reducible] predicate has these important properties which
     must be proved in a mutually-inductive way. They are:
@@ -197,7 +253,9 @@ Proof.
     double_induction_SN_intro M N.
     (* Because (TmProj _ _) is Neutral, it's sufficient to show that all its
        reducts are reducible. *)
-    apply Neutral_Reducible_T2; [seauto |  | ].
+    apply Neutral_Reducible_T2; [seauto | | ].
+     (* TODO: why does the TProj1 case go with seauto but this needs me
+        to tell is what lemma to use? *)
      apply TProj2 with T1; seauto.
     intros Z H.
     inversion H.
@@ -226,9 +284,8 @@ Proof.
   simpl. (* this is only true if both destructors (projections) are reducible. *)
   split; [sauto | ].
   (* Split into left and right projections. *)
-  split.
+  split; [apply l_withdraws | apply r_withdraws]; eauto.
   (* Case: left projection. *)
-   apply l_withdraws; [seauto | seauto | ].
    intros M' H. (* Consider all reducts of the projection. *)
    inversion H.
    (* Case: The reduction is in the subject term. *)
@@ -240,7 +297,6 @@ Proof.
    subst m M.
    solve [inversion M_Neutral].
   (* Case: right projection. *)
-  apply r_withdraws; [seauto | seauto | ].
   intros M' H.
   inversion H.
    pose (r := M_reducts_Reducible m2 H3).
@@ -368,6 +424,17 @@ Proof.
   auto.
 Qed.
 
+(** We say that an environment is reducible when it is a list of closed terms, together
+with types, and each one is reducible at the corresponding type. *)
+(* Grumble: I don't know why foreach2_ty doesn't work here. But it
+gives a universe inconsistency when applied to Reducible. *)
+Fixpoint env_Reducible Vs Ts : Type :=
+  match Vs, Ts with
+    | nil, nil => True%type
+    | V::Vs, T::Ts => (Reducible V T * env_Reducible Vs Ts)%type
+    | _, _ => False
+  end.
+
 (** Every term [λN] is [Reducible] in a closing, [Reducible]
     environment, provided that every [Reducible] argument [V] substituted
     into [N] gives a [Reducible] term. *)
@@ -376,7 +443,7 @@ Lemma lambda_reducibility:
   forall (Ts : list Ty) Vs,
     Typing (S::Ts) N T ->
     env_typing Vs Ts ->
-    foreach2_ty Term Ty Vs Ts Reducible ->
+    env_Reducible Vs Ts ->
     (forall V,
       Reducible V S ->
       Reducible (subst_env 0 (V::Vs) N) T) ->
@@ -513,13 +580,39 @@ Proof.
  apply (TmProj_reducible M N S T true X X0 H1 H2).
 Qed.
 
+Lemma env_Reducible_member:
+  forall x V Vs T Ts,
+    value V = nth_error Vs x ->
+    value T = nth_error Ts x -> env_Reducible Vs Ts -> Reducible V T.
+Proof.
+ induction x; intros.
+  destruct Vs.
+   simpl in H.
+   discriminate.
+  destruct Ts.
+   simpl in H0.
+   discriminate.
+  simpl in *.
+  inversion H.
+  inversion H0.
+  intuition.
+ destruct Vs.
+ simpl in H.
+ discriminate.
+ destruct Ts.
+ simpl in H.
+ discriminate.
+ simpl in H, H0, X.
+ apply IHx with Vs Ts; intuition.
+Qed.
+
 (** Every well-typed term, with a [Reducible] environment that makes it a closed
     term, is [Reducible] at its given type. *)
 Theorem reducibility:
   forall m T tyEnv Vs,
     Typing tyEnv m T ->
     env_typing Vs tyEnv ->
-    foreach2_ty _ _ Vs tyEnv Reducible ->
+    env_Reducible Vs tyEnv ->
     Reducible (subst_env 0 Vs m) T.
 Proof.
  induction m; simpl; intros T tyEnv Vs tp Vs_tp Vs_red;
@@ -531,7 +624,7 @@ Proof.
  (* Case TmVar *)
       replace (x - 0) with x by omega.
       case_eq (nth_error Vs x); [intros V V_H | intro H_bogus].
-       eapply foreach2_ty_member; eauto.
+       eapply env_Reducible_member; eauto.
       absurd (length Vs <= x).
        cut (length tyEnv > x); [omega|]. (* TODO: sufficient ... by omega. *)
        seauto.
@@ -543,7 +636,7 @@ Proof.
      simpl.
      assert (Reducible (TmPair (subst_env 0 Vs m1) (subst_env 0 Vs m2)) (TyPair s t)).
       apply pair_reducible; sauto.
-     simpl in X2.
+     simpl in X1.
      trivial.
 
  (* Case TmProj false *)
@@ -569,7 +662,7 @@ Proof.
    apply lambda_reducibility with tyEnv; auto.
    intros V V_red.
    eapply IHm; eauto.
-   rewrite foreach2_ty_cons; sauto.
+   constructor; auto.
 
   (* Obligation: TmAbs (subst_env 1 Vs m)) = (subst_env 0 Vs (TmAbs m)). *)
   simpl.

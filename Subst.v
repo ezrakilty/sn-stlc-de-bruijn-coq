@@ -2,6 +2,9 @@ Load "eztactics.v".
 
 Require Import Arith.
 Require Import List.
+Require Import Specif.
+
+Add LoadPath "Listkit" as Listkit.
 
 Require Import Listkit.NthError.
 Require Import Listkit.Foreach.
@@ -19,11 +22,12 @@ Ltac map_omega :=
 Fixpoint subst_env k vs tm {struct tm} :=
   match tm with
   | TmConst => tm
-  | TmVar x => if le_gt_dec k x then
-    match nth_error vs (x-k) with
-    | error => tm
-    | value v => v
-    end
+  | TmVar x =>
+    if le_gt_dec k x then
+      match nth_error vs (x-k) with
+      | None => tm
+      | Some v => v
+      end
     else tm
   | TmPair l m => TmPair (subst_env k vs l) (subst_env k vs m)
   | TmProj b m => TmProj b (subst_env k vs m)
@@ -60,6 +64,11 @@ Proof.
  simpl; omega.
 Qed.
 
+(**
+       Vs :: env'
+env, env' |- tm       : ty
+env       |- tm{Vs/k} : ty    (where k = length env)
+*)
 Lemma subst_env_preserves_typing:
   forall tm Vs env env' ty k,
     env_typing Vs env' ->
@@ -69,19 +78,25 @@ Lemma subst_env_preserves_typing:
 Proof.
  induction tm; simpl; intros Vs env env' ty k Vs_tp tp k_eq;
     inversion tp; subst; eauto.
-(* case TmVar *)
+(* Case TmVar *)
   destruct Vs_tp as [Vs_env'_equilong Vs_tp].
   destruct (le_gt_dec (length env) x); auto.
    (* x is beyond length env *)
    assert (value ty = nth_error env' (x - length env)).
     apply nth_error_app; trivial.
-    (* TODO: Switch to this version *)
+(* TODO: Alternate version. Is this better? *)
    (* destruct (nth_error_dichot _ Vs (x-length env)) as [[bounds is_error] | [? ?]]. *)
    (*  refute. *)
-   (* (* apply <- nth_error_overflow in is_error. *) *)
-   (* apply nth_error_ok_rev in H. *)
+   (*  apply nth_error_to_length in H. *)
+   (*  apply nth_error_overflow in is_error. *)
    (*  omega. *)
-   case_eq (nth_error Vs (x-length env));
+   (* assert ({v : Term | nth_error Vs (x - length env) = value v}). *)
+   (*  admit. *)
+   (* destruct H3 as [v H3]. *)
+   (* rewrite H3; simpl. *)
+   (* cut (Typing nil v ty); [sauto | ]. *)
+   (* eapply foreach2_ty_member; eauto. *)
+    case_eq (nth_error Vs (x-length env));
       [intros v H_v | intros H_v; refute]; auto.
     (* Obtained value v for x-length env in Vs. *)
     apply Weakening_closed.
@@ -93,13 +108,12 @@ Proof.
   (* Case of x in env. *)
   apply TVar.
   rewrite <- nth_error_ext_length in H0; auto.
-(* case TmAbs *)
+(* Case TmAbs *)
  apply TAbs.
- replace (S (length env)) with (length (s::env)); trivial.
+ replace (S (length env)) with (length (s::env)) by trivial.
  apply IHtm with env'; trivial.
  erewrite env_typing_shift_noop; eauto.
 Qed.
-
 
 Hint Resolve subst_env_preserves_typing.
 

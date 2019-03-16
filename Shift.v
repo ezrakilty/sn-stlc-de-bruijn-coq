@@ -3,6 +3,8 @@ Load "eztactics.v".
 Require Import Arith.
 Require Import List.
 
+Add LoadPath "Listkit" as Listkit.
+
 Require Import Listkit.NthError.
 Require Import Listkit.Foreach.
 
@@ -343,7 +345,7 @@ Proof.
   simpl.
   unfold env_typing_env.
   unfold foreach2_ty.
-  inversion X.
+  inversion H2.
   simpl in *.
   auto.
 
@@ -351,11 +353,11 @@ Proof.
  simpl.
  replace env with (env1++env2) in *.
  destruct Ts.
-  inversion X.
-  simpl in H2.
+  inversion H2.
+  simpl in H3.
   omega.
- apply env_typing_elim in X.
- destruct X.
+ apply env_typing_elim in H2.
+ destruct H2.
  apply env_typing_intro.
   apply shift_preserves_typing with (env := env1++env2); auto.
  apply IHVs with (env:= env1++env2); auto.
@@ -566,7 +568,7 @@ Proof.
   remember (freevars (shift (S k) 1 M)) as N_fvs.
   pose (a x H).
   simpl in o.
-  omega.
+  destruct o; omega.
 
  (* Case TmApp *)
  rewrite all_union.

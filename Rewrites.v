@@ -1,9 +1,10 @@
 Require Import Arith.
 Require Import List.
+Require Import Omega.
 
 Add LoadPath "Listkit" as Listkit.
 
-Require Import NthError.
+Require Import Listkit.NthError.
 
 Require Import Term.
 Require Import Shift.
@@ -235,11 +236,9 @@ Proof.
     subst.
     eapply Rw_beta_preserves_types; eauto.
  (* Case Beta reduction TPair (1) *)
-  subst T.
-  inversion H0; auto.
+   inversion H; auto.
  (* Case Beta reduction TPair (2) *)
- subst T.
- inversion H0; auto.
+ inversion H; auto.
 Qed.
 
 (** The reflexive-transitive rewrite relation preserves the [Typing] judgment. *)
@@ -484,7 +483,7 @@ Proof.
   subst.
   destruct (IHN n' (S k) H0) as [N' N'_def].
   exists (TmAbs N').
-  destruct (N'_def) as [N'_def N_red_N'].
+  destruct N'_def as [N'_def N_red_N'].
   simpl.
   subst.
   eauto.
