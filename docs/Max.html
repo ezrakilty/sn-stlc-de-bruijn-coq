@@ -2,8 +2,8 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-<link href="coqdoc.css" rel="stylesheet" type="text/css"/>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
 <title>Max</title>
 </head>
 
@@ -19,25 +19,25 @@
 <h1 class="libtitle">Library Max</h1>
 
 <div class="code">
-<span class="id" type="keyword">Require</span> <span class="id" type="keyword">Import</span> <span class="id" type="var">Omega</span>.<br/>
-<span class="id" type="keyword">Require</span> <span class="id" type="keyword">Import</span> <span class="id" type="var">Max</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Omega</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Max</span>.<br/>
 
 <br/>
-<span class="id" type="keyword">Lemma</span> <span class="id" type="var">max_upper</span>:<br/>
-&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">a</span> <span class="id" type="var">b</span> <span class="id" type="var">n</span>, <span class="id" type="var">a</span> ≤ <span class="id" type="var">n</span> → <span class="id" type="var">b</span> ≤ <span class="id" type="var">n</span> → <span class="id" type="var">max</span> <span class="id" type="var">a</span> <span class="id" type="var">b</span> ≤ <span class="id" type="var">n</span>.<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">max_upper</span>:<br/>
+&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">a</span> <span class="id" title="var">b</span> <span class="id" title="var">n</span>, <span class="id" title="var">a</span> ≤ <span class="id" title="var">n</span> → <span class="id" title="var">b</span> ≤ <span class="id" title="var">n</span> → <span class="id" title="var">max</span> <span class="id" title="var">a</span> <span class="id" title="var">b</span> ≤ <span class="id" title="var">n</span>.<br/>
 
 <br/>
-<span class="id" type="keyword">Lemma</span> <span class="id" type="var">max_upbound_l</span> <span class="id" type="var">x</span> <span class="id" type="var">y</span> <span class="id" type="var">z</span>:<br/>
-&nbsp;<span class="id" type="var">max</span> <span class="id" type="var">x</span> <span class="id" type="var">y</span> ≤ <span class="id" type="var">z</span> →<br/>
-&nbsp;&nbsp;<span class="id" type="var">x</span> ≤ <span class="id" type="var">z</span>.<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">max_upbound_l</span> <span class="id" title="var">x</span> <span class="id" title="var">y</span> <span class="id" title="var">z</span>:<br/>
+&nbsp;<span class="id" title="var">max</span> <span class="id" title="var">x</span> <span class="id" title="var">y</span> ≤ <span class="id" title="var">z</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">x</span> ≤ <span class="id" title="var">z</span>.<br/>
 
 <br/>
-<span class="id" type="keyword">Lemma</span> <span class="id" type="var">max_upbound_r</span> <span class="id" type="var">x</span> <span class="id" type="var">y</span> <span class="id" type="var">z</span>:<br/>
-&nbsp;<span class="id" type="var">max</span> <span class="id" type="var">x</span> <span class="id" type="var">y</span> ≤ <span class="id" type="var">z</span> →<br/>
-&nbsp;&nbsp;<span class="id" type="var">y</span> ≤ <span class="id" type="var">z</span>.<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">max_upbound_r</span> <span class="id" title="var">x</span> <span class="id" title="var">y</span> <span class="id" title="var">z</span>:<br/>
+&nbsp;<span class="id" title="var">max</span> <span class="id" title="var">x</span> <span class="id" title="var">y</span> ≤ <span class="id" title="var">z</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">y</span> ≤ <span class="id" title="var">z</span>.<br/>
 
 <br/>
-<span class="id" type="keyword">Hint Resolve</span> <span class="id" type="var">max_upbound_l</span> <span class="id" type="var">max_upbound_r</span> <span class="id" type="var">max_upper</span>.<br/>
+<span class="id" title="keyword">Hint Resolve</span> <span class="id" title="var">max_upbound_l</span> <span class="id" title="var">max_upbound_r</span> <span class="id" title="var">max_upper</span>.<br/>
 </div>
 </div>
 

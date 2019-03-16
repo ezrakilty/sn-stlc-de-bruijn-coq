@@ -2,8 +2,8 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-<link href="coqdoc.css" rel="stylesheet" type="text/css"/>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
 <title>NthError</title>
 </head>
 
@@ -19,108 +19,108 @@
 <h1 class="libtitle">Library NthError</h1>
 
 <div class="code">
-<span class="id" type="keyword">Load</span> <span class="id" type="var">eztactics</span>.<br/>
+<span class="id" title="keyword">Load</span> <span class="id" title="var">eztactics</span>.<br/>
 
 <br/>
-<span class="id" type="keyword">Require</span> <span class="id" type="keyword">Import</span> <span class="id" type="var">List</span>.<br/>
-<span class="id" type="keyword">Require</span> <span class="id" type="keyword">Import</span> <span class="id" type="var">Omega</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">List</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Omega</span>.<br/>
 
 <br/>
 
 <br/>
-<span class="id" type="keyword">Require</span> <span class="id" type="keyword">Import</span> <span class="id" type="var">logickit</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">logickit</span>.<br/>
 
 <br/>
-<span class="id" type="keyword">Lemma</span> <span class="id" type="var">nth_error_ok</span> <span class="id" type="var">A</span> :<br/>
-&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">n</span> (<span class="id" type="var">xs</span> : <span class="id" type="var">list</span> <span class="id" type="var">A</span>), <span class="id" type="var">length</span> <span class="id" type="var">xs</span> &gt; <span class="id" type="var">n</span> →<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="tactic">∃</span> <span class="id" type="var">v</span>, <span class="id" type="var">nth_error</span> <span class="id" type="var">xs</span> <span class="id" type="var">n</span> = <span class="id" type="var">value</span> <span class="id" type="var">v</span>.<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">nth_error_ok</span> <span class="id" title="var">A</span> :<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">n</span> (<span class="id" title="var">xs</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>), <span class="id" title="var">length</span> <span class="id" title="var">xs</span> &gt; <span class="id" title="var">n</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">∃</span> <span class="id" title="var">v</span>, <span class="id" title="var">nth_error</span> <span class="id" title="var">xs</span> <span class="id" title="var">n</span> = <span class="id" title="var">value</span> <span class="id" title="var">v</span>.<br/>
 
 <br/>
-<span class="id" type="keyword">Lemma</span> <span class="id" type="var">nth_error_overflow</span> :<br/>
-&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">A</span> (<span class="id" type="var">l</span>:<span class="id" type="var">list</span> <span class="id" type="var">A</span>) <span class="id" type="var">n</span>, <span class="id" type="var">length</span> <span class="id" type="var">l</span> ≤ <span class="id" type="var">n</span> ↔ <span class="id" type="var">nth_error</span> <span class="id" type="var">l</span> <span class="id" type="var">n</span> = <span class="id" type="var">error</span>.<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">nth_error_overflow</span> :<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">A</span> (<span class="id" title="var">l</span>:<span class="id" title="var">list</span> <span class="id" title="var">A</span>) <span class="id" title="var">n</span>, <span class="id" title="var">length</span> <span class="id" title="var">l</span> ≤ <span class="id" title="var">n</span> ↔ <span class="id" title="var">nth_error</span> <span class="id" title="var">l</span> <span class="id" title="var">n</span> = <span class="id" title="var">error</span>.<br/>
 
 <br/>
-<span class="id" type="keyword">Lemma</span> <span class="id" type="var">nth_error_overflow_errors</span>:<br/>
-&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">A</span> (<span class="id" type="var">l</span>:<span class="id" type="var">list</span> <span class="id" type="var">A</span>) <span class="id" type="var">n</span>, <span class="id" type="var">length</span> <span class="id" type="var">l</span> ≤ <span class="id" type="var">n</span> → <span class="id" type="var">nth_error</span> <span class="id" type="var">l</span> <span class="id" type="var">n</span> = <span class="id" type="var">error</span>.<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">nth_error_overflow_errors</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">A</span> (<span class="id" title="var">l</span>:<span class="id" title="var">list</span> <span class="id" title="var">A</span>) <span class="id" title="var">n</span>, <span class="id" title="var">length</span> <span class="id" title="var">l</span> ≤ <span class="id" title="var">n</span> → <span class="id" title="var">nth_error</span> <span class="id" title="var">l</span> <span class="id" title="var">n</span> = <span class="id" title="var">error</span>.<br/>
 
 <br/>
-<span class="id" type="keyword">Lemma</span> <span class="id" type="var">nth_error_app_strong</span> <span class="id" type="var">A</span> :<br/>
-&nbsp;&nbsp;<span class="id" type="keyword">∀</span> (<span class="id" type="var">x</span>:<span class="id" type="var">A</span>) <span class="id" type="var">xs</span> <span class="id" type="var">ys</span> <span class="id" type="var">n</span>,<br/>
-&nbsp;&nbsp;<span class="id" type="var">value</span> <span class="id" type="var">x</span> = <span class="id" type="var">nth_error</span> (<span class="id" type="var">xs</span> ++ <span class="id" type="var">ys</span>) <span class="id" type="var">n</span> →<br/>
-&nbsp;&nbsp;{<span class="id" type="var">n</span> ≥ <span class="id" type="var">length</span> <span class="id" type="var">xs</span> ∧ <span class="id" type="var">value</span> <span class="id" type="var">x</span> = <span class="id" type="var">nth_error</span> <span class="id" type="var">ys</span> (<span class="id" type="var">n</span> - <span class="id" type="var">length</span> <span class="id" type="var">xs</span>)}<br/>
-&nbsp;&nbsp;+ {<span class="id" type="var">n</span> &lt; <span class="id" type="var">length</span> <span class="id" type="var">xs</span> ∧ <span class="id" type="var">value</span> <span class="id" type="var">x</span> = <span class="id" type="var">nth_error</span> <span class="id" type="var">xs</span> <span class="id" type="var">n</span>}.<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">nth_error_app_strong</span> <span class="id" title="var">A</span> :<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">x</span>:<span class="id" title="var">A</span>) <span class="id" title="var">xs</span> <span class="id" title="var">ys</span> <span class="id" title="var">n</span>,<br/>
+&nbsp;&nbsp;<span class="id" title="var">value</span> <span class="id" title="var">x</span> = <span class="id" title="var">nth_error</span> (<span class="id" title="var">xs</span> ++ <span class="id" title="var">ys</span>) <span class="id" title="var">n</span> →<br/>
+&nbsp;&nbsp;{<span class="id" title="var">n</span> ≥ <span class="id" title="var">length</span> <span class="id" title="var">xs</span> ∧ <span class="id" title="var">value</span> <span class="id" title="var">x</span> = <span class="id" title="var">nth_error</span> <span class="id" title="var">ys</span> (<span class="id" title="var">n</span> - <span class="id" title="var">length</span> <span class="id" title="var">xs</span>)}<br/>
+&nbsp;&nbsp;+ {<span class="id" title="var">n</span> &lt; <span class="id" title="var">length</span> <span class="id" title="var">xs</span> ∧ <span class="id" title="var">value</span> <span class="id" title="var">x</span> = <span class="id" title="var">nth_error</span> <span class="id" title="var">xs</span> <span class="id" title="var">n</span>}.<br/>
 
 <br/>
-<span class="id" type="keyword">Lemma</span> <span class="id" type="var">nth_error_ok_rev</span> :<br/>
-&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">A</span> (<span class="id" type="var">x</span>:<span class="id" type="var">A</span>) <span class="id" type="var">xs</span> <span class="id" type="var">n</span>, <span class="id" type="var">value</span> <span class="id" type="var">x</span> = <span class="id" type="var">nth_error</span> <span class="id" type="var">xs</span> <span class="id" type="var">n</span> → <span class="id" type="var">n</span> &lt; <span class="id" type="var">length</span> <span class="id" type="var">xs</span>.<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">nth_error_ok_rev</span> :<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">A</span> (<span class="id" title="var">x</span>:<span class="id" title="var">A</span>) <span class="id" title="var">xs</span> <span class="id" title="var">n</span>, <span class="id" title="var">value</span> <span class="id" title="var">x</span> = <span class="id" title="var">nth_error</span> <span class="id" title="var">xs</span> <span class="id" title="var">n</span> → <span class="id" title="var">n</span> &lt; <span class="id" title="var">length</span> <span class="id" title="var">xs</span>.<br/>
 
 <br/>
-<span class="id" type="keyword">Lemma</span> <span class="id" type="var">nth_error_nil</span> <span class="id" type="var">A</span> : <span class="id" type="keyword">∀</span> <span class="id" type="var">x</span>, <span class="id" type="var">nth_error</span> (<span class="id" type="var">nil</span>: <span class="id" type="var">list</span> <span class="id" type="var">A</span>) <span class="id" type="var">x</span> = <span class="id" type="var">error</span>.<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">nth_error_nil</span> <span class="id" title="var">A</span> : <span class="id" title="keyword">∀</span> <span class="id" title="var">x</span>, <span class="id" title="var">nth_error</span> (<span class="id" title="var">nil</span>: <span class="id" title="var">list</span> <span class="id" title="var">A</span>) <span class="id" title="var">x</span> = <span class="id" title="var">error</span>.<br/>
 
 <br/>
-<span class="id" type="keyword">Hint Resolve</span> <span class="id" type="var">nth_error_nil</span> <span class="id" type="var">nth_error_ok</span> <span class="id" type="var">nth_error_ok_rev</span><br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">nth_error_overflow_errors</span><br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">nth_error_overflow</span>.<br/>
+<span class="id" title="keyword">Hint Resolve</span> <span class="id" title="var">nth_error_nil</span> <span class="id" title="var">nth_error_ok</span> <span class="id" title="var">nth_error_ok_rev</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">nth_error_overflow_errors</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">nth_error_overflow</span>.<br/>
 
 <br/>
-<span class="id" type="keyword">Lemma</span> <span class="id" type="var">nth_error_ext_length</span>:<br/>
-&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">A</span> (<span class="id" type="var">a</span> <span class="id" type="var">b</span>: <span class="id" type="var">list</span> <span class="id" type="var">A</span>) <span class="id" type="var">n</span>,<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">n</span> &lt; <span class="id" type="var">length</span> <span class="id" type="var">a</span> →<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">nth_error</span> <span class="id" type="var">a</span> <span class="id" type="var">n</span> = <span class="id" type="var">nth_error</span> (<span class="id" type="var">a</span>++<span class="id" type="var">b</span>) <span class="id" type="var">n</span>.<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">nth_error_ext_length</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">A</span> (<span class="id" title="var">a</span> <span class="id" title="var">b</span>: <span class="id" title="var">list</span> <span class="id" title="var">A</span>) <span class="id" title="var">n</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">n</span> &lt; <span class="id" title="var">length</span> <span class="id" title="var">a</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">nth_error</span> <span class="id" title="var">a</span> <span class="id" title="var">n</span> = <span class="id" title="var">nth_error</span> (<span class="id" title="var">a</span>++<span class="id" title="var">b</span>) <span class="id" title="var">n</span>.<br/>
 
 <br/>
-<span class="id" type="keyword">Lemma</span> <span class="id" type="var">nth_error_ext</span>:<br/>
-&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">A</span> (<span class="id" type="var">a</span> <span class="id" type="var">b</span>: <span class="id" type="var">list</span> <span class="id" type="var">A</span>) <span class="id" type="var">n</span> <span class="id" type="var">v</span>,<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">nth_error</span> <span class="id" type="var">a</span> <span class="id" type="var">n</span> = <span class="id" type="var">value</span> <span class="id" type="var">v</span> →<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">value</span> <span class="id" type="var">v</span> = <span class="id" type="var">nth_error</span> (<span class="id" type="var">a</span>++<span class="id" type="var">b</span>) <span class="id" type="var">n</span>.<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">nth_error_ext</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">A</span> (<span class="id" title="var">a</span> <span class="id" title="var">b</span>: <span class="id" title="var">list</span> <span class="id" title="var">A</span>) <span class="id" title="var">n</span> <span class="id" title="var">v</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">nth_error</span> <span class="id" title="var">a</span> <span class="id" title="var">n</span> = <span class="id" title="var">value</span> <span class="id" title="var">v</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">value</span> <span class="id" title="var">v</span> = <span class="id" title="var">nth_error</span> (<span class="id" title="var">a</span>++<span class="id" title="var">b</span>) <span class="id" title="var">n</span>.<br/>
 
 <br/>
-<span class="id" type="keyword">Lemma</span> <span class="id" type="var">nth_error_app</span> <span class="id" type="var">A</span> :<br/>
-&nbsp;&nbsp;<span class="id" type="keyword">∀</span> (<span class="id" type="var">x</span>:<span class="id" type="var">A</span>) <span class="id" type="var">xs</span> <span class="id" type="var">ys</span> <span class="id" type="var">n</span>,<br/>
-&nbsp;&nbsp;&nbsp;<span class="id" type="var">n</span> ≥ <span class="id" type="var">length</span> <span class="id" type="var">xs</span> →<br/>
-&nbsp;&nbsp;<span class="id" type="var">value</span> <span class="id" type="var">x</span> = <span class="id" type="var">nth_error</span> (<span class="id" type="var">xs</span> ++ <span class="id" type="var">ys</span>) <span class="id" type="var">n</span> →<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">value</span> <span class="id" type="var">x</span> = <span class="id" type="var">nth_error</span> <span class="id" type="var">ys</span> (<span class="id" type="var">n</span> - <span class="id" type="var">length</span> <span class="id" type="var">xs</span>).<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">nth_error_app</span> <span class="id" title="var">A</span> :<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">x</span>:<span class="id" title="var">A</span>) <span class="id" title="var">xs</span> <span class="id" title="var">ys</span> <span class="id" title="var">n</span>,<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" title="var">n</span> ≥ <span class="id" title="var">length</span> <span class="id" title="var">xs</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">value</span> <span class="id" title="var">x</span> = <span class="id" title="var">nth_error</span> (<span class="id" title="var">xs</span> ++ <span class="id" title="var">ys</span>) <span class="id" title="var">n</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">value</span> <span class="id" title="var">x</span> = <span class="id" title="var">nth_error</span> <span class="id" title="var">ys</span> (<span class="id" title="var">n</span> - <span class="id" title="var">length</span> <span class="id" title="var">xs</span>).<br/>
 
 <br/>
-<span class="id" type="keyword">Lemma</span> <span class="id" type="var">rewrite_nth_error_app</span> <span class="id" type="var">A</span> :<br/>
-&nbsp;&nbsp;<span class="id" type="keyword">∀</span> (<span class="id" type="var">xs</span> <span class="id" type="var">ys</span> : <span class="id" type="var">list</span> <span class="id" type="var">A</span>) <span class="id" type="var">n</span>,<br/>
-&nbsp;&nbsp;&nbsp;<span class="id" type="var">n</span> ≥ <span class="id" type="var">length</span> <span class="id" type="var">xs</span> →<br/>
-&nbsp;&nbsp;<span class="id" type="var">nth_error</span> (<span class="id" type="var">xs</span> ++ <span class="id" type="var">ys</span>) <span class="id" type="var">n</span> =<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">nth_error</span> <span class="id" type="var">ys</span> (<span class="id" type="var">n</span> - <span class="id" type="var">length</span> <span class="id" type="var">xs</span>).<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">rewrite_nth_error_app</span> <span class="id" title="var">A</span> :<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">xs</span> <span class="id" title="var">ys</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>) <span class="id" title="var">n</span>,<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" title="var">n</span> ≥ <span class="id" title="var">length</span> <span class="id" title="var">xs</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">nth_error</span> (<span class="id" title="var">xs</span> ++ <span class="id" title="var">ys</span>) <span class="id" title="var">n</span> =<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">nth_error</span> <span class="id" title="var">ys</span> (<span class="id" title="var">n</span> - <span class="id" title="var">length</span> <span class="id" title="var">xs</span>).<br/>
 
 <br/>
-<span class="id" type="keyword">Hint Resolve</span> <span class="id" type="var">nth_error_ext</span> <span class="id" type="var">nth_error_ext_length</span> <span class="id" type="var">nth_error_app</span>.<br/>
+<span class="id" title="keyword">Hint Resolve</span> <span class="id" title="var">nth_error_ext</span> <span class="id" title="var">nth_error_ext_length</span> <span class="id" title="var">nth_error_app</span>.<br/>
 
 <br/>
-<span class="id" type="keyword">Lemma</span> <span class="id" type="var">nth_error_map</span>:<br/>
-&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">A</span> <span class="id" type="var">B</span> (<span class="id" type="var">f</span>:<span class="id" type="var">A</span>→<span class="id" type="var">B</span>) <span class="id" type="var">xs</span> <span class="id" type="var">n</span>,<br/>
-&nbsp;&nbsp;<span class="id" type="var">nth_error</span> (<span class="id" type="var">map</span> <span class="id" type="var">f</span> <span class="id" type="var">xs</span>) <span class="id" type="var">n</span> = <span class="id" type="var">fmap</span> <span class="id" type="var">_</span> <span class="id" type="var">_</span> <span class="id" type="var">f</span> (<span class="id" type="var">nth_error</span> <span class="id" type="var">xs</span> <span class="id" type="var">n</span>).<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">nth_error_map</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">A</span> <span class="id" title="var">B</span> (<span class="id" title="var">f</span>:<span class="id" title="var">A</span>→<span class="id" title="var">B</span>) <span class="id" title="var">xs</span> <span class="id" title="var">n</span>,<br/>
+&nbsp;&nbsp;<span class="id" title="var">nth_error</span> (<span class="id" title="var">map</span> <span class="id" title="var">f</span> <span class="id" title="var">xs</span>) <span class="id" title="var">n</span> = <span class="id" title="var">fmap</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">f</span> (<span class="id" title="var">nth_error</span> <span class="id" title="var">xs</span> <span class="id" title="var">n</span>).<br/>
 
 <br/>
-<span class="id" type="keyword">Lemma</span> <span class="id" type="var">nth_error_S</span> :<br/>
-&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">A</span> (<span class="id" type="var">h</span>:<span class="id" type="var">A</span>) <span class="id" type="var">t</span> <span class="id" type="var">n</span>, <span class="id" type="var">nth_error</span> (<span class="id" type="var">h</span>::<span class="id" type="var">t</span>) (<span class="id" type="var">S</span> <span class="id" type="var">n</span>) = <span class="id" type="var">nth_error</span> <span class="id" type="var">t</span> <span class="id" type="var">n</span>.<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">nth_error_S</span> :<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">A</span> (<span class="id" title="var">h</span>:<span class="id" title="var">A</span>) <span class="id" title="var">t</span> <span class="id" title="var">n</span>, <span class="id" title="var">nth_error</span> (<span class="id" title="var">h</span>::<span class="id" title="var">t</span>) (<span class="id" title="var">S</span> <span class="id" title="var">n</span>) = <span class="id" title="var">nth_error</span> <span class="id" title="var">t</span> <span class="id" title="var">n</span>.<br/>
 
 <br/>
-<span class="id" type="keyword">Lemma</span> <span class="id" type="var">nth_error_app_eq</span>:<br/>
-&nbsp;&nbsp;<span class="id" type="keyword">∀</span> (<span class="id" type="var">A</span> : <span class="id" type="keyword">Type</span>) (<span class="id" type="var">xs</span> <span class="id" type="var">ys</span> : <span class="id" type="var">list</span> <span class="id" type="var">A</span>) (<span class="id" type="var">n</span> : <span class="id" type="var">nat</span>),<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">n</span> ≥ <span class="id" type="var">length</span> <span class="id" type="var">xs</span> →<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">n</span> &lt; <span class="id" type="var">length</span> (<span class="id" type="var">xs</span> ++ <span class="id" type="var">ys</span>) →<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">nth_error</span> (<span class="id" type="var">xs</span> ++ <span class="id" type="var">ys</span>) <span class="id" type="var">n</span> =<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">nth_error</span> <span class="id" type="var">ys</span> (<span class="id" type="var">n</span> - <span class="id" type="var">length</span> <span class="id" type="var">xs</span>).<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">nth_error_app_eq</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>) (<span class="id" title="var">xs</span> <span class="id" title="var">ys</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>) (<span class="id" title="var">n</span> : <span class="id" title="var">nat</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">n</span> ≥ <span class="id" title="var">length</span> <span class="id" title="var">xs</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">n</span> &lt; <span class="id" title="var">length</span> (<span class="id" title="var">xs</span> ++ <span class="id" title="var">ys</span>) →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">nth_error</span> (<span class="id" title="var">xs</span> ++ <span class="id" title="var">ys</span>) <span class="id" title="var">n</span> =<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">nth_error</span> <span class="id" title="var">ys</span> (<span class="id" title="var">n</span> - <span class="id" title="var">length</span> <span class="id" title="var">xs</span>).<br/>
 
 <br/>
-<span class="id" type="keyword">Lemma</span> <span class="id" type="var">nth_error_app_split</span> :<br/>
-&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">A</span> (<span class="id" type="var">xs</span>:<span class="id" type="var">list</span> <span class="id" type="var">A</span>) <span class="id" type="var">ys</span> <span class="id" type="var">n</span> <span class="id" type="var">v</span>,<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">nth_error</span> (<span class="id" type="var">xs</span>++<span class="id" type="var">ys</span>) <span class="id" type="var">n</span> = <span class="id" type="var">value</span> <span class="id" type="var">v</span> →<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" type="var">n</span> &lt; <span class="id" type="var">length</span> <span class="id" type="var">xs</span> ∧ <span class="id" type="var">nth_error</span> <span class="id" type="var">xs</span> <span class="id" type="var">n</span> = <span class="id" type="var">value</span> <span class="id" type="var">v</span>)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;∨ (<span class="id" type="var">n</span> ≥ <span class="id" type="var">length</span> <span class="id" type="var">xs</span> ∧ <span class="id" type="var">nth_error</span> <span class="id" type="var">ys</span> (<span class="id" type="var">n</span>-<span class="id" type="var">length</span> <span class="id" type="var">xs</span>) = <span class="id" type="var">value</span> <span class="id" type="var">v</span>).<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">nth_error_app_split</span> :<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">A</span> (<span class="id" title="var">xs</span>:<span class="id" title="var">list</span> <span class="id" title="var">A</span>) <span class="id" title="var">ys</span> <span class="id" title="var">n</span> <span class="id" title="var">v</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">nth_error</span> (<span class="id" title="var">xs</span>++<span class="id" title="var">ys</span>) <span class="id" title="var">n</span> = <span class="id" title="var">value</span> <span class="id" title="var">v</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">n</span> &lt; <span class="id" title="var">length</span> <span class="id" title="var">xs</span> ∧ <span class="id" title="var">nth_error</span> <span class="id" title="var">xs</span> <span class="id" title="var">n</span> = <span class="id" title="var">value</span> <span class="id" title="var">v</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;∨ (<span class="id" title="var">n</span> ≥ <span class="id" title="var">length</span> <span class="id" title="var">xs</span> ∧ <span class="id" title="var">nth_error</span> <span class="id" title="var">ys</span> (<span class="id" title="var">n</span>-<span class="id" title="var">length</span> <span class="id" title="var">xs</span>) = <span class="id" title="var">value</span> <span class="id" title="var">v</span>).<br/>
 
 <br/>
-<span class="id" type="keyword">Lemma</span> <span class="id" type="var">nth_error_app_split_error</span> :<br/>
-&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">A</span> (<span class="id" type="var">xs</span>:<span class="id" type="var">list</span> <span class="id" type="var">A</span>) <span class="id" type="var">ys</span> <span class="id" type="var">n</span>,<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">nth_error</span> (<span class="id" type="var">xs</span>++<span class="id" type="var">ys</span>) <span class="id" type="var">n</span> = <span class="id" type="var">error</span> →<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">n</span> ≥ <span class="id" type="var">length</span> <span class="id" type="var">xs</span> + <span class="id" type="var">length</span> <span class="id" type="var">ys</span> ∧ <span class="id" type="var">nth_error</span> <span class="id" type="var">xs</span> <span class="id" type="var">n</span> = <span class="id" type="var">error</span><br/>
-&nbsp;&nbsp;&nbsp;&nbsp;∧ <span class="id" type="var">nth_error</span> <span class="id" type="var">ys</span> (<span class="id" type="var">n</span>-<span class="id" type="var">length</span> <span class="id" type="var">xs</span>) = <span class="id" type="var">error</span>.<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">nth_error_app_split_error</span> :<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">A</span> (<span class="id" title="var">xs</span>:<span class="id" title="var">list</span> <span class="id" title="var">A</span>) <span class="id" title="var">ys</span> <span class="id" title="var">n</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">nth_error</span> (<span class="id" title="var">xs</span>++<span class="id" title="var">ys</span>) <span class="id" title="var">n</span> = <span class="id" title="var">error</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">n</span> ≥ <span class="id" title="var">length</span> <span class="id" title="var">xs</span> + <span class="id" title="var">length</span> <span class="id" title="var">ys</span> ∧ <span class="id" title="var">nth_error</span> <span class="id" title="var">xs</span> <span class="id" title="var">n</span> = <span class="id" title="var">error</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;∧ <span class="id" title="var">nth_error</span> <span class="id" title="var">ys</span> (<span class="id" title="var">n</span>-<span class="id" title="var">length</span> <span class="id" title="var">xs</span>) = <span class="id" title="var">error</span>.<br/>
 
 <br/>
 </div>
@@ -130,57 +130,57 @@ When two lists are equally long, we can take the same index into
     each one and we will either get two hits or two misses. 
 </div>
 <div class="code">
-<span class="id" type="keyword">Lemma</span> <span class="id" type="var">equilong_nth_error</span>:<br/>
-&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">A</span> <span class="id" type="var">B</span> (<span class="id" type="var">xs</span> : <span class="id" type="var">list</span> <span class="id" type="var">A</span>) (<span class="id" type="var">ys</span> : <span class="id" type="var">list</span> <span class="id" type="var">B</span>) <span class="id" type="var">n</span>,<br/>
-&nbsp;&nbsp;<span class="id" type="var">length</span> <span class="id" type="var">xs</span> = <span class="id" type="var">length</span> <span class="id" type="var">ys</span> →<br/>
-&nbsp;&nbsp;{<span class="id" type="var">n</span> &lt; <span class="id" type="var">length</span> <span class="id" type="var">xs</span> ∧<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="tactic">∃</span> <span class="id" type="var">x</span>, <span class="id" type="tactic">∃</span> <span class="id" type="var">y</span>, <span class="id" type="var">nth_error</span> <span class="id" type="var">xs</span> <span class="id" type="var">n</span> = <span class="id" type="var">value</span> <span class="id" type="var">x</span> ∧ <span class="id" type="var">nth_error</span> <span class="id" type="var">ys</span> <span class="id" type="var">n</span> = <span class="id" type="var">value</span> <span class="id" type="var">y</span>} +<br/>
-&nbsp;&nbsp;{<span class="id" type="var">n</span> ≥ <span class="id" type="var">length</span> <span class="id" type="var">xs</span> ∧ <span class="id" type="var">nth_error</span> <span class="id" type="var">xs</span> <span class="id" type="var">n</span> = <span class="id" type="var">error</span> ∧ <span class="id" type="var">nth_error</span> <span class="id" type="var">ys</span> <span class="id" type="var">n</span> = <span class="id" type="var">error</span>}.<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">equilong_nth_error</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">A</span> <span class="id" title="var">B</span> (<span class="id" title="var">xs</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>) (<span class="id" title="var">ys</span> : <span class="id" title="var">list</span> <span class="id" title="var">B</span>) <span class="id" title="var">n</span>,<br/>
+&nbsp;&nbsp;<span class="id" title="var">length</span> <span class="id" title="var">xs</span> = <span class="id" title="var">length</span> <span class="id" title="var">ys</span> →<br/>
+&nbsp;&nbsp;{<span class="id" title="var">n</span> &lt; <span class="id" title="var">length</span> <span class="id" title="var">xs</span> ∧<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">∃</span> <span class="id" title="var">x</span>, <span class="id" title="tactic">∃</span> <span class="id" title="var">y</span>, <span class="id" title="var">nth_error</span> <span class="id" title="var">xs</span> <span class="id" title="var">n</span> = <span class="id" title="var">value</span> <span class="id" title="var">x</span> ∧ <span class="id" title="var">nth_error</span> <span class="id" title="var">ys</span> <span class="id" title="var">n</span> = <span class="id" title="var">value</span> <span class="id" title="var">y</span>} +<br/>
+&nbsp;&nbsp;{<span class="id" title="var">n</span> ≥ <span class="id" title="var">length</span> <span class="id" title="var">xs</span> ∧ <span class="id" title="var">nth_error</span> <span class="id" title="var">xs</span> <span class="id" title="var">n</span> = <span class="id" title="var">error</span> ∧ <span class="id" title="var">nth_error</span> <span class="id" title="var">ys</span> <span class="id" title="var">n</span> = <span class="id" title="var">error</span>}.<br/>
 
 <br/>
-<span class="id" type="keyword">Lemma</span> <span class="id" type="var">nth_error_exists</span>:<br/>
-&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">A</span> (<span class="id" type="var">xs</span>: <span class="id" type="var">list</span> <span class="id" type="var">A</span>) <span class="id" type="var">n</span>,<br/>
-&nbsp;&nbsp;<span class="id" type="var">n</span> &lt; <span class="id" type="var">length</span> <span class="id" type="var">xs</span> → <span class="id" type="tactic">∃</span> <span class="id" type="var">x</span>, <span class="id" type="var">nth_error</span> <span class="id" type="var">xs</span> <span class="id" type="var">n</span> = <span class="id" type="var">value</span> <span class="id" type="var">x</span>.<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">nth_error_exists</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">A</span> (<span class="id" title="var">xs</span>: <span class="id" title="var">list</span> <span class="id" title="var">A</span>) <span class="id" title="var">n</span>,<br/>
+&nbsp;&nbsp;<span class="id" title="var">n</span> &lt; <span class="id" title="var">length</span> <span class="id" title="var">xs</span> → <span class="id" title="tactic">∃</span> <span class="id" title="var">x</span>, <span class="id" title="var">nth_error</span> <span class="id" title="var">xs</span> <span class="id" title="var">n</span> = <span class="id" title="var">value</span> <span class="id" title="var">x</span>.<br/>
 
 <br/>
-<span class="id" type="keyword">Lemma</span> <span class="id" type="var">nth_error_to_length</span> :<br/>
-&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">A</span> (<span class="id" type="var">v</span>:<span class="id" type="var">A</span>) <span class="id" type="var">xs</span> <span class="id" type="var">n</span>, <span class="id" type="var">value</span> <span class="id" type="var">v</span> = <span class="id" type="var">nth_error</span> <span class="id" type="var">xs</span> <span class="id" type="var">n</span> → <span class="id" type="var">n</span> &lt; <span class="id" type="var">length</span> <span class="id" type="var">xs</span>.<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">nth_error_to_length</span> :<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">A</span> (<span class="id" title="var">v</span>:<span class="id" title="var">A</span>) <span class="id" title="var">xs</span> <span class="id" title="var">n</span>, <span class="id" title="var">value</span> <span class="id" title="var">v</span> = <span class="id" title="var">nth_error</span> <span class="id" title="var">xs</span> <span class="id" title="var">n</span> → <span class="id" title="var">n</span> &lt; <span class="id" title="var">length</span> <span class="id" title="var">xs</span>.<br/>
 
 <br/>
-<span class="id" type="keyword">Lemma</span> <span class="id" type="var">nth_error_dichot</span> <span class="id" type="var">A</span> (<span class="id" type="var">xs</span> : <span class="id" type="var">list</span> <span class="id" type="var">A</span>):<br/>
-&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">n</span>,<br/>
-&nbsp;&nbsp;{<span class="id" type="var">n</span> ≥ <span class="id" type="var">length</span> <span class="id" type="var">xs</span> ∧ <span class="id" type="var">nth_error</span> <span class="id" type="var">xs</span> <span class="id" type="var">n</span> = <span class="id" type="var">error</span>} +<br/>
-&nbsp;&nbsp;{<span class="id" type="var">n</span> &lt; <span class="id" type="var">length</span> <span class="id" type="var">xs</span> ∧ <span class="id" type="tactic">∃</span> <span class="id" type="var">v</span>, <span class="id" type="var">nth_error</span> <span class="id" type="var">xs</span> <span class="id" type="var">n</span> = <span class="id" type="var">value</span> <span class="id" type="var">v</span>}.<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">nth_error_dichot</span> <span class="id" title="var">A</span> (<span class="id" title="var">xs</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>):<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">n</span>,<br/>
+&nbsp;&nbsp;{<span class="id" title="var">n</span> ≥ <span class="id" title="var">length</span> <span class="id" title="var">xs</span> ∧ <span class="id" title="var">nth_error</span> <span class="id" title="var">xs</span> <span class="id" title="var">n</span> = <span class="id" title="var">error</span>} +<br/>
+&nbsp;&nbsp;{<span class="id" title="var">n</span> &lt; <span class="id" title="var">length</span> <span class="id" title="var">xs</span> ∧ <span class="id" title="tactic">∃</span> <span class="id" title="var">v</span>, <span class="id" title="var">nth_error</span> <span class="id" title="var">xs</span> <span class="id" title="var">n</span> = <span class="id" title="var">value</span> <span class="id" title="var">v</span>}.<br/>
 
 <br/>
-<span class="id" type="keyword">Ltac</span> <span class="id" type="var">nth_error_dichotomize</span> <span class="id" type="var">bounds</span> <span class="id" type="var">is_error</span> <span class="id" type="var">v</span> <span class="id" type="var">v_def</span> :=<br/>
-&nbsp;&nbsp;<span class="id" type="keyword">match</span> <span class="id" type="keyword">goal</span> <span class="id" type="keyword">with</span><br/>
-&nbsp;&nbsp;&nbsp;&nbsp;| |- <span class="id" type="keyword">context</span> <span class="id" type="var">C</span> [<span class="id" type="var">nth_error</span> ?<span class="id" type="var">xs</span> ?<span class="id" type="var">n</span>] ⇒<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" type="tactic">destruct</span> (<span class="id" type="var">nth_error_dichot</span> <span class="id" type="var">_</span> <span class="id" type="var">xs</span> <span class="id" type="var">n</span>)<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="keyword">as</span> [[<span class="id" type="var">bounds</span> <span class="id" type="var">is_error</span>] | [<span class="id" type="var">bounds</span> [<span class="id" type="var">v</span> <span class="id" type="var">v_def</span>]]];<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[<span class="id" type="tactic">rewrite</span> <span class="id" type="var">is_error</span>; <span class="id" type="tactic">simpl</span> | <span class="id" type="tactic">rewrite</span> <span class="id" type="var">v_def</span>; <span class="id" type="tactic">simpl</span>])<br/>
-&nbsp;&nbsp;<span class="id" type="keyword">end</span>.<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">nth_error_dichotomize</span> <span class="id" title="var">bounds</span> <span class="id" title="var">is_error</span> <span class="id" title="var">v</span> <span class="id" title="var">v_def</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| |- <span class="id" title="keyword">context</span> <span class="id" title="var">C</span> [<span class="id" title="var">nth_error</span> ?<span class="id" title="var">xs</span> ?<span class="id" title="var">n</span>] ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="tactic">destruct</span> (<span class="id" title="var">nth_error_dichot</span> <span class="id" title="var">_</span> <span class="id" title="var">xs</span> <span class="id" title="var">n</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">as</span> [[<span class="id" title="var">bounds</span> <span class="id" title="var">is_error</span>] | [<span class="id" title="var">bounds</span> [<span class="id" title="var">v</span> <span class="id" title="var">v_def</span>]]];<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[<span class="id" title="tactic">rewrite</span> <span class="id" title="var">is_error</span>; <span class="id" title="tactic">simpl</span> | <span class="id" title="tactic">rewrite</span> <span class="id" title="var">v_def</span>; <span class="id" title="tactic">simpl</span>])<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
 
 <br/>
-<span class="id" type="keyword">Lemma</span> <span class="id" type="var">nth_error_rewrite_app_right</span>:<br/>
-&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">A</span> (<span class="id" type="var">xs</span> <span class="id" type="var">ys</span>:<span class="id" type="var">list</span> <span class="id" type="var">A</span>) <span class="id" type="var">n</span>,<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">length</span> <span class="id" type="var">xs</span> ≤ <span class="id" type="var">n</span> →<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">nth_error</span> (<span class="id" type="var">xs</span> ++ <span class="id" type="var">ys</span>) <span class="id" type="var">n</span> = <span class="id" type="var">nth_error</span> <span class="id" type="var">ys</span> (<span class="id" type="var">n</span>-<span class="id" type="var">length</span> <span class="id" type="var">xs</span>).<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">nth_error_rewrite_app_right</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">A</span> (<span class="id" title="var">xs</span> <span class="id" title="var">ys</span>:<span class="id" title="var">list</span> <span class="id" title="var">A</span>) <span class="id" title="var">n</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">length</span> <span class="id" title="var">xs</span> ≤ <span class="id" title="var">n</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">nth_error</span> (<span class="id" title="var">xs</span> ++ <span class="id" title="var">ys</span>) <span class="id" title="var">n</span> = <span class="id" title="var">nth_error</span> <span class="id" title="var">ys</span> (<span class="id" title="var">n</span>-<span class="id" title="var">length</span> <span class="id" title="var">xs</span>).<br/>
 
 <br/>
-<span class="id" type="keyword">Lemma</span> <span class="id" type="var">nth_error_rewrite_app_left</span>:<br/>
-&nbsp;&nbsp;<span class="id" type="keyword">∀</span> <span class="id" type="var">A</span> (<span class="id" type="var">xs</span> <span class="id" type="var">ys</span>:<span class="id" type="var">list</span> <span class="id" type="var">A</span>) <span class="id" type="var">n</span>,<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">n</span> &lt; <span class="id" type="var">length</span> <span class="id" type="var">xs</span> →<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">nth_error</span> (<span class="id" type="var">xs</span> ++ <span class="id" type="var">ys</span>) <span class="id" type="var">n</span> = <span class="id" type="var">nth_error</span> <span class="id" type="var">xs</span> <span class="id" type="var">n</span>.<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">nth_error_rewrite_app_left</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">A</span> (<span class="id" title="var">xs</span> <span class="id" title="var">ys</span>:<span class="id" title="var">list</span> <span class="id" title="var">A</span>) <span class="id" title="var">n</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">n</span> &lt; <span class="id" title="var">length</span> <span class="id" title="var">xs</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">nth_error</span> (<span class="id" title="var">xs</span> ++ <span class="id" title="var">ys</span>) <span class="id" title="var">n</span> = <span class="id" title="var">nth_error</span> <span class="id" title="var">xs</span> <span class="id" title="var">n</span>.<br/>
 
 <br/>
-<span class="id" type="keyword">Hint Resolve</span> <span class="id" type="var">nth_error_ok</span> <span class="id" type="var">nth_error_overflow</span> <span class="id" type="var">nth_error_overflow_errors</span><br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">nth_error_app_strong</span> <span class="id" type="var">nth_error_ok_rev</span> <span class="id" type="var">nth_error_nil</span><br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">nth_error_ext_length</span> <span class="id" type="var">nth_error_ext</span> <span class="id" type="var">nth_error_app</span> <span class="id" type="var">rewrite_nth_error_app</span><br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">nth_error_map</span> <span class="id" type="var">nth_error_S</span> <span class="id" type="var">nth_error_app_eq</span> <span class="id" type="var">nth_error_app_split</span><br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">nth_error_app_split_error</span> <span class="id" type="var">equilong_nth_error</span> <span class="id" type="var">nth_error_exists</span><br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">nth_error_to_length</span> <span class="id" type="var">nth_error_dichot</span> <span class="id" type="var">nth_error_rewrite_app_right</span><br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" type="var">nth_error_rewrite_app_left</span> : <span class="id" type="var">NthError</span>.<br/>
+<span class="id" title="keyword">Hint Resolve</span> <span class="id" title="var">nth_error_ok</span> <span class="id" title="var">nth_error_overflow</span> <span class="id" title="var">nth_error_overflow_errors</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">nth_error_app_strong</span> <span class="id" title="var">nth_error_ok_rev</span> <span class="id" title="var">nth_error_nil</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">nth_error_ext_length</span> <span class="id" title="var">nth_error_ext</span> <span class="id" title="var">nth_error_app</span> <span class="id" title="var">rewrite_nth_error_app</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">nth_error_map</span> <span class="id" title="var">nth_error_S</span> <span class="id" title="var">nth_error_app_eq</span> <span class="id" title="var">nth_error_app_split</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">nth_error_app_split_error</span> <span class="id" title="var">equilong_nth_error</span> <span class="id" title="var">nth_error_exists</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">nth_error_to_length</span> <span class="id" title="var">nth_error_dichot</span> <span class="id" title="var">nth_error_rewrite_app_right</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">nth_error_rewrite_app_left</span> : <span class="id" title="var">NthError</span>.<br/>
 </div>
 </div>
 
