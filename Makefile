@@ -38,11 +38,12 @@ LISTKIT_FILES = Listkit/logickit.v Listkit/NthError.v			\
                 Listkit/Subseteq.v
 
 
-FILES = Term.v Shift.v Subst.v Rewrites.v \
-	Norm.v Typing.v Monomorphism.v OutsideRange.v \
-	$(LISTKIT_FILES)
+FILES = Monomorphism.v	OutsideRange.v	Subst.v		eztactics.v \
+        Norm.v		Rewrites.v	Term.v		sn3.v \
+        Shift.v		Typing.v \
+        $(LISTKIT_FILES)
 
-index.html: Listkit/listkit.v Term.v Shift.v Subst.v Rewrites.v \
-	Norm.v Typing.v Monomorphism.v OutsideRange.v
+
+index.html: $(FILES)
 	mkdir -p docs
 	coqdoc -g --utf8 -d docs $(FILES)
