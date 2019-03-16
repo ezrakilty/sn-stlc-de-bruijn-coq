@@ -39,14 +39,12 @@ LISTKIT_FILES = Listkit/logickit.v Listkit/NthError.v			\
                 Listkit/AllType.v Listkit/Map.v Listkit/Sets.v		\
                 Listkit/Subseteq.v
 
-FILES = Monomorphism.v	OutsideRange.v	Subst.v		\
-        Norm.v		Rewrites.v	Term.v		sn3.v \
-        Shift.v		Typing.v \
+FILES = Monomorphism.v OutsideRange.v Subst.v Norm.v Rewrites.v Term.v \
+        sn3.v Shift.v Typing.v \
         $(LISTKIT_FILES)
 
 GLOBS := $(FILES:.v=.glob)
 
-index.html: $(FILES) $(GLOBS)
-	echo $(GLOBS)
+html: $(FILES) $(GLOBS)
 	mkdir -p docs
 	coqdoc -g --utf8 -d docs $(FILES)
