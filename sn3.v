@@ -33,9 +33,9 @@ Require Import Monomorphism.
 Hint Rewrite app_comm_cons : list.
 
 (** A term [M] is [Neutral] if, when it reduces in context, [C[M] ~> Z], the
-    reduction either in C or in M:
-      C[M] ~> Z  ==  C[M] ~> C[M']  or
-      C[M] ~> Z  ==  C[M] ~> C'[M].
+    reduction either in [C] or in [M]: Either
+      [C[M] ~> Z  ==  C[M] ~> C[M']]  or
+      [C[M] ~> Z  ==  C[M] ~> C'[M]].
     In other words, [M] cannot react with [C] immediately.
 
     But we define it here by the cases that we know have that property.
@@ -126,7 +126,7 @@ Ltac splitN n :=
     | 3 => split; [splitN 2 | ]
   end.
 
-Lemma mamma_mia:
+Lemma pair_proj_reducible:
   forall
   (T1 : Ty)
   (T2 : Ty)
@@ -142,10 +142,10 @@ Lemma mamma_mia:
                           Typing nil M0 (if b then T2 else T1) ->
                           (forall M' : Term, (M0 ~> M') -> Reducible M' (if b then T2 else T1)) ->
                           Reducible M0 (if b then T2 else T1))
-   (b:bool),
-   Reducible (TmProj b (〈M, N 〉)) (if b then T2 else T1).
+  (b:bool),
+    Reducible (TmProj b (〈M, N 〉)) (if b then T2 else T1).
 Proof.
- intros.
+ intros T1 T2 M M_red N N_red Reducible_SN_Tn Neutral_Reducible_Tn b.
  (* double_induction_SN M N. (* FIXME: doesn't work! *) *)
  cut (M ~>> M); [|auto]; cut (N ~>> N); [|sauto]; pattern N at 2 3, M at 2 3;
  refine (SN_double_induction _ _ N M _ _).
@@ -224,51 +224,16 @@ Proof.
   (* Case: When continuation frames (left & right projections) are applied, a
        reducible term is formed. *)
     split.
-
-    (* Case: left projection *)
-    (* TODO: double_induction_SN needs us to prove that an arbitrary
-       transitive reduct of the term is reducible; but I think it
-       would be fine to prove just that the term itself is so. *)
-     double_induction_SN_intro M N.
-     (* Because (TmProj _ _) is Neutral, it's sufficient to show that all its
-        reducts are reducible. *)
-     apply Neutral_Reducible_T1; [seauto | seauto | ].
-     intros Z H.
-     inversion H.
-     (* Case: <M', N'> itself reduces *)
-      subst.
-      inversion H3.
-      (* Case: reduction in rhs *)
-       subst m1 n m2.
-       apply IHM; seauto.
-      (* Case: reduction in lhs *)
-      subst m n1 m2.
-      apply IHN; seauto.
-     (* Case: The reduct is at the head; we project. *)
-     subst m n Z.
-     seauto.
-
-    (* Case: right projection *)
-    (* TODO: refactor between the TmProj true / TmProj false cases. *)
-    double_induction_SN_intro M N.
-    (* Because (TmProj _ _) is Neutral, it's sufficient to show that all its
-       reducts are reducible. *)
-    apply Neutral_Reducible_T2; [seauto | | ].
-     (* TODO: why does the TProj1 case go with seauto but this needs me
-        to tell is what lemma to use? *)
-     apply TProj2 with T1; seauto.
-    intros Z H.
-    inversion H.
-    (* Case: <M', N'> itself reduces *)
-     subst.
-     inversion H3.
-      subst m1 n m2.
-      apply IHM; seauto.
-     subst m n1 m2.
-     apply IHN; seauto.
-    (* Case: The reduct is at the head; we project. *)
-    subst m n Z.
-    seauto.
+     set (b := false).
+     replace T1 with (if b then T2 else T1) by auto.
+     apply pair_proj_reducible; auto.
+      intros; destruct b0; auto.
+     intros; destruct b0; auto.
+    set (b := true).
+    replace T2 with (if b then T2 else T1) by auto.
+    apply pair_proj_reducible; auto.
+     intros; destruct b0; auto.
+    intros; destruct b0; auto.
 
   (* Case: Reducible pair-type terms are strongly normalizing *)
    simpl.
