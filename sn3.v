@@ -127,25 +127,20 @@ Ltac splitN n :=
   end.
 
 Lemma pair_proj_reducible:
-  forall
-  (T1 : Ty)
-  (T2 : Ty)
-  (M : Term)
-  (M_red : Reducible M T1)
-  (N : Term)
-  (N_red : Reducible N T2)
-  (Reducible_SN_Tn : forall b:bool, forall tm : Term,
-                       Reducible tm (if b then T2 else T1) -> SN tm)
-  (Neutral_Reducible_Tn : forall b: bool,
-                          forall M0 : Term,
-                          Neutral M0 ->
-                          Typing nil M0 (if b then T2 else T1) ->
-                          (forall M' : Term, (M0 ~> M') -> Reducible M' (if b then T2 else T1)) ->
-                          Reducible M0 (if b then T2 else T1))
-  (b:bool),
-    Reducible (TmProj b (〈M, N 〉)) (if b then T2 else T1).
+  forall T1 T2 M N,
+    Reducible M T1 -> Reducible N T2 ->
+    (forall b : bool, forall tm : Term,
+          Reducible tm (if b then T2 else T1) -> SN tm) ->
+    (forall b : bool,
+        forall M0 : Term,
+          Neutral M0 ->
+          Typing nil M0 (if b then T2 else T1) ->
+          (forall M' : Term, (M0 ~> M') -> Reducible M' (if b then T2 else T1)) ->
+          Reducible M0 (if b then T2 else T1)) ->
+    forall (b : bool),
+      Reducible (TmProj b (〈M, N 〉)) (if b then T2 else T1).
 Proof.
- intros T1 T2 M M_red N N_red Reducible_SN_Tn Neutral_Reducible_Tn b.
+ intros T1 T2 M N M_red N_red Reducible_SN_Tn Neutral_Reducible_Tn b.
  (* double_induction_SN M N. (* FIXME: doesn't work! *) *)
  cut (M ~>> M); [|auto]; cut (N ~>> N); [|sauto]; pattern N at 2 3, M at 2 3;
  refine (SN_double_induction _ _ N M _ _).
